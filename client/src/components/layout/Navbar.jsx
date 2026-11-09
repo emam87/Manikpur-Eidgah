@@ -8,7 +8,7 @@ import { EightPointStar } from '../common/EightPointStar.jsx';
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { locale, toggleLocale, t } = useLanguage();
+  const { locale, setLocale, toggleLocale, t } = useLanguage();
   const { getSetting } = useSettings();
   const location = useLocation();
 
@@ -87,16 +87,34 @@ export function Navbar() {
           </nav>
 
           {/* Controls: Language Switcher & Mobile Menu */}
-          <div className="flex items-center gap-2">
-            {/* Language Toggle Button */}
-            <button
-              onClick={toggleLocale}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950 border border-gold-500/40 text-gold-300 hover:bg-gold-500 hover:text-stone-950 transition-all text-xs font-semibold tap-target shadow-sm"
-              title={locale === 'bn' ? 'Switch to English' : 'বাংলায় দেখুন'}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>{locale === 'bn' ? 'English' : 'বাংলা'}</span>
-            </button>
+          <div className="flex items-center gap-2.5">
+            {/* Dual Language Segmented Toggle Switch: [ বাংলা | EN ] */}
+            <div className="flex items-center bg-emerald-950/90 p-0.5 rounded-full border border-gold-500/40 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setLocale('bn')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  locale === 'bn'
+                    ? 'bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-emerald-950 shadow-md font-extrabold'
+                    : 'text-ivory-200 hover:text-gold-300'
+                }`}
+                title="বাংলায় দেখুন"
+              >
+                বাংলা
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale('en')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  locale === 'en'
+                    ? 'bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-emerald-950 shadow-md font-extrabold'
+                    : 'text-ivory-200 hover:text-gold-300'
+                }`}
+                title="View in English"
+              >
+                EN
+              </button>
+            </div>
 
             {/* Mobile Hamburger Menu Button */}
             <button
@@ -112,7 +130,39 @@ export function Navbar() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="xl:hidden bg-emerald-950 border-t border-gold-500/30 px-4 pt-3 pb-6 space-y-2 animate-fade-in shadow-2xl">
+        <div className="xl:hidden bg-emerald-950 border-t border-gold-500/30 px-4 pt-3 pb-6 space-y-3 animate-fade-in shadow-2xl">
+          {/* Mobile Language Switcher Row */}
+          <div className="flex items-center justify-between pb-3 border-b border-emerald-800 text-xs text-ivory-200">
+            <span className="font-semibold flex items-center gap-1.5 text-gold-300">
+              <Globe className="w-4 h-4 text-gold-400" />
+              <span>{locale === 'bn' ? 'ভাষা নির্বাচন:' : 'Language:'}</span>
+            </span>
+            <div className="flex items-center bg-emerald-900 p-0.5 rounded-full border border-gold-500/40 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setLocale('bn')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  locale === 'bn'
+                    ? 'bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-emerald-950 shadow-md font-extrabold'
+                    : 'text-ivory-200 hover:text-gold-300'
+                }`}
+              >
+                বাংলা
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale('en')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  locale === 'en'
+                    ? 'bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-emerald-950 shadow-md font-extrabold'
+                    : 'text-ivory-200 hover:text-gold-300'
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </div>
+
           {/* Mobile Nav Links */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[70vh] overflow-y-auto">
             {navLinks.map((link) => (
