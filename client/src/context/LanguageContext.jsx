@@ -78,6 +78,7 @@ export function LanguageProvider({ children }) {
         t,
         toBanglaNum,
         formatMoney,
+        formatBDT: formatMoney,
         getLocalized,
       }}
     >
