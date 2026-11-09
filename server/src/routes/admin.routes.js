@@ -162,3 +162,4 @@ router.get('/activity-logs', getActivityLogs);
 router.get('/backup/export', requireRole('ADMIN'), getDatabaseBackup);
 
 export default router;
+

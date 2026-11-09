@@ -11,6 +11,8 @@ import healthRoutes from './routes/health.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import publicRoutes from './routes/public.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import seoRoutes from './routes/seo.routes.js';
+import { SeoController } from './controllers/seo.controller.js';
 
 export const app = express();
 
@@ -64,7 +66,13 @@ app.use('/api', generalLimiter);
 // 6. Static local files for development/testing when R2 is not used
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
-// 7. Decoy Scanner Routes -> Immediate 404 (Never redirect or give unique error)
+// 7. SEO: Sitemap & Robots.txt
+app.use(seoRoutes);
+
+// 8. Social Crawler Open Graph Pre-renderer
+app.use(SeoController.handleCrawlerMeta);
+
+// 9. Decoy Scanner Routes -> Immediate 404 (Never redirect or give unique error)
 const DECOY_REGEX = /^\/(admin|login|dashboard|panel|wp-admin|wp-login\.php|administrator|phpmyadmin|cpanel)($|\/)/i;
 app.use((req, res, next) => {
   if (DECOY_REGEX.test(req.path)) {
@@ -76,13 +84,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// 8. API Routes
+// 10. API Routes
 app.use('/api', healthRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 
-// 9. 404 and Centralized Error Handling
+// 11. 404 and Centralized Error Handling
 app.use(notFoundHandler);
 app.use(errorHandler);
 
