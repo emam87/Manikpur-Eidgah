@@ -597,3 +597,186 @@ export async function getNoticeBySlug(req, res, next) {
     next(err);
   }
 }
+
+/**
+ * GET /api/public/albums
+ * Photo gallery folders with search, type tabs, year filter, photo count
+ */
+export async function getAlbums(req, res, next) {
+  try {
+    const q = (req.query.q || '').trim();
+    const type = (req.query.type || '').trim();
+    const year = req.query.year ? parseInt(req.query.year, 10) : null;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '12', 10)));
+    const skip = (page - 1) * limit;
+
+    const where = {
+      isPublished: true,
+      deletedAt: null,
+    };
+
+    if (type && ['FITR', 'ADHA', 'OTHER'].includes(type)) {
+      where.type = type;
+    }
+
+    if (year && !isNaN(year)) {
+      where.year = year;
+    }
+
+    if (q) {
+      where.OR = [
+        { titleBn: { contains: q, mode: 'insensitive' } },
+        { titleEn: { contains: q, mode: 'insensitive' } },
+        { occasionNameBn: { contains: q, mode: 'insensitive' } },
+        { occasionNameEn: { contains: q, mode: 'insensitive' } },
+        { descriptionBn: { contains: q, mode: 'insensitive' } },
+        { descriptionEn: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [totalAlbums, albums, yearsData] = await Promise.all([
+      prisma.album.count({ where }),
+      prisma.album.findMany({
+        where,
+        orderBy: [{ year: 'desc' }, { sortOrder: 'asc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+        include: {
+          coverPhoto: true,
+          photos: {
+            where: { isPublished: true, deletedAt: null },
+            take: 1,
+            select: { path: true, thumbPath: true },
+          },
+          _count: {
+            select: {
+              photos: { where: { isPublished: true, deletedAt: null } },
+            },
+          },
+        },
+      }),
+      prisma.album.findMany({
+        where: { isPublished: true, deletedAt: null },
+        select: { year: true },
+        distinct: ['year'],
+        orderBy: { year: 'desc' },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      albums,
+      years: yearsData.map((y) => y.year),
+      pagination: {
+        page,
+        limit,
+        total: totalAlbums,
+        totalPages: Math.ceil(totalAlbums / limit),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/public/albums/:slug
+ * Folder details with all published photos and next/prev folders
+ */
+export async function getAlbumBySlug(req, res, next) {
+  try {
+    const { slug } = req.params;
+
+    const album = await prisma.album.findFirst({
+      where: { slug, isPublished: true, deletedAt: null },
+      include: {
+        coverPhoto: true,
+        photos: {
+          where: { isPublished: true, deletedAt: null },
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+          select: {
+            id: true,
+            path: true,
+            thumbPath: true,
+            captionBn: true,
+            captionEn: true,
+            width: true,
+            height: true,
+            fileSize: true,
+          },
+        },
+      },
+    });
+
+    if (!album) {
+      return res.status(404).json({ success: false, error: 'ফোল্ডারটি পাওয়া যায়নি।' });
+    }
+
+    // Previous and Next album navigation
+    const [prevAlbum, nextAlbum] = await Promise.all([
+      prisma.album.findFirst({
+        where: {
+          isPublished: true,
+          deletedAt: null,
+          OR: [
+            { year: { lt: album.year } },
+            { year: album.year, id: { lt: album.id } },
+          ],
+        },
+        orderBy: [{ year: 'desc' }, { id: 'desc' }],
+        select: { id: true, slug: true, titleBn: true, titleEn: true, year: true },
+      }),
+      prisma.album.findFirst({
+        where: {
+          isPublished: true,
+          deletedAt: null,
+          OR: [
+            { year: { gt: album.year } },
+            { year: album.year, id: { gt: album.id } },
+          ],
+        },
+        orderBy: [{ year: 'asc' }, { id: 'asc' }],
+        select: { id: true, slug: true, titleBn: true, titleEn: true, year: true },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      album,
+      navigation: {
+        prev: prevAlbum,
+        next: nextAlbum,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/public/designs
+ * Design & Plan 3D renders with captions and optional published video
+ */
+export async function getDesigns(req, res, next) {
+  try {
+    const [designs, video] = await Promise.all([
+      prisma.design.findMany({
+        where: { isPublished: true, deletedAt: null },
+        orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      }),
+      prisma.designVideo.findFirst({
+        where: { isPublished: true },
+        orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      designs,
+      video,
+    });
+  } catch (err) {
+    next(err);
+  }
+}

@@ -11,10 +11,10 @@ import { Notices } from './pages/Notices.jsx';
 import { NoticeDetail } from './pages/NoticeDetail.jsx';
 import { MapPage } from './pages/MapPage.jsx';
 import { Contact } from './pages/Contact.jsx';
+import { Gallery } from './pages/Gallery.jsx';
+import { GalleryFolder } from './pages/GalleryFolder.jsx';
+import { Designs } from './pages/Designs.jsx';
 import { NotFound } from './pages/NotFound.jsx';
-
-// Gallery and Designs placeholders (to be completed in Phase 5)
-import { Gallery, GalleryFolder, Designs } from './pages/PublicPages.jsx';
 
 // Lazy-loaded secret admin SPA chunk
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx'));

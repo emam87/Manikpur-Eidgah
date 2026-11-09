@@ -9,6 +9,9 @@ import {
   getLandMaps,
   getNotices,
   getNoticeBySlug,
+  getAlbums,
+  getAlbumBySlug,
+  getDesigns,
 } from '../controllers/public.controller.js';
 
 const router = Router();
@@ -22,5 +25,8 @@ router.get('/documents', getDocuments);
 router.get('/land-maps', getLandMaps);
 router.get('/notices', getNotices);
 router.get('/notices/:slug', getNoticeBySlug);
+router.get('/albums', getAlbums);
+router.get('/albums/:slug', getAlbumBySlug);
+router.get('/designs', getDesigns);
 
 export default router;
