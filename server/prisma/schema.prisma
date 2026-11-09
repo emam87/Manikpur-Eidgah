@@ -1,0 +1,394 @@
+// ==============================================================================
+// Manikpur Central Shahi Eidgah (মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ)
+// Prisma Database Schema — PostgreSQL (Supabase)
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  EDITOR
+}
+
+enum AlbumType {
+  FITR
+  ADHA
+  OTHER
+}
+
+enum DonationPurpose {
+  CONSTRUCTION
+  BOUNDARY_WALL
+  LAND_PURCHASE
+  SOUND_SYSTEM
+  GENERAL
+  OTHER
+}
+
+enum DocumentCategory {
+  DEED
+  KHATIAN
+  PORCHA
+  MUTATION
+  DCR
+  COURT
+  RESOLUTION
+  OTHER
+}
+
+enum DocumentVisibility {
+  PUBLIC
+  ADMIN_ONLY
+}
+
+enum LandMapType {
+  CS
+  SA
+  RS
+  BS
+}
+
+enum DesignVideoType {
+  UPLOAD
+  YOUTUBE
+}
+
+// ------------------------------------------------------------------------------
+// Models
+// ------------------------------------------------------------------------------
+
+model User {
+  id                 Int        @id @default(autoincrement())
+  name               String     @db.VarChar(255)
+  email              String     @unique @db.VarChar(255)
+  password           String     @db.VarChar(255)
+  role               UserRole   @default(EDITOR)
+  isActive           Boolean    @default(true) @map("is_active")
+  mustChangePassword Boolean    @default(false) @map("must_change_password")
+  lastLoginAt        DateTime?  @map("last_login_at")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  documents    Document[]
+  notices      Notice[]
+  activityLogs ActivityLog[]
+
+  @@map("users")
+}
+
+model Member {
+  id           Int       @id @default(autoincrement())
+  membershipNo String    @unique @map("membership_no") @db.VarChar(50)
+  nameBn       String    @map("name_bn") @db.VarChar(255)
+  nameEn       String?   @map("name_en") @db.VarChar(255)
+  fatherNameBn String?   @map("father_name_bn") @db.VarChar(255)
+  fatherNameEn String?   @map("father_name_en") @db.VarChar(255)
+  addressBn    String?   @map("address_bn") @db.VarChar(255)
+  addressEn    String?   @map("address_en") @db.VarChar(255)
+  phone        String?   @db.VarChar(40) // Strictly private, never sent to public API
+  nidNo        String?   @map("nid_no") @db.VarChar(40) // Strictly private, never sent to public API
+  photoPath    String?   @map("photo_path") @db.VarChar(255)
+  memberSince  Int?      @map("member_since") @db.SmallInt
+  amountPaid   Decimal?  @map("amount_paid") @db.Decimal(12, 2)
+  showAmount   Boolean   @default(false) @map("show_amount")
+  isActive     Boolean   @default(true) @map("is_active")
+  sortOrder    Int       @default(0) @map("sort_order")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([membershipNo])
+  @@index([memberSince])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("members")
+}
+
+model Donor {
+  id           Int             @id @default(autoincrement())
+  donorNameBn  String          @map("donor_name_bn") @db.VarChar(255)
+  donorNameEn  String?         @map("donor_name_en") @db.VarChar(255)
+  phone        String?         @db.VarChar(40) // Strictly private, never sent to public API
+  addressBn    String?         @map("address_bn") @db.VarChar(255)
+  addressEn    String?         @map("address_en") @db.VarChar(255)
+  amount       Decimal         @default(0) @db.Decimal(12, 2)
+  donationDate DateTime        @map("donation_date") @db.Date
+  purpose      DonationPurpose @default(GENERAL)
+  showAmount   Boolean         @default(true) @map("show_amount")
+  receiptNo    String?         @map("receipt_no") @db.VarChar(60)
+  noteBn       String?         @map("note_bn") @db.Text
+  noteEn       String?         @map("note_en") @db.Text
+  deletedAt    DateTime?       @map("deleted_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  @@index([donationDate])
+  @@index([purpose])
+  @@index([deletedAt])
+  @@map("donors")
+}
+
+model CommitteeMember {
+  id              Int       @id @default(autoincrement())
+  level           Int       @default(1) @db.SmallInt
+  parentId        Int?      @map("parent_id")
+  parent          CommitteeMember?  @relation("CommitteeHierarchy", fields: [parentId], references: [id])
+  children        CommitteeMember[] @relation("CommitteeHierarchy")
+  nameBn          String    @map("name_bn") @db.VarChar(255)
+  nameEn          String?   @map("name_en") @db.VarChar(255)
+  designationBn   String    @map("designation_bn") @db.VarChar(255)
+  designationEn   String?   @map("designation_en") @db.VarChar(255)
+  roleBn          String?   @map("role_bn") @db.VarChar(255)
+  roleEn          String?   @map("role_en") @db.VarChar(255)
+  designationType String    @default("MEMBER") @map("designation_type") @db.VarChar(40)
+  addressBn       String?   @map("address_bn") @db.VarChar(255)
+  addressEn       String?   @map("address_en") @db.VarChar(255)
+  photoPath       String?   @map("photo_path") @db.VarChar(255)
+  term            String?   @db.VarChar(100)
+  termPeriod      String?   @map("term_period") @db.VarChar(50)
+  isCurrent       Boolean   @default(true) @map("is_current")
+  isActive        Boolean   @default(true) @map("is_active")
+  sortOrder       Int       @default(0) @map("sort_order")
+  phone           String?   @db.VarChar(50)
+  showPhone       Boolean   @default(false) @map("show_phone")
+  bioBn           String?   @map("bio_bn") @db.Text
+  bioEn           String?   @map("bio_en") @db.Text
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([isCurrent])
+  @@index([isActive])
+  @@index([level])
+  @@index([sortOrder])
+  @@index([deletedAt])
+  @@map("committee_members")
+}
+
+model Album {
+  id             Int       @id @default(autoincrement())
+  titleBn        String    @map("title_bn") @db.VarChar(255)
+  titleEn        String?   @map("title_en") @db.VarChar(255)
+  slug           String    @unique @db.VarChar(255)
+  occasionNameBn String?   @map("occasion_name_bn") @db.VarChar(255)
+  occasionNameEn String?   @map("occasion_name_en") @db.VarChar(255)
+  descriptionBn  String?   @map("description_bn") @db.Text
+  descriptionEn  String?   @map("description_en") @db.Text
+  type           AlbumType @default(FITR)
+  year           Int       @db.SmallInt
+  eventDate      DateTime? @map("event_date") @db.Date
+  coverPhotoId   Int?      @map("cover_photo_id")
+  coverPhoto     Photo?    @relation("AlbumCover", fields: [coverPhotoId], references: [id])
+  photos         Photo[]   @relation("AlbumPhotos")
+  isPublished    Boolean   @default(true) @map("is_published")
+  sortOrder      Int       @default(0) @map("sort_order")
+  deletedAt      DateTime? @map("deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([type])
+  @@index([year])
+  @@index([isPublished])
+  @@index([deletedAt])
+  @@map("albums")
+}
+
+model Photo {
+  id           Int       @id @default(autoincrement())
+  albumId      Int       @map("album_id")
+  album        Album     @relation("AlbumPhotos", fields: [albumId], references: [id], onDelete: Cascade)
+  coveredAlbums Album[]  @relation("AlbumCover")
+  path         String    @db.VarChar(255)
+  thumbPath    String?   @map("thumb_path") @db.VarChar(255)
+  originalName String?   @map("original_name") @db.VarChar(255)
+  captionBn    String?   @map("caption_bn") @db.VarChar(255)
+  captionEn    String?   @map("caption_en") @db.VarChar(255)
+  width        Int?
+  height       Int?
+  fileSize     Int?      @map("file_size")
+  sortOrder    Int       @default(0) @map("sort_order")
+  isPublished  Boolean   @default(true) @map("is_published")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([albumId])
+  @@index([isPublished])
+  @@index([sortOrder])
+  @@index([deletedAt])
+  @@map("photos")
+}
+
+model LandMap {
+  id             Int       @id @default(autoincrement())
+  titleBn        String    @map("title_bn") @db.VarChar(255)
+  titleEn        String?   @map("title_en") @db.VarChar(255)
+  descriptionBn  String?   @map("description_bn") @db.Text
+  descriptionEn  String?   @map("description_en") @db.Text
+  surveyType     String?   @map("survey_type") @db.VarChar(60) // CS, SA, RS, BS
+  dagKhatianInfo String?   @map("dag_khatian_info") @db.VarChar(255)
+  mapDate        DateTime? @map("map_date") @db.Date
+  filePath       String    @map("file_path") @db.VarChar(255)
+  thumbPath      String?   @map("thumb_path") @db.VarChar(255)
+  fileType       String    @default("IMAGE") @map("file_type") @db.VarChar(20) // IMAGE | PDF
+  fileSize       Int?      @map("file_size")
+  isPublished    Boolean   @default(true) @map("is_published")
+  sortOrder      Int       @default(0) @map("sort_order")
+  deletedAt      DateTime? @map("deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([isPublished])
+  @@index([sortOrder])
+  @@index([deletedAt])
+  @@map("land_maps")
+}
+
+model Document {
+  id           Int                @id @default(autoincrement())
+  titleBn      String             @map("title_bn") @db.VarChar(255)
+  titleEn      String?            @map("title_en") @db.VarChar(255)
+  category     DocumentCategory   @default(DEED)
+  documentNo   String?            @map("document_no") @db.VarChar(100)
+  documentDate DateTime?          @map("document_date") @db.Date
+  descriptionBn String?           @map("description_bn") @db.Text
+  descriptionEn String?           @map("description_en") @db.Text
+  filePath     String             @map("file_path") @db.VarChar(255) // In private bucket
+  fileMime     String?            @map("file_mime") @db.VarChar(100)
+  fileSize     Int?               @map("file_size")
+  visibility   DocumentVisibility @default(PUBLIC)
+  uploadedById Int?               @map("uploaded_by")
+  uploadedBy   User?              @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  deletedAt    DateTime?          @map("deleted_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([visibility])
+  @@index([documentDate])
+  @@index([deletedAt])
+  @@map("documents")
+}
+
+model Notice {
+  id             Int       @id @default(autoincrement())
+  titleBn        String    @map("title_bn") @db.VarChar(255)
+  titleEn        String?   @map("title_en") @db.VarChar(255)
+  slug           String    @unique @db.VarChar(255)
+  bodyBn         String    @map("body_bn") @db.Text
+  bodyEn         String?   @map("body_en") @db.Text
+  publishedAt    DateTime  @default(now()) @map("published_at") @db.Date
+  isPinned       Boolean   @default(false) @map("is_pinned")
+  isPublished    Boolean   @default(true) @map("is_published")
+  attachmentPath String?   @map("attachment_path") @db.VarChar(255)
+  createdById    Int?      @map("created_by")
+  createdBy      User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt      DateTime? @map("deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([isPinned])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@index([deletedAt])
+  @@map("notices")
+}
+
+model Design {
+  id          Int       @id @default(autoincrement())
+  path        String    @db.VarChar(255) // R2 key
+  thumbPath   String?   @map("thumb_path") @db.VarChar(255)
+  captionBn   String?   @map("caption_bn") @db.VarChar(255)
+  captionEn   String?   @map("caption_en") @db.VarChar(255)
+  sortOrder   Int       @default(0) @map("sort_order")
+  isPublished Boolean   @default(true) @map("is_published")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([sortOrder])
+  @@index([isPublished])
+  @@index([deletedAt])
+  @@map("design_images")
+}
+
+model DesignVideo {
+  id          Int             @id @default(autoincrement())
+  titleBn     String          @map("title_bn") @db.VarChar(255)
+  titleEn     String?         @map("title_en") @db.VarChar(255)
+  type        DesignVideoType @default(YOUTUBE)
+  filePath    String?         @map("file_path") @db.VarChar(255)
+  url         String?         @db.VarChar(500)
+  posterPath  String?         @map("poster_path") @db.VarChar(255)
+  sortOrder   Int             @default(0) @map("sort_order")
+  isPublished Boolean         @default(true) @map("is_published")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@index([sortOrder])
+  @@index([isPublished])
+  @@map("design_videos")
+}
+
+model SiteSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(100)
+  valueBn   String?  @map("value_bn") @db.Text
+  valueEn   String?  @map("value_en") @db.Text
+  type      String   @default("text") @db.VarChar(30)
+  group     String   @default("general") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([key])
+  @@index([group])
+  @@map("site_settings")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String   @db.VarChar(50)
+  subjectType String?  @map("subject_type") @db.VarChar(100)
+  subjectId   Int?     @map("subject_id")
+  description String   @db.VarChar(255)
+  properties  Json?
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([subjectType])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model LoginAttempt {
+  id          Int       @id @default(autoincrement())
+  key         String    @unique @db.VarChar(191) // Hash of lower(email) + '|' + ip
+  attempts    Int       @default(1)
+  lockedUntil DateTime? @map("locked_until")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([key])
+  @@index([lockedUntil])
+  @@map("login_attempts")
+}
+

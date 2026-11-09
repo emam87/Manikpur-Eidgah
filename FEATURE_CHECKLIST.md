@@ -205,10 +205,11 @@ Decoy paths (`/admin`, `/login`, `/dashboard`, `/wp-admin`, `/phpmyadmin`, etc.)
 ## 10. Phase Execution Roadmap & Status
 
 - [x] **Phase 1: Feature Parity Audit & Checklist** (Review & Approval)
-- [ ] **Phase 2: Monorepo & Backend Foundation** (Express, Prisma schema & migrations, Auth, JWT cookie, R2 service, Health route, GitHub Action)
+- [x] **Phase 2: Monorepo & Backend Foundation** (Express, Prisma schema & migrations, Auth, JWT cookie, R2 service, Health route, GitHub Action)
 - [ ] **Phase 3: Frontend Foundation & Home Page** (Vite, Tailwind, i18n Context, Decoy 404, Home page with 3 hero styles & stats)
 - [ ] **Phase 4: Public Core Pages** (Lifetime Members, Donors, About/Committee, Contact, Notices, Documents, Land Maps, Leaflet Map)
 - [ ] **Phase 5: Gallery Folders & Design Showcase** (Folder system, masonry, lightboxes, 3D video)
 - [ ] **Phase 6: Admin Panel Complete** (Dashboard charts, CRUD for all models, Trash, Activity Log, CSV tools, Settings, Backup)
 - [ ] **Phase 7: Data Import, SEO/OG, Responsive QA & Automated Tests** (Import script, test suite, Lighthouse mobile 85+, 360-1920px testing)
 - [ ] **Phase 8: Documentation & Parity Verification** (README, DEPLOYMENT.md, environment variables summary, 100% parity sign-off)
+

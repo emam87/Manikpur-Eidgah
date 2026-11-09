@@ -1,0 +1,58 @@
+# Environment files & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production builds
+dist/
+build/
+client/dist/
+server/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Protected folders strictly excluded from repo
+legacy-laravel/
+migration-source/
+*.zip
+*.tar.gz
+*.sql
+*.sqlite
+
+# Local temporary uploads & data
+uploads/
+server/uploads/
+storage/
+temp/
+tmp/
+.cache/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+.nyc_output/
+

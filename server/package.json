@@ -1,0 +1,46 @@
+{
+  "name": "manikpur-eidgah-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend REST API for Manikpur Central Shahi Eidgah",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "node src/scripts/seed.js",
+    "admin:create": "node src/scripts/createAdmin.js",
+    "admin:path": "node src/scripts/printAdminPath.js",
+    "data:import": "node src/scripts/importLegacyData.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/s3-request-presigner": "^3.750.0",
+    "@prisma/client": "^6.4.1",
+    "archiver": "^7.0.1",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "file-type": "^20.1.0",
+    "helmet": "^8.0.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "papaparse": "^5.5.2",
+    "sharp": "^0.33.5",
+    "unzipper": "^0.12.3",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "prisma": "^6.4.1"
+  }
+}
+

@@ -1,0 +1,27 @@
+name: Keep Supabase & Render Free-Tier Alive
+
+on:
+  schedule:
+    # Run at 06:00 UTC every 3 days (0 6 */3 * *)
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping API Health Endpoint
+        env:
+          APP_HEALTH_URL: ${{ secrets.APP_HEALTH_URL || 'https://manikpureidgah.org/api/health' }}
+        run: |
+          echo "Pinging health check endpoint to prevent Supabase database pause and test Render uptime..."
+          STATUS=$(curl -s -o response.json -w "%{http_code}" "$APP_HEALTH_URL")
+          echo "HTTP Status Code: $STATUS"
+          cat response.json
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "Keep-alive ping successful!"
+
