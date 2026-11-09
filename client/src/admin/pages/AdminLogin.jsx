@@ -7,6 +7,7 @@ import { SEO } from '../../components/common/SEO.jsx';
 export function AdminLogin() {
   const { login } = useAdminAuth();
   const navigate = useNavigate();
+  const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'eidgah-manage-k29x';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +28,7 @@ export function AdminLogin() {
     setLoading(false);
 
     if (res.success) {
-      navigate('');
+      navigate(`/${ADMIN_PATH}`, { replace: true });
     } else {
       setErrorMessage(res.error || 'লগইন ব্যর্থ হয়েছে। তথ্য যাচাই করুন।');
     }
