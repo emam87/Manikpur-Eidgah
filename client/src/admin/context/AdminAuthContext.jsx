@@ -15,7 +15,8 @@ export function AdminAuthProvider({ children }) {
     try {
       const res = await fetch('/api/admin/auth/me');
       if (res.ok) {
-        const data = await res.json();
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
         if (data.success && data.user) {
           setUser(data.user);
         } else {
@@ -39,7 +40,14 @@ export function AdminAuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        throw new Error('সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে ব্যাকএন্ড চালু রয়েছে কি না নিশ্চিত করুন।');
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'লগইন ব্যর্থ হয়েছে।');
@@ -70,7 +78,15 @@ export function AdminAuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      const data = await res.json();
+
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        throw new Error('সার্ভার থেকে সঠিক উত্তর পাওয়া যায়নি।');
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'পাসওয়ার্ড পরিবর্তন ব্যর্থ হয়েছে।');
       }

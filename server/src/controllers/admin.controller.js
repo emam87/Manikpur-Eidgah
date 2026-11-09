@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../db/prisma.js';
 import { logActivity } from '../services/activityLogger.service.js';
 import { SettingsService } from '../services/settings.service.js';

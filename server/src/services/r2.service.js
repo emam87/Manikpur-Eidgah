@@ -128,6 +128,8 @@ export async function getSignedDocumentUrl(key, expiresInSeconds = 900) {
   return `/api/documents/private-file?key=${encodeURIComponent(cleanKey)}`;
 }
 
+export const getPrivateSignedDownloadUrl = getSignedDocumentUrl;
+
 /**
  * Delete a file from public storage.
  * @param {string} key

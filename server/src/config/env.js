@@ -11,9 +11,9 @@ dotenv.config();
 
 export const ENV = {
   NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: parseInt(process.env.PORT || '5000', 10),
+  PORT: parseInt(process.env.PORT || '5001', 10),
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
-  API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:5000/api',
+  API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:5001/api',
 
   // Database
   DATABASE_URL: process.env.DATABASE_URL || '',
