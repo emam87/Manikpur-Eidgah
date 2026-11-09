@@ -119,3 +119,4 @@ test('rbac: Unauthenticated request is rejected with 401', () => {
   assert.equal(nextCalled, false);
   assert.equal(statusCode, 401, 'Must return 401 Unauthorized when user is missing');
 });
+

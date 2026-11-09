@@ -93,3 +93,4 @@ test('privacy: document query visibility filter strictly excludes ADMIN_ONLY fro
   assert.ok(publicDocuments.every((doc) => doc.visibility === 'PUBLIC'));
   assert.ok(!publicDocuments.some((doc) => doc.visibility === 'ADMIN_ONLY'));
 });
+

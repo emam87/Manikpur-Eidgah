@@ -224,3 +224,4 @@ npm run dev:client    # Frontend SPA on http://localhost:5173
 
 Developed with reverence for the **Manikpur Central Shahi Eidgah (মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ)** community and Waqf Estate.  
 © 1965 – 2026 মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ পরিচালনা কমিটি। সর্বস্বত্ব সংরক্ষিত।
+

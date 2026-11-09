@@ -102,3 +102,4 @@ test('seo: sitemap.xml output structure and static routes', async () => {
   assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/notices</loc>'));
   assert.ok(capturedBody.includes('</urlset>'));
 });
+

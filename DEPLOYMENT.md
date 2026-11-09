@@ -241,3 +241,4 @@ node src/scripts/printAdminPath.js
   - `GET https://<site-domain>/sitemap.xml` returns valid XML schema.
   - `GET https://<site-domain>/robots.txt` disallows `/api/` and the secret admin path.
 - [ ] **Social Media OG Preview**: Testing a notice or album URL on [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) shows proper title, description, and preview image.
+
