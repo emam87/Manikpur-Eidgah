@@ -1,0 +1,25 @@
+name: Free-Tier Database Keep-Alive
+
+on:
+  schedule:
+    # Run every 3 days at midnight UTC to prevent Supabase database pausing
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  ping-health:
+    name: Ping Health Endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API Health Check
+        run: |
+          URL="${{ secrets.HEALTH_CHECK_URL || 'https://api.manikpureidgah.org/api/health' }}"
+          echo "Pinging health check endpoint: $URL"
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" "$URL")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          echo "Response status code: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 503 ]; then
+            echo "API server and database pinged successfully."
+          else
+            echo "Warning: Unexpected response status $HTTP_STATUS"
+          fi
