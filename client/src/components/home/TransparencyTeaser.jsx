@@ -45,31 +45,31 @@ export function TransparencyTeaser() {
             return (
               <div
                 key={index}
-                className="bg-ivory-50 rounded-3xl p-6 sm:p-8 border border-gold-500/30 hover:border-gold-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
+                className="bg-ivory-50 rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-gold-500/30 hover:border-gold-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
               >
-                <div className="space-y-4">
+                <div className="space-y-3.5 sm:space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-800 text-gold-300 flex items-center justify-center shadow-md">
-                      <Icon className="w-6 h-6" />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-800 text-gold-300 flex items-center justify-center shadow-md shrink-0">
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 text-xs font-semibold">
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 text-[11px] sm:text-xs font-semibold">
                       {item.badge}
                     </span>
                   </div>
 
-                  <h3 className="font-serif font-bold text-xl sm:text-2xl text-stone-900 group-hover:text-emerald-800 transition-colors">
+                  <h3 className="font-serif font-bold text-lg sm:text-2xl text-stone-900 group-hover:text-emerald-800 transition-colors leading-snug">
                     {item.title}
                   </h3>
 
-                  <p className="text-sm text-stone-600 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
                     {item.description}
                   </p>
                 </div>
 
-                <div className="pt-6 mt-6 border-t border-gold-500/20">
+                <div className="pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-gold-500/20">
                   <Link
                     to={item.link}
-                    className="inline-flex items-center gap-2 text-sm font-bold text-emerald-800 hover:text-emerald-950 group-hover:text-gold-600 transition-colors"
+                    className="inline-flex items-center gap-2 text-sm font-bold text-emerald-800 hover:text-emerald-950 group-hover:text-gold-600 transition-colors min-h-[40px] tap-target"
                   >
                     <span>{item.cta}</span>
                     <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

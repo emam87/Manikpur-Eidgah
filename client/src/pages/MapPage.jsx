@@ -159,9 +159,9 @@ export function MapPage() {
         {/* Map Stage + Floating Controls */}
         <div className="bg-white rounded-3xl border-2 border-gold-500/40 shadow-2xl overflow-hidden flex flex-col">
           {/* Top Control Bar */}
-          <div className="p-4 sm:p-5 bg-emerald-950 text-ivory flex flex-wrap items-center justify-between gap-4 border-b border-gold-500/30">
+          <div className="p-4 sm:p-5 bg-emerald-950 text-ivory flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gold-500/30">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-300">
+              <div className="w-10 h-10 rounded-xl bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-300 shrink-0">
                 <MapPin className="w-5 h-5" />
               </div>
               <div>
@@ -174,10 +174,10 @@ export function MapPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
               <button
                 onClick={handleShareLocation}
-                className="px-3.5 py-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 text-xs font-semibold border border-gold-500/30 transition-colors flex items-center gap-1.5"
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 text-xs font-semibold border border-gold-500/30 transition-colors flex items-center justify-center gap-1.5 min-h-[44px] tap-target"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
                 <span>{copied ? (locale === 'bn' ? 'কপি হয়েছে!' : 'Copied!') : (locale === 'bn' ? 'শেয়ার' : 'Share')}</span>
@@ -187,11 +187,11 @@ export function MapPage() {
                 href={googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-emerald-950 text-xs sm:text-sm font-bold shadow-md hover:from-gold-500 hover:to-gold-400 transition-all flex items-center gap-2"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 text-emerald-950 text-xs sm:text-sm font-bold shadow-md hover:from-gold-500 hover:to-gold-400 transition-all flex items-center justify-center gap-2 min-h-[44px] tap-target"
               >
-                <Navigation className="w-4 h-4 fill-current" />
-                <span>{locale === 'bn' ? 'গুগল ম্যাপে দিকনির্দেশনা' : 'Get Directions'}</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <Navigation className="w-4 h-4 fill-current shrink-0" />
+                <span className="truncate">{locale === 'bn' ? 'গুগল ম্যাপে দিকনির্দেশনা' : 'Get Directions'}</span>
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               </a>
             </div>
           </div>

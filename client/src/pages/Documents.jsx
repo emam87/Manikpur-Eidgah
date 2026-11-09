@@ -19,6 +19,18 @@ export function Documents() {
   const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 1 });
   const [previewDoc, setPreviewDoc] = useState(null);
 
+  // Lock body scroll when document preview modal is open
+  useEffect(() => {
+    if (previewDoc) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [previewDoc]);
+
   const categories = [
     { value: '', labelBn: 'সকল দলিল ও রেকর্ড', labelEn: 'All Documents' },
     { value: 'DEED', labelBn: 'ওয়াকফ ও মূল দলিল', labelEn: 'Waqf & Registered Deeds' },
@@ -99,7 +111,7 @@ export function Documents() {
         </div>
 
         {/* Category Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
           {categories.map((cat) => (
             <button
               key={cat.value}
@@ -285,14 +297,15 @@ export function Documents() {
                   href={previewDoc.filePath}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-gold-300 transition-colors"
+                  className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center tap-target"
                   title="নতুন ট্যাবে খুলুন"
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
                 <button
                   onClick={() => setPreviewDoc(null)}
-                  className="p-2 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-gold-300 transition-colors"
+                  className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center tap-target"
+                  aria-label="Close document preview"
                 >
                   <X className="w-4 h-4" />
                 </button>

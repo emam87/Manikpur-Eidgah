@@ -83,28 +83,28 @@ export function StatsSection({ stats = {} }) {
   ];
 
   return (
-    <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-14 lg:-mt-16 mb-16">
-      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border-2 border-gold-500/30 relative overflow-hidden">
+    <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-14 lg:-mt-16 mb-12 sm:mb-16">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl border-2 border-gold-500/30 relative overflow-hidden">
         {/* Subtle decorative gold top bar */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-800 via-gold-500 to-emerald-800" />
 
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8 divide-y sm:divide-y-0 sm:divide-x divide-gold-500/20">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6 lg:gap-8">
           {statItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.id}
-                className={`flex flex-col items-center text-center space-y-1.5 ${
-                  index !== 0 ? 'pt-4 sm:pt-0 sm:pl-4' : ''
-                } ${index === 4 ? 'col-span-2 lg:col-span-1' : ''}`}
+                className={`flex flex-col items-center text-center p-3 sm:p-2 rounded-xl bg-ivory-50/60 sm:bg-transparent border border-gold-500/10 sm:border-0 ${
+                  index === 4 ? 'col-span-2 lg:col-span-1 max-w-[200px] mx-auto w-full' : ''
+                }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-gold-500/30 flex items-center justify-center text-emerald-800 mb-1">
-                  <Icon className="w-5 h-5 text-emerald-700" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 border border-gold-500/30 flex items-center justify-center text-emerald-800 mb-1 shrink-0">
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700" />
                 </div>
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-serif font-extrabold text-stone-900 tracking-tight">
+                <span className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-serif font-extrabold text-stone-900 tracking-tight">
                   {item.value}
                 </span>
-                <span className="text-xs sm:text-sm text-stone-600 font-medium leading-snug">
+                <span className="text-[11px] sm:text-xs lg:text-sm text-stone-600 font-medium leading-tight">
                   {item.label}
                 </span>
               </div>

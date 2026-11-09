@@ -38,6 +38,18 @@ export function AdminDonors() {
 
   const fileInputRef = useRef(null);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (modalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [modalOpen]);
+
   const purposes = [
     { value: 'GENERAL', label: 'সাধারণ তহবিল' },
     { value: 'CONSTRUCTION', label: 'নির্মাণ তহবিল' },

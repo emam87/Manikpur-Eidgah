@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Heart, MapPin, Calendar, ChevronRight, X, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
@@ -9,6 +9,18 @@ export function MembersDonorsTeaser({ members = [] }) {
   const { locale, t, toBanglaNum, formatMoney, getLocalized } = useLanguage();
   const { isSettingEnabled } = useSettings();
   const [selectedMember, setSelectedMember] = useState(null);
+
+  // Lock body scroll when member modal is open
+  useEffect(() => {
+    if (selectedMember) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedMember]);
 
   if (!members || members.length === 0) {
     return null;
@@ -131,16 +143,17 @@ export function MembersDonorsTeaser({ members = [] }) {
         {/* Member Detail Modal */}
         {selectedMember && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
             onClick={() => setSelectedMember(null)}
           >
             <div
-              className="relative max-w-md w-full bg-emerald-950 text-ivory-50 rounded-3xl p-6 sm:p-8 border-2 border-gold-500 shadow-2xl space-y-4"
+              className="relative max-w-md w-full bg-emerald-950 text-ivory-50 rounded-2xl sm:rounded-3xl p-5 sm:p-8 border-2 border-gold-500 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setSelectedMember(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-emerald-900 text-gold-400 hover:text-white"
+                className="absolute top-3.5 right-3.5 p-2 rounded-full bg-emerald-900 text-gold-400 hover:text-white min-w-[40px] min-h-[40px] flex items-center justify-center transition-colors"
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>

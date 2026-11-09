@@ -14,6 +14,18 @@ export function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'eidgah-manage-k29x';
 
+  // Lock body scroll when mobile sidebar is open
+  React.useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');

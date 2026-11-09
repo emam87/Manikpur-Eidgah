@@ -122,34 +122,34 @@ export function HeroSection({ jamatSchedule = '' }) {
         </div>
 
         {/* Grand Title */}
-        <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-extrabold text-ivory-50 tracking-tight leading-tight sm:leading-tight mb-4 drop-shadow-md">
+        <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-ivory-50 tracking-tight leading-tight sm:leading-tight mb-4 drop-shadow-md break-words">
           {siteName}
         </h1>
 
         {/* 8-Point Star Divider */}
-        <StarDivider className="my-5" />
+        <StarDivider className="my-4 sm:my-5" />
 
         {/* Tagline */}
-        <p className="max-w-3xl mx-auto text-base sm:text-lg lg:text-xl text-ivory-100/90 font-sans leading-relaxed mb-8 sm:mb-10">
+        <p className="max-w-3xl mx-auto text-sm sm:text-base lg:text-xl text-ivory-100/90 font-sans leading-relaxed mb-6 sm:mb-10 px-2 sm:px-0">
           {tagline}
         </p>
 
         {/* Two Equal Primary CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto mb-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 max-w-md mx-auto mb-8 sm:mb-10 w-full px-2 sm:px-0">
           <Link
             to="/lifetime-members"
-            className="w-full sm:w-1/2 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-gold-500 text-stone-950 font-bold hover:bg-gold-400 transition-all shadow-lg hover:shadow-gold-500/30 tap-target text-sm sm:text-base"
+            className="w-full sm:w-1/2 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-gold-500 text-stone-950 font-bold hover:bg-gold-400 active:scale-[0.98] transition-all shadow-lg hover:shadow-gold-500/30 tap-target text-sm sm:text-base min-h-[48px]"
           >
-            <Users className="w-5 h-5 text-stone-900" />
-            <span>{t('hero_cta_members')}</span>
+            <Users className="w-5 h-5 text-stone-900 shrink-0" />
+            <span className="truncate">{t('hero_cta_members')}</span>
           </Link>
 
           <Link
             to="/donors"
-            className="w-full sm:w-1/2 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-emerald-950 text-ivory-50 font-bold border border-gold-500/50 hover:bg-emerald-900 hover:border-gold-400 transition-all shadow-lg tap-target text-sm sm:text-base"
+            className="w-full sm:w-1/2 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-emerald-950 text-ivory-50 font-bold border border-gold-500/50 hover:bg-emerald-900 active:scale-[0.98] hover:border-gold-400 transition-all shadow-lg tap-target text-sm sm:text-base min-h-[48px]"
           >
-            <HeartHandshake className="w-5 h-5 text-gold-400" />
-            <span>{t('hero_cta_donate')}</span>
+            <HeartHandshake className="w-5 h-5 text-gold-400 shrink-0" />
+            <span className="truncate">{t('hero_cta_donate')}</span>
           </Link>
         </div>
 

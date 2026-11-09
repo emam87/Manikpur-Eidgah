@@ -20,6 +20,18 @@ export function About() {
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState(null);
 
+  // Lock body scroll when member modal is open
+  useEffect(() => {
+    if (selectedMember) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedMember]);
+
   useEffect(() => {
     fetch('/api/public/about')
       .then((res) => {
@@ -166,7 +178,7 @@ export function About() {
                   </div>
 
                   {/* Grid of 3 per row on desktop (6 members = exactly 2 rows), 2 per row on mobile */}
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
                     {aboutData.level2.map((coord) => {
                       const name = getLocalized(coord, 'name');
                       const designation = getLocalized(coord, 'designation') || getLocalized(coord, 'role');
@@ -176,7 +188,7 @@ export function About() {
                         <div
                           key={coord.id}
                           onClick={() => setSelectedMember(coord)}
-                          className="bg-white rounded-2xl p-5 sm:p-6 border border-gold-500/30 text-center shadow-sm hover:shadow-xl hover:border-gold-500 transition-all duration-300 cursor-pointer group flex flex-col items-center justify-between"
+                          className="bg-white rounded-2xl p-3.5 sm:p-6 border border-gold-500/30 text-center shadow-sm hover:shadow-xl hover:border-gold-500 transition-all duration-300 cursor-pointer group flex flex-col items-center justify-between"
                         >
                           <div className="flex flex-col items-center">
                             <div className="w-20 h-26 sm:w-24 sm:h-30 rounded-t-full rounded-b-lg border-2 border-gold-500 overflow-hidden bg-emerald-950 shadow-sm mx-auto mb-3 flex items-center justify-center">
@@ -262,16 +274,17 @@ export function About() {
       {/* Member Profile Detail Modal */}
       {selectedMember && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
           onClick={() => setSelectedMember(null)}
         >
           <div
-            className="relative max-w-md w-full bg-emerald-950 text-ivory-50 rounded-3xl p-6 sm:p-8 border-2 border-gold-500 shadow-2xl space-y-4"
+            className="relative max-w-md w-full bg-emerald-950 text-ivory-50 rounded-2xl sm:rounded-3xl p-5 sm:p-8 border-2 border-gold-500 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setSelectedMember(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-emerald-900 text-gold-400 hover:text-white"
+              className="absolute top-3.5 right-3.5 p-2 rounded-full bg-emerald-900 text-gold-400 hover:text-white min-w-[40px] min-h-[40px] flex items-center justify-center transition-colors"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>

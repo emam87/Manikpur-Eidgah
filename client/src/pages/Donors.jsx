@@ -22,6 +22,18 @@ export function Donors() {
   const [totalVisibleAmount, setTotalVisibleAmount] = useState(0);
   const [selectedDonor, setSelectedDonor] = useState(null);
 
+  // Lock body scroll when donor modal is open
+  useEffect(() => {
+    if (selectedDonor) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedDonor]);
+
   const purposes = [
     { value: 'CONSTRUCTION', labelBn: 'নির্মাণ তহবিল', labelEn: 'Construction Fund', icon: Building2 },
     { value: 'BOUNDARY_WALL', labelBn: 'সীমানা প্রাচীর', labelEn: 'Boundary Wall', icon: Shield },
@@ -212,7 +224,65 @@ export function Donors() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gold-500/30 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+            {/* Mobile View: Card list (<md) */}
+            <div className="block md:hidden divide-y divide-stone-100">
+              {donors.map((donor) => {
+                const purposeInfo = getPurposeInfo(donor.purpose);
+                const dateFormatted = donor.donationDate 
+                  ? new Date(donor.donationDate).toLocaleDateString(locale === 'bn' ? 'bn-BD' : 'en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : '—';
+
+                return (
+                  <div
+                    key={donor.id}
+                    onClick={() => setSelectedDonor(donor)}
+                    className="p-4 hover:bg-emerald-50/60 active:bg-emerald-50 cursor-pointer transition-colors space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono font-bold text-emerald-900 bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                        {donor.receiptNo ? `${locale === 'bn' ? 'রশিদ: ' : 'Receipt: '} ${toBanglaNum(donor.receiptNo)}` : '—'}
+                      </span>
+                      <span className="text-stone-500 text-[11px]">{dateFormatted}</span>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-serif font-bold text-base text-stone-900 leading-snug">
+                          {getLocalized(donor, 'donorName')}
+                        </h4>
+                        {donor.addressBn && (
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            {getLocalized(donor, 'address')}
+                          </p>
+                        )}
+                      </div>
+
+                      {globalShowAmount && donor.amount !== null && (
+                        <span className="font-serif font-extrabold text-base text-emerald-950 shrink-0">
+                          {formatBDT(donor.amount)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {purposeInfo.label}
+                      </span>
+                      <span className="text-[11px] text-gold-600 font-semibold">
+                        {locale === 'bn' ? 'রশিদ দেখুন →' : 'View receipt →'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop View: Full Table (>=md) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm text-stone-700">
                 <thead className="bg-emerald-950 text-gold-200 text-xs uppercase tracking-wider font-semibold">
                   <tr>
@@ -280,7 +350,7 @@ export function Donors() {
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 min-h-[44px]"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>{locale === 'bn' ? 'পূর্ববর্তী' : 'Previous'}</span>
@@ -296,7 +366,7 @@ export function Donors() {
             <button
               onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
               disabled={currentPage >= pagination.totalPages}
-              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 min-h-[44px]"
             >
               <span>{locale === 'bn' ? 'পরবর্তী' : 'Next'}</span>
               <ChevronRight className="w-4 h-4" />
@@ -307,11 +377,18 @@ export function Donors() {
 
       {/* Detail Modal */}
       {selectedDonor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden border border-gold-500/40 shadow-2xl relative">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSelectedDonor(null)}
+        >
+          <div
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full overflow-hidden border border-gold-500/40 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setSelectedDonor(null)}
-              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors"
+              className="absolute top-3.5 right-3.5 z-10 w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors tap-target"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>

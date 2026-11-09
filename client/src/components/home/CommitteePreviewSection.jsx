@@ -33,7 +33,7 @@ export function CommitteePreviewSection({ leaders = [] }) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
           {leaders.slice(0, 4).map((member) => {
             const name = getLocalized(member, 'name');
             const designation = getLocalized(member, 'designation') || getLocalized(member, 'role');
@@ -43,9 +43,9 @@ export function CommitteePreviewSection({ leaders = [] }) {
             return (
               <div
                 key={member.id}
-                className="bg-white rounded-2xl p-5 border border-gold-500/30 text-center flex flex-col items-center shadow-sm hover:shadow-lg transition-all duration-300 group"
+                className="bg-white rounded-2xl p-3.5 sm:p-5 border border-gold-500/30 text-center flex flex-col items-center shadow-sm hover:shadow-lg transition-all duration-300 group"
               >
-                <div className="w-20 h-24 rounded-t-full rounded-b-lg border-2 border-gold-500 overflow-hidden bg-emerald-950 shadow-sm flex items-center justify-center mb-3">
+                <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-t-full rounded-b-lg border-2 border-gold-500 overflow-hidden bg-emerald-950 shadow-sm flex items-center justify-center mb-2.5 sm:mb-3 shrink-0">
                   {photoUrl ? (
                     <img
                       src={photoUrl}
@@ -67,10 +67,10 @@ export function CommitteePreviewSection({ leaders = [] }) {
                   </div>
                 </div>
 
-                <h3 className="font-serif font-bold text-sm sm:text-base text-stone-900 group-hover:text-emerald-800 transition-colors line-clamp-1">
+                <h3 className="font-serif font-bold text-xs sm:text-base text-stone-900 group-hover:text-emerald-800 transition-colors line-clamp-1">
                   {name}
                 </h3>
-                <span className="text-xs text-gold-600 font-semibold mt-1">
+                <span className="text-[11px] sm:text-xs text-gold-600 font-semibold mt-0.5 sm:mt-1 line-clamp-1">
                   {designation}
                 </span>
               </div>

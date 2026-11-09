@@ -25,6 +25,18 @@ export function AdminUsers() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (modalOpen || resetModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [modalOpen, resetModalOpen]);
+
   useEffect(() => {
     fetchUsers();
   }, []);

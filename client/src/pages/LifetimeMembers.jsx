@@ -23,6 +23,18 @@ export function LifetimeMembers() {
   const [globalShowAmount, setGlobalShowAmount] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
+  // Lock body scroll when member modal is open
+  useEffect(() => {
+    if (selectedMember) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedMember]);
+
   useEffect(() => {
     fetchMembers();
   }, [searchQuery, selectedYear, sortBy, currentPage]);
@@ -386,11 +398,18 @@ export function LifetimeMembers() {
 
       {/* Detail Modal */}
       {selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden border border-gold-500/40 shadow-2xl relative">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSelectedMember(null)}
+        >
+          <div
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full overflow-hidden border border-gold-500/40 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setSelectedMember(null)}
-              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors"
+              className="absolute top-3.5 right-3.5 z-10 w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors tap-target"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>

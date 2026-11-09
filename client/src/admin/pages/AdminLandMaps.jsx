@@ -18,6 +18,18 @@ export function AdminLandMaps() {
   const [mapFile, setMapFile] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (modalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [modalOpen]);
+
   useEffect(() => {
     fetchMaps();
   }, []);

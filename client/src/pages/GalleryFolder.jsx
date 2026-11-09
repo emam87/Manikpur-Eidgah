@@ -311,24 +311,24 @@ export function GalleryFolder() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setZoomLevel((z) => Math.min(3, +(z + 0.3).toFixed(1)))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setZoomLevel((z) => Math.max(0.7, +(z - 0.3).toFixed(1)))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setZoomLevel(1)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Reset Zoom"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -340,7 +340,7 @@ export function GalleryFolder() {
                   download
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-xl bg-gold-500 text-stone-950 font-bold hover:bg-gold-400 transition-colors flex items-center gap-1.5"
+                  className="p-2 rounded-xl bg-gold-500 text-stone-950 font-bold hover:bg-gold-400 transition-colors flex items-center gap-1.5 min-h-[40px]"
                   title="ডাউনলোড"
                 >
                   <Download className="w-4 h-4" />
@@ -350,8 +350,9 @@ export function GalleryFolder() {
 
               <button
                 onClick={closeLightbox}
-                className="p-2 rounded-xl bg-white/10 hover:bg-red-600/80 text-white transition-colors ml-2"
+                className="p-2 rounded-xl bg-white/20 hover:bg-red-600/80 text-white transition-colors ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center tap-target"
                 title="বন্ধ করুন (Esc)"
+                aria-label="Close lightbox"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -359,14 +360,15 @@ export function GalleryFolder() {
           </div>
 
           {/* Center Stage: Photo + Prev/Next Arrow Buttons */}
-          <div className="relative flex-1 flex items-center justify-center p-4 overflow-hidden">
-            {/* Prev Arrow Button */}
+          <div className="relative flex-1 flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+            {/* Prev Arrow Button (Desktop + Mobile touch target) */}
             <button
               onClick={handlePrevPhoto}
-              className="absolute left-4 z-20 p-3 rounded-full bg-black/60 hover:bg-gold-500 hover:text-stone-950 text-white backdrop-blur-md transition-all hidden sm:flex items-center justify-center"
+              className="absolute left-2 sm:left-4 z-20 p-2.5 sm:p-3 rounded-full bg-black/60 hover:bg-gold-500 hover:text-stone-950 text-white backdrop-blur-md transition-all flex items-center justify-center min-w-[44px] min-h-[44px]"
               title="পূর্ববর্তী (বাম তীর)"
+              aria-label="Previous photo"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
             {/* Active Photo with Zoom Transform */}
@@ -381,13 +383,14 @@ export function GalleryFolder() {
               />
             </div>
 
-            {/* Next Arrow Button */}
+            {/* Next Arrow Button (Desktop + Mobile touch target) */}
             <button
               onClick={handleNextPhoto}
-              className="absolute right-4 z-20 p-3 rounded-full bg-black/60 hover:bg-gold-500 hover:text-stone-950 text-white backdrop-blur-md transition-all hidden sm:flex items-center justify-center"
+              className="absolute right-2 sm:right-4 z-20 p-2.5 sm:p-3 rounded-full bg-black/60 hover:bg-gold-500 hover:text-stone-950 text-white backdrop-blur-md transition-all flex items-center justify-center min-w-[44px] min-h-[44px]"
               title="পরবর্তী (ডান তীর)"
+              aria-label="Next photo"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 

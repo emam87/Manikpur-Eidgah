@@ -105,11 +105,11 @@ export function Footer() {
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-gold-400 shrink-0" />
-                <a href={`tel:${phone}`} className="hover:text-gold-300 transition-colors">{phone}</a>
+                <a href={`tel:${phone}`} className="hover:text-gold-300 transition-colors py-1 inline-block break-all">{phone}</a>
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-gold-400 shrink-0" />
-                <a href={`mailto:${email}`} className="hover:text-gold-300 transition-colors">{email}</a>
+                <a href={`mailto:${email}`} className="hover:text-gold-300 transition-colors py-1 inline-block break-all">{email}</a>
               </p>
             </div>
           </div>

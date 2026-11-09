@@ -38,11 +38,11 @@ export function AdminLogin() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-stone-900 text-ivory flex flex-col justify-center items-center p-4">
       <SEO title="অ্যাডমিন লগইন" noIndex={true} />
 
-      <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-3xl p-8 sm:p-10 border-2 border-gold-500/40 shadow-2xl text-stone-900 space-y-6">
+      <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-6 sm:p-10 border-2 border-gold-500/40 shadow-2xl text-stone-900 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-900 text-gold-300 flex items-center justify-center mx-auto border border-gold-500/40 shadow-md">
-            <Lock className="w-7 h-7" />
+          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-emerald-900 text-gold-300 flex items-center justify-center mx-auto border border-gold-500/40 shadow-md">
+            <Lock className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-950 tracking-tight">
             অ্যাডমিন প্রবেশদ্বার
@@ -73,7 +73,7 @@ export function AdminLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@manikpureidgah.org"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-sm bg-stone-50"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-base sm:text-sm bg-stone-50"
               />
               <Mail className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5" />
             </div>
@@ -90,7 +90,7 @@ export function AdminLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-sm bg-stone-50 font-mono"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-base sm:text-sm bg-stone-50 font-mono"
               />
               <Lock className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5" />
             </div>
@@ -99,7 +99,7 @@ export function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-950 text-gold-200 font-bold text-sm hover:from-emerald-800 hover:to-emerald-900 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-emerald-950 text-gold-200 font-bold text-sm sm:text-base hover:from-emerald-800 hover:to-emerald-900 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 min-h-[48px] tap-target"
           >
             {loading ? (
               <>

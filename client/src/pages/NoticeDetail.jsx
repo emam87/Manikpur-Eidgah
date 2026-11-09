@@ -155,8 +155,9 @@ export function NoticeDetail() {
                 {/* Share Button */}
                 <button
                   onClick={handleShare}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-stone-600 hover:text-emerald-900 hover:bg-stone-50 border border-stone-200 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium text-stone-600 hover:text-emerald-900 hover:bg-stone-50 border border-stone-200 transition-colors min-h-[40px] tap-target"
                   title="শেয়ার করুন"
+                  aria-label="Share notice"
                 >
                   {copied ? (
                     <>

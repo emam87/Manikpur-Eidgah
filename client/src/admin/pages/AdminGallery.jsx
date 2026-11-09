@@ -28,6 +28,18 @@ export function AdminGallery() {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
 
+  // Lock body scroll when album modal is open
+  useEffect(() => {
+    if (albumModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [albumModalOpen]);
+
   useEffect(() => {
     fetchAlbums();
   }, []);

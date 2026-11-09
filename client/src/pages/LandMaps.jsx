@@ -162,28 +162,31 @@ export function LandMaps() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     {/* Zoom In */}
                     <button
                       onClick={handleZoomIn}
-                      className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 border border-gold-500/30 transition-colors"
+                      className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 border border-gold-500/30 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                       title="Zoom In"
+                      aria-label="Zoom In"
                     >
                       <ZoomIn className="w-4 h-4" />
                     </button>
                     {/* Zoom Out */}
                     <button
                       onClick={handleZoomOut}
-                      className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 border border-gold-500/30 transition-colors"
+                      className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 border border-gold-500/30 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                       title="Zoom Out"
+                      aria-label="Zoom Out"
                     >
                       <ZoomOut className="w-4 h-4" />
                     </button>
                     {/* Reset */}
                     <button
                       onClick={handleResetZoom}
-                      className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 border border-gold-500/30 transition-colors"
+                      className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 border border-gold-500/30 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                       title="Reset View"
+                      aria-label="Reset View"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -192,7 +195,8 @@ export function LandMaps() {
                       <a
                         href={currentMap.filePath}
                         download
-                        className="px-3 py-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-500 text-emerald-950 font-bold text-xs hover:from-gold-500 hover:to-gold-400 transition-all flex items-center gap-1.5 shadow-md"
+                        className="px-3 py-2 rounded-xl bg-gradient-to-r from-gold-600 to-gold-500 text-emerald-950 font-bold text-xs hover:from-gold-500 hover:to-gold-400 transition-all flex items-center gap-1.5 shadow-md min-h-[40px] tap-target"
+                        aria-label="Download map"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">{locale === 'bn' ? 'মূল নকশা ডাউনলোড' : 'Download'}</span>

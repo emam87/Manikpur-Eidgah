@@ -154,18 +154,18 @@ export function Contact() {
                   <span className="font-serif font-bold text-base text-gold-200">{acName}</span>
                 </div>
 
-                <div className="bg-emerald-900/80 p-3.5 rounded-xl border border-gold-500/30 flex items-center justify-between">
-                  <div>
+                <div className="bg-emerald-900/80 p-3.5 sm:p-4 rounded-xl border border-gold-500/30 flex flex-col xs:flex-row xs:items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <span className="text-[11px] text-gold-300 block font-mono">{locale === 'bn' ? 'হিসাব নম্বর (A/C No)' : 'Account Number'}</span>
-                    <span className="font-mono font-extrabold text-lg text-white tracking-wider">{acNumber}</span>
+                    <span className="font-mono font-extrabold text-base sm:text-lg text-white tracking-wider break-all">{acNumber}</span>
                   </div>
                   <button
                     onClick={() => copyToClipboard(acNumber, 'bank_ac')}
-                    className="p-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-stone-950 font-semibold text-xs flex items-center gap-1 transition-all"
+                    className="px-3 py-2 rounded-xl bg-gold-500 hover:bg-gold-400 active:scale-[0.98] text-stone-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all min-h-[40px] tap-target shrink-0 shadow-sm"
                     title="হিসাব নম্বর কপি করুন"
                   >
                     {copiedKey === 'bank_ac' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedKey === 'bank_ac' ? (locale === 'bn' ? 'কপি হয়েছে' : 'Copied') : (locale === 'bn' ? 'কপি' : 'Copy')}</span>
+                    <span>{copiedKey === 'bank_ac' ? (locale === 'bn' ? 'কপি হয়েছে' : 'Copied') : (locale === 'bn' ? 'কপি করুন' : 'Copy')}</span>
                   </button>
                 </div>
 
@@ -179,7 +179,7 @@ export function Contact() {
             </div>
 
             {/* Mobile Banking Options */}
-            <div className="bg-white rounded-3xl p-6 border border-gold-500/30 shadow-md space-y-4">
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gold-500/30 shadow-md space-y-4">
               <h3 className="font-serif font-bold text-base text-emerald-950 flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-gold-500" />
                 <span>{locale === 'bn' ? 'মোবাইল ব্যাংকিং (বিকাশ ও নগদ)' : 'Mobile Banking (bKash & Nagad)'}</span>
@@ -187,12 +187,14 @@ export function Contact() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* bKash */}
-                <div className="p-4 rounded-2xl bg-pink-50/60 border border-pink-200 flex flex-col justify-between space-y-2">
-                  <span className="text-xs font-bold text-pink-700 font-mono">bKash (বিকাশ)</span>
-                  <span className="font-mono font-bold text-stone-900 text-sm">{bkashNo}</span>
+                <div className="p-4 rounded-2xl bg-pink-50/60 border border-pink-200 flex flex-col justify-between space-y-3">
+                  <div>
+                    <span className="text-xs font-bold text-pink-700 font-mono">bKash (বিকাশ)</span>
+                    <span className="font-mono font-bold text-stone-900 text-sm block mt-1">{bkashNo}</span>
+                  </div>
                   <button
                     onClick={() => copyToClipboard(bkashNo.split(' ')[0], 'bkash')}
-                    className="text-xs text-pink-800 hover:text-pink-900 font-semibold flex items-center gap-1 self-start"
+                    className="text-xs text-pink-800 hover:text-pink-900 font-bold flex items-center gap-1.5 self-start px-3 py-1.5 rounded-lg bg-pink-100/70 border border-pink-200 min-h-[38px] tap-target transition-colors"
                   >
                     {copiedKey === 'bkash' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedKey === 'bkash' ? (locale === 'bn' ? 'কপি হয়েছে!' : 'Copied!') : (locale === 'bn' ? 'নম্বর কপি করুন' : 'Copy Number')}</span>
@@ -200,12 +202,14 @@ export function Contact() {
                 </div>
 
                 {/* Nagad */}
-                <div className="p-4 rounded-2xl bg-orange-50/60 border border-orange-200 flex flex-col justify-between space-y-2">
-                  <span className="text-xs font-bold text-orange-700 font-mono">Nagad (নগদ)</span>
-                  <span className="font-mono font-bold text-stone-900 text-sm">{nagadNo}</span>
+                <div className="p-4 rounded-2xl bg-orange-50/60 border border-orange-200 flex flex-col justify-between space-y-3">
+                  <div>
+                    <span className="text-xs font-bold text-orange-700 font-mono">Nagad (নগদ)</span>
+                    <span className="font-mono font-bold text-stone-900 text-sm block mt-1">{nagadNo}</span>
+                  </div>
                   <button
                     onClick={() => copyToClipboard(nagadNo.split(' ')[0], 'nagad')}
-                    className="text-xs text-orange-800 hover:text-orange-900 font-semibold flex items-center gap-1 self-start"
+                    className="text-xs text-orange-800 hover:text-orange-900 font-bold flex items-center gap-1.5 self-start px-3 py-1.5 rounded-lg bg-orange-100/70 border border-orange-200 min-h-[38px] tap-target transition-colors"
                   >
                     {copiedKey === 'nagad' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedKey === 'nagad' ? (locale === 'bn' ? 'কপি হয়েছে!' : 'Copied!') : (locale === 'bn' ? 'নম্বর কপি করুন' : 'Copy Number')}</span>

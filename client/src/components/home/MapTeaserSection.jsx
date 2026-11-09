@@ -54,21 +54,27 @@ export function MapTeaserSection() {
             </div>
           </div>
 
-          {/* Right: Map Visual Preview */}
-          <div className="w-full lg:w-1/2 aspect-[16/10] rounded-2xl overflow-hidden border-2 border-gold-500/30 relative shadow-inner bg-emerald-900">
-            {/* Embed OpenStreetMap iframe (with pointer-events disabled by default to avoid mobile scroll trap) */}
+          {/* Right: Map Visual Preview (Clickable & prevents mobile scroll trap) */}
+          <Link
+            to="/map"
+            className="w-full lg:w-1/2 aspect-[16/10] rounded-2xl overflow-hidden border-2 border-gold-500/30 relative shadow-inner bg-emerald-900 group cursor-pointer block"
+            title={locale === 'bn' ? 'সম্পূর্ণ মানচিত্র দেখুন' : 'View Full Map'}
+          >
+            {/* Embed OpenStreetMap iframe with pointer-events-none to avoid mobile scroll trap */}
             <iframe
               title="Manikpur Eidgah Map Preview"
               width="100%"
               height="100%"
               loading="lazy"
               src={`https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(lng) - 0.005}%2C${parseFloat(lat) - 0.003}%2C${parseFloat(lng) + 0.005}%2C${parseFloat(lat) + 0.003}&layer=mapnik&marker=${lat}%2C${lng}`}
-              className="w-full h-full border-0 filter contrast-105"
+              className="w-full h-full border-0 filter contrast-105 pointer-events-none"
             />
-            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-gold-300 text-[10px] px-2.5 py-1 rounded-md">
-              <span>{lat}, {lng}</span>
+            <div className="absolute inset-0 bg-emerald-950/15 group-hover:bg-transparent transition-colors" />
+            <div className="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur-sm text-gold-300 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-gold-500/30 shadow-md">
+              <span>{locale === 'bn' ? 'মানচিত্র বিস্তারিত দেখুন' : 'Explore Full Map'}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </div>
-          </div>
+          </Link>
         </div>
       </div>
     </section>

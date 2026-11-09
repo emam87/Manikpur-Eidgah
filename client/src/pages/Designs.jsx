@@ -277,32 +277,33 @@ export function Designs() {
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setZoomLevel((z) => Math.min(3, +(z + 0.3).toFixed(1)))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setZoomLevel((z) => Math.max(0.7, +(z - 0.3).toFixed(1)))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setZoomLevel(1)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Reset Zoom"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={closeLightbox}
-                className="p-2 rounded-xl bg-white/10 hover:bg-red-600/80 text-white transition-colors ml-2"
+                className="p-2 rounded-xl bg-white/20 hover:bg-red-600/80 text-white transition-colors ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center tap-target"
                 title="Close (Esc)"
+                aria-label="Close lightbox"
               >
                 <X className="w-5 h-5" />
               </button>

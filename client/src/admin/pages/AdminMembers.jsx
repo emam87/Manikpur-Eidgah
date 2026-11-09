@@ -38,6 +38,18 @@ export function AdminMembers() {
 
   const fileInputRef = useRef(null);
 
+  // Lock body scroll when admin modal is open
+  useEffect(() => {
+    if (modalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [modalOpen]);
+
   useEffect(() => {
     fetchMembers();
   }, [search, year, page]);
