@@ -77,3 +77,4 @@ export function DesignsTeaserSection({ designs = [] }) {
     </section>
   );
 }
+

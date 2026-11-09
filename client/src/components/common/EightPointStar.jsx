@@ -33,3 +33,4 @@ export function StarDivider({ className = 'my-6', starColor = 'text-gold-500' })
     </div>
   );
 }
+

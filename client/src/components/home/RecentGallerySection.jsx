@@ -111,3 +111,4 @@ export function RecentGallerySection({ albums = [] }) {
     </section>
   );
 }
+

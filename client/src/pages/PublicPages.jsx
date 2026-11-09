@@ -67,3 +67,4 @@ export function NoticeDetail() {
 export function Contact() {
   return <PagePlaceholder titleBn="যোগাযোগ" titleEn="Contact" descBn="কমিটির সাথে যোগাযোগ ও অনুদান পাঠানোর ব্যাংক হিসাব।" descEn="Contact committee representatives and bank donation info." />;
 }
+

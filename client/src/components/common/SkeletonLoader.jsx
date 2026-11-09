@@ -26,3 +26,4 @@ export function SkeletonLoader({ count = 3, type = 'card' }) {
     </div>
   );
 }
+

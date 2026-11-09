@@ -81,3 +81,4 @@ export function CommitteePreviewSection({ leaders = [] }) {
     </section>
   );
 }
+

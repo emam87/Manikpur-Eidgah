@@ -169,3 +169,4 @@ export function HeroSection({ jamatSchedule = '' }) {
     </section>
   );
 }
+

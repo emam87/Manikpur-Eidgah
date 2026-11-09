@@ -1,22 +1,20 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { PublicLayout } from './components/layout/PublicLayout.jsx';
 import { Home } from './pages/Home.jsx';
+import { About } from './pages/About.jsx';
+import { LifetimeMembers } from './pages/LifetimeMembers.jsx';
+import { Donors } from './pages/Donors.jsx';
+import { Documents } from './pages/Documents.jsx';
+import { LandMaps } from './pages/LandMaps.jsx';
+import { Notices } from './pages/Notices.jsx';
+import { NoticeDetail } from './pages/NoticeDetail.jsx';
+import { MapPage } from './pages/MapPage.jsx';
+import { Contact } from './pages/Contact.jsx';
 import { NotFound } from './pages/NotFound.jsx';
-import {
-  About,
-  LifetimeMembers,
-  Donors,
-  Gallery,
-  GalleryFolder,
-  Designs,
-  MapPage,
-  LandMaps,
-  Documents,
-  Notices,
-  NoticeDetail,
-  Contact,
-} from './pages/PublicPages.jsx';
+
+// Gallery and Designs placeholders (to be completed in Phase 5)
+import { Gallery, GalleryFolder, Designs } from './pages/PublicPages.jsx';
 
 // Lazy-loaded secret admin SPA chunk
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx'));
