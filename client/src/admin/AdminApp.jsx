@@ -1,20 +1,73 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { SEO } from '../components/common/SEO.jsx';
+import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext.jsx';
+import { AdminLayout } from './components/AdminLayout.jsx';
+import { AdminLogin } from './pages/AdminLogin.jsx';
+import { ForcePasswordChange } from './pages/ForcePasswordChange.jsx';
+import { AdminDashboard } from './pages/AdminDashboard.jsx';
+import { AdminMembers } from './pages/AdminMembers.jsx';
+import { AdminDonors } from './pages/AdminDonors.jsx';
+import { AdminCommittee } from './pages/AdminCommittee.jsx';
+import { AdminGallery } from './pages/AdminGallery.jsx';
+import { AdminDocuments } from './pages/AdminDocuments.jsx';
+import { AdminLandMaps } from './pages/AdminLandMaps.jsx';
+import { AdminNotices } from './pages/AdminNotices.jsx';
+import { AdminDesigns } from './pages/AdminDesigns.jsx';
+import { AdminSettings } from './pages/AdminSettings.jsx';
+import { AdminUsers } from './pages/AdminUsers.jsx';
+import { AdminTrash } from './pages/AdminTrash.jsx';
+import { AdminActivityLogs } from './pages/AdminActivityLogs.jsx';
+import { Loader2 } from 'lucide-react';
 
-export default function AdminApp() {
-  return (
-    <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center justify-center p-4">
-      <SEO title="Admin Portal" noIndex={true} />
-      <div className="max-w-md w-full bg-stone-800 p-8 rounded-2xl border border-stone-700 shadow-2xl text-center space-y-4">
-        <h1 className="font-serif text-2xl font-bold text-gold-400">
-          Manikpur Eidgah Admin
-        </h1>
-        <p className="text-sm text-stone-400">
-          Protected Administrative Dashboard (Lazy-Loaded Chunk). Full admin interface is implemented in Phase 6.
-        </p>
+function AdminContent() {
+  const { user, loading } = useAdminAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-900 flex flex-col items-center justify-center text-ivory">
+        <Loader2 className="w-8 h-8 text-gold-400 animate-spin mb-3" />
+        <span className="text-xs text-stone-400 font-mono">অথেনটিকেশন যাচাই হচ্ছে...</span>
       </div>
-    </div>
+    );
+  }
+
+  // If not logged in, render Admin Login screen
+  if (!user) {
+    return <AdminLogin />;
+  }
+
+  // If mustChangePassword flag is true, force password change screen
+  if (user.mustChangePassword) {
+    return <ForcePasswordChange />;
+  }
+
+  // Authenticated: Render Admin Panel with sidebar layout
+  return (
+    <AdminLayout>
+      <Routes>
+        <Route path="/" element={<AdminDashboard />} />
+        <Route path="members" element={<AdminMembers />} />
+        <Route path="donors" element={<AdminDonors />} />
+        <Route path="committee" element={<AdminCommittee />} />
+        <Route path="gallery" element={<AdminGallery />} />
+        <Route path="documents" element={<AdminDocuments />} />
+        <Route path="land-maps" element={<AdminLandMaps />} />
+        <Route path="notices" element={<AdminNotices />} />
+        <Route path="designs" element={<AdminDesigns />} />
+        <Route path="settings" element={<AdminSettings />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="trash" element={<AdminTrash />} />
+        <Route path="activity-logs" element={<AdminActivityLogs />} />
+        <Route path="*" element={<Navigate to="" replace />} />
+      </Routes>
+    </AdminLayout>
   );
 }
 
+export default function AdminApp() {
+  return (
+    <AdminAuthProvider>
+      <AdminContent />
+    </AdminAuthProvider>
+  );
+}

@@ -209,7 +209,7 @@ Decoy paths (`/admin`, `/login`, `/dashboard`, `/wp-admin`, `/phpmyadmin`, etc.)
 - [x] **Phase 3: Frontend Foundation & Home Page** (Vite, Tailwind, i18n Context, Decoy 404, Home page with 3 hero styles & stats)
 - [x] **Phase 4: Public Core Pages** (About & Managing Committee, Lifetime Members with Certificate cards & table toggle, Donors ledger with purpose filters, Legal Documents archive with PDF viewer/mobile fallback, Cadastral Land Maps with pan/zoom, Notices with detail view & Web Share, Leaflet Map with 1.35-acre polygon overlay & directions, Contact & Bank donation accounts)
 - [x] **Phase 5: Gallery Folders & Design Showcase** (Folder system with stacked look, type tabs & year filter, album page with masonry grid, touch-swipe lightbox with pinch/zoom & thumbnail strip, allow_photo_download setting toggle, 7 seeded 3D architectural renders & 3D video section)
-- [ ] **Phase 6: Admin Panel Complete** (Dashboard charts, CRUD for all models, Trash, Activity Log, CSV tools, Settings, Backup)
+- [x] **Phase 6: Admin Panel Complete** (Lazy-loaded admin chunk under secret VITE_ADMIN_PATH, Dashboard with Recharts, CRUD for Members/Donors/Committee/Albums/Photos/Documents/LandMaps/Notices/Designs/Settings/Users, CSV import/export, Trash system with restore & typed permanent delete, Activity Log, and full DB backup)
 - [ ] **Phase 7: Data Import, SEO/OG, Responsive QA & Automated Tests** (Import script, test suite, Lighthouse mobile 85+, 360-1920px testing)
 - [ ] **Phase 8: Documentation & Parity Verification** (README, DEPLOYMENT.md, environment variables summary, 100% parity sign-off)
 

@@ -274,3 +274,4 @@ export function Gallery() {
     </div>
   );
 }
+
