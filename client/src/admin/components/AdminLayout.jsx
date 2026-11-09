@@ -12,6 +12,7 @@ export function AdminLayout({ children }) {
   const { user, logout } = useAdminAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'eidgah-manage-k29x';
 
   const handleLogout = async () => {
     await logout();
@@ -19,22 +20,22 @@ export function AdminLayout({ children }) {
   };
 
   const navItems = [
-    { to: '', label: 'ড্যাশবোর্ড', icon: LayoutDashboard, exact: true },
-    { to: 'members', label: 'আজীবন সদস্য', icon: Users },
-    { to: 'donors', label: 'দান ও ফান্ড', icon: HeartHandshake },
-    { to: 'committee', label: 'কমিটি পরিষদ', icon: Users2 },
-    { to: 'gallery', label: 'ফটো গ্যালারি', icon: Images },
-    { to: 'documents', label: 'দলিল সংরক্ষণাগার', icon: FileText },
-    { to: 'land-maps', label: 'মৌজা নকশা', icon: Map },
-    { to: 'notices', label: 'নোটিশ বোর্ড', icon: Bell },
-    { to: 'designs', label: '৩ডি ডিজাইন', icon: Compass },
-    { to: 'settings', label: 'ওয়েবসাইট সেটিংস', icon: Settings },
+    { to: `/${ADMIN_PATH}`, label: 'ড্যাশবোর্ড', icon: LayoutDashboard, exact: true },
+    { to: `/${ADMIN_PATH}/members`, label: 'আজীবন সদস্য', icon: Users },
+    { to: `/${ADMIN_PATH}/donors`, label: 'দান ও ফান্ড', icon: HeartHandshake },
+    { to: `/${ADMIN_PATH}/committee`, label: 'কমিটি পরিষদ', icon: Users2 },
+    { to: `/${ADMIN_PATH}/gallery`, label: 'ফটো গ্যালারি', icon: Images },
+    { to: `/${ADMIN_PATH}/documents`, label: 'দলিল সংরক্ষণাগার', icon: FileText },
+    { to: `/${ADMIN_PATH}/land-maps`, label: 'মৌজা নকশা', icon: Map },
+    { to: `/${ADMIN_PATH}/notices`, label: 'নোটিশ বোর্ড', icon: Bell },
+    { to: `/${ADMIN_PATH}/designs`, label: '৩ডি ডিজাইন', icon: Compass },
+    { to: `/${ADMIN_PATH}/settings`, label: 'ওয়েবসাইট সেটিংস', icon: Settings },
     // ADMIN ONLY items
     ...(user?.role === 'ADMIN'
-      ? [{ to: 'users', label: 'অ্যাডমিন ইউজার', icon: UserCog }]
+      ? [{ to: `/${ADMIN_PATH}/users`, label: 'অ্যাডমিন ইউজার', icon: UserCog }]
       : []),
-    { to: 'trash', label: 'ট্র্যাশ বিন', icon: Trash2 },
-    { to: 'activity-logs', label: 'লগ ও ব্যাকআপ', icon: History },
+    { to: `/${ADMIN_PATH}/trash`, label: 'ট্র্যাশ বিন', icon: Trash2 },
+    { to: `/${ADMIN_PATH}/activity-logs`, label: 'লগ ও ব্যাকআপ', icon: History },
   ];
 
   return (

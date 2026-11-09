@@ -13,6 +13,7 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export function AdminDashboard() {
   const { toBanglaNum, formatBDT } = useLanguage();
+  const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'eidgah-manage-k29x';
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,7 @@ export function AdminDashboard() {
         {/* Quick Action Shortcuts */}
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            to="members"
+            to={`/${ADMIN_PATH}/members`}
             className="px-3.5 py-2 rounded-xl bg-emerald-950 text-gold-200 text-xs font-semibold hover:bg-emerald-900 transition-colors flex items-center gap-1.5 shadow-sm"
           >
             <PlusCircle className="w-3.5 h-3.5 text-gold-400" />
@@ -72,7 +73,7 @@ export function AdminDashboard() {
           </Link>
 
           <Link
-            to="donors"
+            to={`/${ADMIN_PATH}/donors`}
             className="px-3.5 py-2 rounded-xl bg-emerald-950 text-gold-200 text-xs font-semibold hover:bg-emerald-900 transition-colors flex items-center gap-1.5 shadow-sm"
           >
             <PlusCircle className="w-3.5 h-3.5 text-gold-400" />
@@ -80,7 +81,7 @@ export function AdminDashboard() {
           </Link>
 
           <Link
-            to="gallery"
+            to={`/${ADMIN_PATH}/gallery`}
             className="px-3.5 py-2 rounded-xl bg-gold-500 text-stone-950 text-xs font-bold hover:bg-gold-400 transition-colors flex items-center gap-1.5 shadow-sm"
           >
             <PlusCircle className="w-3.5 h-3.5" />
@@ -150,7 +151,7 @@ export function AdminDashboard() {
 
       {/* Secondary Quick Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Link to="documents" className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-gold-500/40 hover:shadow-sm transition-all flex items-center gap-3">
+        <Link to={`/${ADMIN_PATH}/documents`} className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-gold-500/40 hover:shadow-sm transition-all flex items-center gap-3">
           <FileText className="w-5 h-5 text-emerald-800" />
           <div>
             <span className="text-xs text-stone-500 block">সংরক্ষিত দলিল</span>
@@ -158,7 +159,7 @@ export function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="notices" className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-gold-500/40 hover:shadow-sm transition-all flex items-center gap-3">
+        <Link to={`/${ADMIN_PATH}/notices`} className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-gold-500/40 hover:shadow-sm transition-all flex items-center gap-3">
           <Bell className="w-5 h-5 text-emerald-800" />
           <div>
             <span className="text-xs text-stone-500 block">প্রকাশিত নোটিশ</span>
@@ -166,7 +167,7 @@ export function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="designs" className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-gold-500/40 hover:shadow-sm transition-all flex items-center gap-3">
+        <Link to={`/${ADMIN_PATH}/designs`} className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-gold-500/40 hover:shadow-sm transition-all flex items-center gap-3">
           <Compass className="w-5 h-5 text-emerald-800" />
           <div>
             <span className="text-xs text-stone-500 block">৩ডি মাস্টার নকশা</span>
@@ -174,7 +175,7 @@ export function AdminDashboard() {
           </div>
         </Link>
 
-        <Link to="trash" className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-red-400 hover:shadow-sm transition-all flex items-center gap-3">
+        <Link to={`/${ADMIN_PATH}/trash`} className="bg-white p-4 rounded-2xl border border-stone-200 hover:border-red-400 hover:shadow-sm transition-all flex items-center gap-3">
           <Trash2 className="w-5 h-5 text-red-600" />
           <div>
             <span className="text-xs text-stone-500 block">ট্র্যাশ বিন</span>
@@ -257,7 +258,7 @@ export function AdminDashboard() {
               সাম্প্রতিক প্রশাসনিক কার্যক্রম (Audit Log)
             </h2>
           </div>
-          <Link to="activity-logs" className="text-xs font-semibold text-emerald-900 hover:text-gold-600">
+          <Link to={`/${ADMIN_PATH}/activity-logs`} className="text-xs font-semibold text-emerald-900 hover:text-gold-600">
             সকল লগ দেখুন &rarr;
           </Link>
         </div>

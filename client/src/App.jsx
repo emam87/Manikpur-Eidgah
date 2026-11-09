@@ -25,6 +25,16 @@ const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'eidgah-manage-k29x';
 export function App() {
   return (
     <Routes>
+      {/* Secret Admin Panel Route (Only accessible via secret VITE_ADMIN_PATH) */}
+      <Route
+        path={`/${ADMIN_PATH}/*`}
+        element={
+          <Suspense fallback={<div className="min-h-screen bg-stone-900" />}>
+            <AdminApp />
+          </Suspense>
+        }
+      />
+
       {/* Public Pages Layout */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
@@ -55,16 +65,6 @@ export function App() {
         {/* 404 Catch-All within Public Layout */}
         <Route path="*" element={<NotFound />} />
       </Route>
-
-      {/* Secret Admin Panel Route (Only accessible via secret VITE_ADMIN_PATH) */}
-      <Route
-        path={`/${ADMIN_PATH}/*`}
-        element={
-          <Suspense fallback={<div className="min-h-screen bg-stone-900" />}>
-            <AdminApp />
-          </Suspense>
-        }
-      />
     </Routes>
   );
 }
