@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, X, Globe, Type, ChevronRight } from 'lucide-react';
+import { Menu, X, Globe, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
-import { useTheme } from '../../context/ThemeContext.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import { EightPointStar } from '../common/EightPointStar.jsx';
 
@@ -10,7 +9,6 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { locale, toggleLocale, t } = useLanguage();
-  const { fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
   const { getSetting } = useSettings();
   const location = useLocation();
 
@@ -88,39 +86,8 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* Controls: Text Size & Language Switcher */}
+          {/* Controls: Language Switcher & Mobile Menu */}
           <div className="flex items-center gap-2">
-            {/* Font Size Modifier (A- / A / A+) */}
-            <div className="hidden sm:flex items-center bg-emerald-950/80 rounded-lg p-1 border border-gold-500/30 text-xs">
-              <button
-                onClick={decreaseFontSize}
-                title="Decrease font size"
-                className={`px-2 py-1 rounded transition-colors ${
-                  fontSize === 'sm' ? 'bg-gold-500 text-stone-950 font-bold' : 'text-ivory-200 hover:text-gold-300'
-                }`}
-              >
-                A-
-              </button>
-              <button
-                onClick={resetFontSize}
-                title="Default font size"
-                className={`px-2 py-1 rounded transition-colors ${
-                  fontSize === 'base' ? 'bg-gold-500 text-stone-950 font-bold' : 'text-ivory-200 hover:text-gold-300'
-                }`}
-              >
-                A
-              </button>
-              <button
-                onClick={increaseFontSize}
-                title="Increase font size"
-                className={`px-2 py-1 rounded transition-colors ${
-                  fontSize === 'lg' ? 'bg-gold-500 text-stone-950 font-bold' : 'text-ivory-200 hover:text-gold-300'
-                }`}
-              >
-                A+
-              </button>
-            </div>
-
             {/* Language Toggle Button */}
             <button
               onClick={toggleLocale}
@@ -146,31 +113,6 @@ export function Navbar() {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="xl:hidden bg-emerald-950 border-t border-gold-500/30 px-4 pt-3 pb-6 space-y-2 animate-fade-in shadow-2xl">
-          {/* Mobile Text Size Controls */}
-          <div className="flex items-center justify-between pb-3 mb-2 border-b border-emerald-800 text-xs text-ivory-200">
-            <span>{t('text_size_title')}:</span>
-            <div className="flex gap-1 bg-emerald-900 rounded p-1 border border-gold-500/20">
-              <button
-                onClick={decreaseFontSize}
-                className={`px-3 py-1 rounded ${fontSize === 'sm' ? 'bg-gold-500 text-stone-950 font-bold' : ''}`}
-              >
-                A-
-              </button>
-              <button
-                onClick={resetFontSize}
-                className={`px-3 py-1 rounded ${fontSize === 'base' ? 'bg-gold-500 text-stone-950 font-bold' : ''}`}
-              >
-                A
-              </button>
-              <button
-                onClick={increaseFontSize}
-                className={`px-3 py-1 rounded ${fontSize === 'lg' ? 'bg-gold-500 text-stone-950 font-bold' : ''}`}
-              >
-                A+
-              </button>
-            </div>
-          </div>
-
           {/* Mobile Nav Links */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[70vh] overflow-y-auto">
             {navLinks.map((link) => (
