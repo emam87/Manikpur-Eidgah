@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware.js'
 
 import healthRoutes from './routes/health.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import publicRoutes from './routes/public.routes.js';
 
 export const app = express();
 
@@ -76,6 +77,7 @@ app.use((req, res, next) => {
 
 // 8. API Routes
 app.use('/api', healthRoutes);
+app.use('/api/public', publicRoutes);
 app.use('/api/admin/auth', authRoutes);
 
 // 9. 404 and Centralized Error Handling

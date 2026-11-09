@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    overflow-x: hidden;
+    background-color: #FAF7F0;
+  }
+
+  /* Text Size Modifier (A- / A / A+) */
+  html.text-size-sm {
+    font-size: 14px;
+  }
+  html.text-size-base {
+    font-size: 16px;
+  }
+  html.text-size-lg {
+    font-size: 18px;
+  }
+
+  /* Accessible Tap Target: Minimum 44px for primary interactive elements */
+  button, a.tap-target, input, select {
+    min-height: 44px;
+  }
+}
+
+/* Faint Islamic 8-Point Star Geometric Pattern */
+.bg-star-pattern {
+  background-color: #0F5132;
+  background-image: radial-gradient(rgba(184, 146, 63, 0.12) 1px, transparent 1px),
+                    radial-gradient(rgba(184, 146, 63, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: 0 0, 16px 16px;
+}
+
+.bg-star-pattern-light {
+  background-image: radial-gradient(rgba(184, 146, 63, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Arch-Top Image Frame */
+.arch-frame {
+  border-radius: 60px 60px 8px 8px;
+  overflow: hidden;
+}
+
+/* Gold Hairline Borders */
+.border-gold-hairline {
+  border: 1px solid rgba(184, 146, 63, 0.35);
+}
+
+.border-gold-double {
+  border: 3px double rgba(184, 146, 63, 0.6);
+}
+
+/* Shimmer Animation for Gold Foil */
+@keyframes goldShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(184, 146, 63, 0.2) 0%,
+    rgba(255, 235, 179, 0.8) 50%,
+    rgba(184, 146, 63, 0.2) 100%
+  );
+  background-size: 200% 100%;
+  animation: goldShimmer 3s infinite linear;
+}
+
+/* Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
