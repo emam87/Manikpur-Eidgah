@@ -4,6 +4,8 @@ import {
   Phone, Calendar, AlertCircle, ArrowUpDown 
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { BilingualInput } from '../components/BilingualInput.jsx';
+import { getImageUrl } from '../../utils/imageUrl.js';
 
 export function AdminCommittee() {
   const { toBanglaNum } = useLanguage();
@@ -29,6 +31,7 @@ export function AdminCommittee() {
     phone: '',
     showPhone: false,
     bioBn: '',
+    bioEn: '',
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -80,6 +83,7 @@ export function AdminCommittee() {
       phone: '',
       showPhone: false,
       bioBn: '',
+      bioEn: '',
     });
     setPhotoFile(null);
     setErrorMsg('');
@@ -101,6 +105,7 @@ export function AdminCommittee() {
       phone: item.phone || '',
       showPhone: item.showPhone === true,
       bioBn: item.bioBn || '',
+      bioEn: item.bioEn || '',
     });
     setPhotoFile(null);
     setErrorMsg('');
@@ -109,8 +114,8 @@ export function AdminCommittee() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.nameBn.trim() || !formData.designationBn.trim()) {
-      setErrorMsg('সদস্যের নাম ও পদবী আবশ্যক।');
+    if (!formData.nameBn.trim() || !formData.nameEn.trim() || !formData.designationBn.trim() || !formData.designationEn.trim()) {
+      setErrorMsg('সদস্যের নাম ও পদবী বাংলা এবং ইংরেজি উভয় ভাষাতেই আবশ্যক।');
       return;
     }
 
@@ -146,7 +151,7 @@ export function AdminCommittee() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`আপনি কি নিশ্চিত যে '${name}' কে কমিটি থেকে ট্র্যাশে পাঠাতে চান?`)) return;
+    if (!window.confirm(`আপনি কি নিশ্চিত যে '${name}' কে কমিটি ও ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলতে চান?`)) return;
 
     try {
       const res = await fetch(`/api/admin/committee/${id}`, { method: 'DELETE' });
@@ -194,13 +199,13 @@ export function AdminCommittee() {
   return (
     <div className="space-y-6">
       {/* Title & Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gold-500/30 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-surface p-6 rounded-3xl border border-sand shadow-sakinah-card">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-stone-900 flex items-center gap-2">
-            <Users2 className="w-6 h-6 text-emerald-800" />
+          <h1 className="font-serif text-2xl font-bold text-primary-dark flex items-center gap-2">
+            <Users2 className="w-6 h-6 text-primary" />
             <span>পরিচালনা পরিষদ ও কমিটি ব্যবস্থাপনা</span>
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
+          <p className="text-xs text-ink-muted mt-1">
             বর্তমান সক্রিয় সদস্য: {toBanglaNum(currentMembers.length)} জন | আর্কাইভ সদস্য: {toBanglaNum(archivedMembers.length)} জন
           </p>
         </div>
@@ -209,35 +214,35 @@ export function AdminCommittee() {
           {/* Archive Term Action */}
           <button
             onClick={() => setArchiveModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-stone-200"
+            className="px-3.5 py-2 rounded-xl bg-canvas-alt hover:bg-primary-soft text-ink text-xs font-semibold flex items-center gap-1.5 transition-colors border border-sand"
           >
-            <Archive className="w-3.5 h-3.5 text-stone-600" />
+            <Archive className="w-3.5 h-3.5 text-ink-muted" />
             <span>বর্তমান মেয়াদ আর্কাইভ করুন</span>
           </button>
 
           {/* Add Committee Member */}
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-xl bg-emerald-950 text-gold-200 text-xs font-bold hover:bg-emerald-900 transition-colors flex items-center gap-1.5 shadow-md"
+            className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors flex items-center gap-1.5 shadow-sakinah-sm"
           >
-            <Plus className="w-4 h-4 text-gold-400" />
+            <Plus className="w-4 h-4 text-gold-plate-from" />
             <span>নতুন সদস্য যোগ</span>
           </button>
         </div>
       </div>
 
       {/* Current Committee List */}
-      <div className="bg-white rounded-3xl p-6 border border-gold-500/30 shadow-sm space-y-4">
-        <h2 className="font-serif font-bold text-lg text-emerald-950 flex items-center gap-2 border-b border-stone-100 pb-3">
+      <div className="bg-surface rounded-3xl p-6 border border-sand shadow-sakinah-card space-y-4">
+        <h2 className="font-serif font-bold text-lg text-primary-dark flex items-center gap-2 border-b border-sand pb-3">
           <span>বর্তমান কার্যনির্বাহী পরিষদ</span>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-sans font-semibold">
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-success-soft text-success font-sans font-semibold">
             সক্রিয়
           </span>
         </h2>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-stone-700">
-            <thead className="bg-emerald-950 text-gold-200 uppercase tracking-wider font-semibold">
+          <table className="w-full text-left text-xs text-ink">
+            <thead className="bg-primary-soft text-primary-dark uppercase tracking-wider font-semibold border-b border-sand">
               <tr>
                 <th className="px-5 py-3.5">ক্রম</th>
                 <th className="px-5 py-3.5">নাম ও ছবি</th>
@@ -247,53 +252,53 @@ export function AdminCommittee() {
                 <th className="px-5 py-3.5 text-center">অ্যাকশন</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-sand">
               {currentMembers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-5 py-8 text-center text-stone-400">
+                  <td colSpan="6" className="px-5 py-8 text-center text-ink-muted">
                     কোনো বর্তমান কমিটি সদস্য নেই।
                   </td>
                 </tr>
               ) : (
                 currentMembers.map((m) => (
-                  <tr key={m.id} className="hover:bg-emerald-50/40 transition-colors">
-                    <td className="px-5 py-3 font-mono font-bold text-emerald-900">
+                  <tr key={m.id} className="hover:bg-canvas-alt transition-colors">
+                    <td className="px-5 py-3 font-mono font-bold text-primary-dark">
                       {toBanglaNum(m.sortOrder)}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full overflow-hidden bg-emerald-900 text-gold-300 flex items-center justify-center shrink-0 border border-gold-500/40">
+                        <div className="w-9 h-9 rounded-full overflow-hidden bg-primary-soft text-primary-dark flex items-center justify-center shrink-0 border border-gold/40">
                           {m.photoPath ? (
-                            <img src={m.photoPath} alt="" className="w-full h-full object-cover" />
+                            <img src={getImageUrl(m.photoPath)} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <User className="w-5 h-5" />
                           )}
                         </div>
-                        <span className="font-serif font-bold text-stone-900 text-sm">{m.nameBn}</span>
+                        <span className="font-serif font-bold text-ink text-sm">{m.nameBn}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3 font-semibold text-emerald-900">{m.designationBn}</td>
+                    <td className="px-5 py-3 font-semibold text-primary-dark">{m.designationBn}</td>
                     <td className="px-5 py-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        m.level === 1 ? 'bg-gold-100 text-gold-900' : 'bg-stone-100 text-stone-700'
+                        m.level === 1 ? 'bg-gold/20 text-gold-text' : 'bg-canvas-alt text-ink-muted border border-sand'
                       }`}>
                         {m.level === 1 ? 'লেভেল ১ (প্রধান)' : 'লেভেল ২ (সমন্বয়ক)'}
                       </span>
                     </td>
-                    <td className="px-5 py-3 font-mono text-stone-600">
+                    <td className="px-5 py-3 font-mono text-ink-muted">
                       {m.phone ? `${m.phone} ${m.showPhone ? '(উন্মুক্ত)' : '(গোপন)'}` : '—'}
                     </td>
                     <td className="px-5 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => openEditModal(m)}
-                          className="p-1.5 rounded-lg text-emerald-800 hover:bg-emerald-50"
+                          className="p-1.5 rounded-lg text-primary hover:bg-primary-soft"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(m.id, m.nameBn)}
-                          className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
+                          className="p-1.5 rounded-lg text-danger hover:bg-danger-soft"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -309,15 +314,15 @@ export function AdminCommittee() {
 
       {/* Archived Committees List */}
       {archivedMembers.length > 0 && (
-        <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
-          <h2 className="font-serif font-bold text-lg text-stone-800 flex items-center gap-2 border-b border-stone-100 pb-3">
-            <Archive className="w-4 h-4 text-stone-500" />
+        <div className="bg-surface rounded-3xl p-6 border border-sand shadow-sakinah-sm space-y-4">
+          <h2 className="font-serif font-bold text-lg text-primary-dark flex items-center gap-2 border-b border-sand pb-3">
+            <Archive className="w-4 h-4 text-ink-muted" />
             <span>পূর্ববর্তী মেয়াদের আর্কাইভ কমিটি</span>
           </h2>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-stone-700">
-              <thead className="bg-stone-100 text-stone-700 uppercase font-semibold">
+            <table className="w-full text-left text-xs text-ink">
+              <thead className="bg-canvas-alt text-ink-muted uppercase font-semibold border-b border-sand">
                 <tr>
                   <th className="px-5 py-3">মেয়াদ</th>
                   <th className="px-5 py-3">নাম</th>
@@ -325,16 +330,16 @@ export function AdminCommittee() {
                   <th className="px-5 py-3 text-center">অ্যাকশন</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-sand">
                 {archivedMembers.map((m) => (
-                  <tr key={m.id} className="hover:bg-stone-50">
-                    <td className="px-5 py-3 font-mono font-medium text-stone-800">{m.term}</td>
-                    <td className="px-5 py-3 font-bold text-stone-900">{m.nameBn}</td>
-                    <td className="px-5 py-3 text-stone-600">{m.designationBn}</td>
+                  <tr key={m.id} className="hover:bg-canvas-alt">
+                    <td className="px-5 py-3 font-mono font-medium text-ink">{m.term}</td>
+                    <td className="px-5 py-3 font-bold text-ink">{m.nameBn}</td>
+                    <td className="px-5 py-3 text-ink-muted">{m.designationBn}</td>
                     <td className="px-5 py-3 text-center">
                       <button
                         onClick={() => openEditModal(m)}
-                        className="p-1.5 text-emerald-800 hover:bg-emerald-50 rounded-lg"
+                        className="p-1.5 text-primary hover:bg-primary-soft rounded-lg"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -349,73 +354,53 @@ export function AdminCommittee() {
 
       {/* Create / Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto border border-gold-500/40 shadow-2xl relative p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h2 className="font-serif font-bold text-xl text-stone-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto border border-gold/40 shadow-sakinah-lift relative p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-sand pb-3">
+              <h2 className="font-serif font-bold text-xl text-primary-dark">
                 {editItem ? 'কমিটি সদস্য সম্পাদনা' : 'নতুন কমিটি সদস্য যোগ'}
               </h2>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-stone-100 text-stone-500">
+              <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-canvas-alt text-ink-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {errorMsg && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
+              <div className="p-3 bg-danger-soft border border-danger/30 text-danger text-xs rounded-xl">
                 {errorMsg}
               </div>
             )}
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
+              <BilingualInput
+                label="সদস্যের নাম"
+                required={true}
+                valueBn={formData.nameBn}
+                valueEn={formData.nameEn}
+                onChangeBn={(val) => setFormData({ ...formData, nameBn: val })}
+                onChangeEn={(val) => setFormData({ ...formData, nameEn: val })}
+                placeholderBn="উদাঃ আলহাজ্ব মোঃ রফিকুল ইসলাম"
+                placeholderEn="e.g. Alhaj Md. Rafiqul Islam"
+              />
+
+              <BilingualInput
+                label="পদবী"
+                required={true}
+                valueBn={formData.designationBn}
+                valueEn={formData.designationEn}
+                onChangeBn={(val) => setFormData({ ...formData, designationBn: val })}
+                onChangeEn={(val) => setFormData({ ...formData, designationEn: val })}
+                placeholderBn="উদাঃ প্রধান সমন্বয়ক"
+                placeholderEn="e.g. Chief Coordinator"
+              />
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">সদস্যের নাম (বাংলা) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.nameBn}
-                    onChange={(e) => setFormData({ ...formData, nameBn: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">সদস্যের নাম (ইংরেজি)</label>
-                  <input
-                    type="text"
-                    value={formData.nameEn}
-                    onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">পদবী (বাংলা) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.designationBn}
-                    onChange={(e) => setFormData({ ...formData, designationBn: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">পদবী (ইংরেজি)</label>
-                  <input
-                    type="text"
-                    value={formData.designationEn}
-                    onChange={(e) => setFormData({ ...formData, designationEn: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">কমিটি স্তর (Hierarchy Level)</label>
+                  <label className="block font-bold text-ink mb-1">কমিটি স্তর (Hierarchy Level)</label>
                   <select
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: parseInt(e.target.value, 10) })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink"
                   >
                     <option value={1}>লেভেল ১: প্রধান সমন্বয়ক (Hero Card)</option>
                     <option value={2}>লেভেল ২: সমন্বয়কবৃন্দ (৩ কলাম গ্রিড)</option>
@@ -424,91 +409,104 @@ export function AdminCommittee() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">ক্রম নম্বর (Sort Order)</label>
+                  <label className="block font-bold text-ink mb-1">ক্রম নম্বর (Sort Order)</label>
                   <input
                     type="number"
                     value={formData.sortOrder}
                     onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value, 10) })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 font-mono"
+                    className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">মেয়াদ (Term)</label>
+                  <label className="block font-bold text-ink mb-1">মেয়াদ (Term)</label>
                   <input
                     type="text"
                     value={formData.term}
                     onChange={(e) => setFormData({ ...formData, term: e.target.value })}
                     placeholder="বর্তমান অথবা ২০২১-২০২৩"
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">মোবাইল নম্বর</label>
+                  <label className="block font-bold text-ink mb-1">মোবাইল নম্বর</label>
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 font-mono"
+                    className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">সংক্ষিপ্ত পরিচিতি / বায়ো</label>
-                <textarea
-                  rows={2}
-                  value={formData.bioBn}
-                  onChange={(e) => setFormData({ ...formData, bioBn: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                />
-              </div>
+              <BilingualInput
+                label="সংক্ষিপ্ত পরিচিতি / বায়ো"
+                isTextArea={true}
+                rows={2}
+                valueBn={formData.bioBn}
+                valueEn={formData.bioEn}
+                onChangeBn={(val) => setFormData({ ...formData, bioBn: val })}
+                onChangeEn={(val) => setFormData({ ...formData, bioEn: val })}
+                placeholderBn="সংক্ষিপ্ত পরিচিতি লিখুন..."
+                placeholderEn="Short biography..."
+              />
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">ছবি আপলোড</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-800"
-                />
+                <label className="block font-bold text-ink mb-1">ছবি আপলোড</label>
+                <div className="flex items-center gap-4">
+                  {(photoFile || editItem?.photoPath) && (
+                    <div className="w-14 h-14 rounded-xl overflow-hidden border border-gold/40 bg-canvas-alt shrink-0 shadow-sakinah-sm">
+                      <img
+                        src={photoFile ? URL.createObjectURL(photoFile) : getImageUrl(editItem.photoPath)}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+                    className="w-full text-xs text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary-soft file:text-primary-dark"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-6 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer text-ink">
                   <input
                     type="checkbox"
                     checked={formData.isCurrent}
                     onChange={(e) => setFormData({ ...formData, isCurrent: e.target.checked })}
-                    className="rounded text-emerald-800"
+                    className="rounded accent-primary"
                   />
                   <span>বর্তমান পরিচালনা পরিষদ সদস্য</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer text-ink">
                   <input
                     type="checkbox"
                     checked={formData.showPhone}
                     onChange={(e) => setFormData({ ...formData, showPhone: e.target.checked })}
-                    className="rounded text-emerald-800"
+                    className="rounded accent-primary"
                   />
                   <span>ওয়েবসাইটে মোবাইল নম্বর উন্মুক্ত রাখুন</span>
                 </label>
               </div>
 
-              <div className="pt-4 border-t border-stone-100 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-sand flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 text-xs font-semibold hover:bg-stone-50"
+                  className="px-4 py-2 rounded-xl border border-sand text-ink-muted text-xs font-semibold hover:bg-canvas-alt"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2 rounded-xl bg-emerald-950 text-gold-200 text-xs font-bold hover:bg-emerald-900 transition-colors shadow-md disabled:opacity-50"
+                  className="px-6 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors shadow-sakinah-sm disabled:opacity-50"
                 >
                   {saving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
                 </button>
@@ -520,18 +518,18 @@ export function AdminCommittee() {
 
       {/* Archive Term Modal */}
       {archiveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-gold-500/40 shadow-2xl space-y-4">
-            <h3 className="font-serif font-bold text-lg text-stone-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface rounded-3xl max-w-md w-full p-6 border border-gold/40 shadow-sakinah-lift space-y-4">
+            <h3 className="font-serif font-bold text-lg text-primary-dark">
               বর্তমান পরিষদ মেয়াদ আর্কাইভ
             </h3>
-            <p className="text-xs text-stone-600 leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               বর্তমান পরিষদকে একটি নির্দিষ্ট মেয়াদ নামে সংরক্ষণে রূপান্তর করবে (কোনো ডাটা মুছবে না)। পরবর্তীতে নতুন কার্যনির্বাহী পরিষদ গঠন করতে পারবেন।
             </p>
 
             <form onSubmit={handleArchiveTerm} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
+                <label className="block text-xs font-bold text-ink mb-1">
                   মেয়াদ নাম (যেমন: ২০২১ - ২০২৪)
                 </label>
                 <input
@@ -540,7 +538,7 @@ export function AdminCommittee() {
                   value={archiveTermName}
                   onChange={(e) => setArchiveTermName(e.target.value)}
                   placeholder="২০২১ - ২০২৪ মেয়াদ"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm font-medium"
+                  className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink text-sm font-medium"
                 />
               </div>
 
@@ -548,14 +546,14 @@ export function AdminCommittee() {
                 <button
                   type="button"
                   onClick={() => setArchiveModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl border border-sand text-ink-muted text-xs font-semibold"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 rounded-xl bg-emerald-950 text-gold-200 text-xs font-bold shadow-md"
+                  className="px-5 py-2 rounded-xl bg-primary text-white text-xs font-bold shadow-sakinah-sm hover:bg-primary-hover"
                 >
                   {saving ? 'আর্কাইভ হচ্ছে...' : 'আর্কাইভ নিশ্চিত করুন'}
                 </button>

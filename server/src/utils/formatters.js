@@ -58,23 +58,26 @@ export function formatBDT(amount, locale = 'bn') {
  * @param {'bn'|'en'} [locale='bn'] - Desired locale
  * @returns {string}
  */
-export function getLocalized(obj, field, locale = 'bn') {
+export function getLocalized(obj, field, locale = 'bn', allowFallback = false) {
   if (!obj || typeof obj !== 'object') {
     return '';
   }
 
   const primarySnake = `${field}_${locale}`;
-  const fallbackSnake = locale === 'en' ? `${field}_bn` : `${field}_en`;
-
   const primaryCamel = `${field}${locale.charAt(0).toUpperCase() + locale.slice(1)}`;
-  const fallbackCamel = locale === 'en' ? `${field}Bn` : `${field}En`;
 
   const val = obj[primaryCamel] ?? obj[primarySnake];
   if (typeof val === 'string' && val.trim() !== '') {
     return val;
   }
 
-  const fallbackVal = obj[fallbackCamel] ?? obj[fallbackSnake] ?? obj[field];
-  return typeof fallbackVal === 'string' ? fallbackVal : '';
+  if (allowFallback) {
+    const fallbackSnake = locale === 'en' ? `${field}_bn` : `${field}_en`;
+    const fallbackCamel = locale === 'en' ? `${field}Bn` : `${field}En`;
+    const fallbackVal = obj[fallbackCamel] ?? obj[fallbackSnake] ?? obj[field];
+    return typeof fallbackVal === 'string' ? fallbackVal : '';
+  }
+
+  return '';
 }
 

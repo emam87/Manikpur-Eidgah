@@ -35,32 +35,32 @@ export function ForcePasswordChange() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-900 text-ivory flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col items-center justify-center p-4">
       <SEO title="পাসওয়ার্ড পরিবর্তন বাধ্যতামূলক" noIndex={true} />
 
-      <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-gold-500/40 shadow-2xl text-stone-900 space-y-6">
+      <div className="max-w-md w-full bg-surface rounded-3xl p-8 border-gold-double shadow-sakinah-lift text-ink space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-gold-500/20 text-emerald-950 flex items-center justify-center mx-auto border border-gold-500/40">
-            <KeyRound className="w-7 h-7 text-emerald-900" />
+          <div className="w-14 h-14 rounded-2xl bg-primary-soft text-primary-dark flex items-center justify-center mx-auto border border-gold/45">
+            <KeyRound className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="font-serif text-2xl font-bold text-emerald-950">
+          <h1 className="font-serif text-2xl font-bold text-primary-dark">
             পাসওয়ার্ড পরিবর্তন বাধ্যতামূলক
           </h1>
-          <p className="text-xs text-stone-600">
+          <p className="text-xs text-ink-muted">
             প্রথমবার সফল লগইনের পর আপনার অ্যাকাউন্টের সুরক্ষায় নতুন একটি শক্তিশালী পাসওয়ার্ড নির্ধারণ করা বাধ্যতামূলক।
           </p>
         </div>
 
         {error && (
-          <div className="p-3.5 rounded-xl bg-red-50 border border-red-300 text-red-800 text-xs flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-red-600 shrink-0" />
+          <div className="p-3.5 rounded-xl bg-danger-soft border border-danger/30 text-danger text-xs flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-danger shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
+            <label className="block text-xs font-bold text-ink uppercase mb-1">
               বর্তমান পাসওয়ার্ড
             </label>
             <input
@@ -68,12 +68,12 @@ export function ForcePasswordChange() {
               required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm font-mono"
+              className="w-full px-4 py-2.5 rounded-xl border border-sand bg-canvas text-sm font-mono text-ink"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
+            <label className="block text-xs font-bold text-ink uppercase mb-1">
               নতুন পাসওয়ার্ড (কমপক্ষে ১০ অক্ষর)
             </label>
             <input
@@ -82,12 +82,12 @@ export function ForcePasswordChange() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••••"
-              className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm font-mono"
+              className="w-full px-4 py-2.5 rounded-xl border border-sand bg-canvas text-sm font-mono text-ink"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
+            <label className="block text-xs font-bold text-ink uppercase mb-1">
               নতুন পাসওয়ার্ড নিশ্চিত করুন
             </label>
             <input
@@ -96,14 +96,14 @@ export function ForcePasswordChange() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••••"
-              className="w-full px-4 py-2.5 rounded-xl border border-stone-300 text-sm font-mono"
+              className="w-full px-4 py-2.5 rounded-xl border border-sand bg-canvas text-sm font-mono text-ink"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded-xl bg-emerald-900 text-gold-200 font-bold text-sm hover:bg-emerald-800 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sakinah-sm"
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

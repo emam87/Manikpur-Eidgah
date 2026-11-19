@@ -11,7 +11,7 @@ export async function seedDatabase() {
     const boundaryGeoJson = JSON.stringify({
       type: 'Feature',
       properties: {
-        name: 'Manikpur Central Eidgah Boundary (1.35 Acres)',
+        name: 'Manikpur Eidgah Boundary (1.35 Acres)',
       },
       geometry: {
         type: 'Polygon',
@@ -26,7 +26,9 @@ export async function seedDatabase() {
     });
 
     const defaultSettings = [
-      ['site_name', 'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ', 'Manikpur Central Shahi Eidgah', 'text', 'general'],
+      ['site_name', 'মানিকপুর ঈদগাহ', 'Manikpur Eidgah', 'text', 'general'],
+      ['eidgahNameBn', 'মানিকপুর ঈদগাহ', 'মানিকপুর ঈদগাহ', 'text', 'general'],
+      ['eidgahNameEn', 'Manikpur Eidgah', 'Manikpur Eidgah', 'text', 'general'],
       ['tagline', 'ঐতিহ্যবাহী দ্বীনি ও সামাজিক ঈদগাহ ময়দান • স্থাপিত ১৯৬৫ খ্রি.', 'Historic Community Eidgah Ground & Waqf Estate • Est. 1965', 'text', 'general'],
       ['established_year', '১৯৬৫ খ্রিস্টাব্দ (১৩৭২ বঙ্গাব্দ)', '1965 AD (1372 Bengali Year)', 'text', 'general'],
       ['land_area', '১.৩৫ একর (১৩৫ শতাংশ ওয়াকফকৃত জমি)', '1.35 Acres (135 Decimals Waqf Land)', 'text', 'general'],
@@ -34,15 +36,15 @@ export async function seedDatabase() {
       ['location', 'মানিকপুর, ডাকঘর: মানিকপুর বাজার, বাংলাদেশ', 'Manikpur, P.O: Manikpur Bazar, Bangladesh', 'text', 'general'],
       [
         'intro',
-        'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ ১৯৬৫ সালে গ্রামের ধর্মপ্রাণ মুরুব্বি ও সমাজহিতৈষী ব্যক্তিবর্গের ঐকান্তিক প্রচেষ্টায় প্রতিষ্ঠিত হয়। ১.৩৫ একর ওয়াকফকৃত নিষ্কণ্টক জমির ওপর অবস্থিত এই ঈদগাহে মানিকপুর ও পার্শ্ববর্তী ৭টি গ্রামের হাজারো ধর্মপ্রাণ মুসল্লি প্রতি বছর পবিত্র ঈদুল ফিতর ও ঈদুল আযহার নামাজ আদায় করেন।',
-        'Established in 1965 through the dedication of pious elders and community philanthropists, Manikpur Central Shahi Eidgah stands on 1.35 acres of registered Waqf land. Every year, thousands of worshippers from Manikpur and seven neighboring villages gather here in unity for Eid-ul-Fitr and Eid-ul-Adha congregations.',
+        'মানিকপুর ঈদগাহ ১৯৬৫ সালে গ্রামের ধর্মপ্রাণ মুরুব্বি ও সমাজহিতৈষী ব্যক্তিবর্গের ঐকান্তিক প্রচেষ্টায় প্রতিষ্ঠিত হয়। ১.৩৫ একর ওয়াকফকৃত নিষ্কণ্টক জমির ওপর অবস্থিত এই ঈদগাহে মানিকপুর ও পার্শ্ববর্তী ৭টি গ্রামের হাজারো ধর্মপ্রাণ মুসল্লি প্রতি বছর পবিত্র ঈদুল ফিতর ও ঈদুল আযহার নামাজ আদায় করেন।',
+        'Established in 1965 through the dedication of pious elders and community philanthropists, Manikpur Eidgah stands on 1.35 acres of registered Waqf land. Every year, thousands of worshippers from Manikpur and seven neighboring villages gather here in unity for Eid-ul-Fitr and Eid-ul-Adha congregations.',
         'text',
         'general',
       ],
       [
         'history',
-        "১৯৬৫ সালের পূর্বে মানিকপুর গ্রামের মুসল্লিগণ অস্থায়ী মাঠে ঈদের নামাজ আদায় করতেন। মরহুম আলহাজ্ব মৌলভী আব্দুল জব্বার সাহেব এবং গ্রামের প্রবীণ মুরুব্বিগণের উদ্যোগে ১৯৬৫ সালে প্রথম ৮০ শতাংশ জমি ঈদগাহের নামে রেজিস্ট্রি ওয়াকফ দলিলমূলে দান করা হয়।\n\nপরবর্তীতে ১৯৯৮ ও ২০১৬ সালে গ্রামবাসী এবং প্রবাসী ভাইদের বিশেষ অনুদানে আরও ৫৫ শতাংশ জমি ক্রয় করে ঈদগাহের মোট আয়তন ১.৩৫ একরে (১৩৫ শতাংশ) উন্নীত করা হয়। ২০২২-২০২৫ মেয়াদে আধুনিক শাহী মিম্বর, দৃষ্টিনন্দন প্রধান তোরণ, দক্ষিণ ও পূর্ব পাশের আরসিসি সীমানা প্রাচীর এবং ওযুখানার কাজ সম্পন্ন হয়েছে।",
-        "Prior to 1965, residents of Manikpur offered Eid prayers in temporary open fields. Through the pioneering leadership of Late Alhaj Maulvi Abdul Jabbar and respected village elders, an initial 80 decimals of land were permanently dedicated via Registered Waqf Deed No. 2841 in 1965.\n\nSubsequently, in 1998 and 2016, generous contributions from local residents and diaspora members enabled the acquisition of an additional 55 decimals, expanding the Eidgah to 1.35 acres (135 decimals). Between 2022 and 2025, a grand Shahi Minbar, main archway gate, RCC boundary wall, and ablution (Wudu) facilities were constructed.",
+        "১৯৬৫ সালের পূর্বে মানিকপুর গ্রামের মুসল্লিগণ অস্থায়ী মাঠে ঈদের নামাজ আদায় করতেন। মরহুম আলহাজ্ব মৌলভী আব্দুল জব্বার সাহেব এবং গ্রামের প্রবীণ মুরুব্বিগণের উদ্যোগে ১৯৬৫ সালে প্রথম ৮০ শতাংশ জমি ঈদগাহের নামে রেজিস্ট্রি ওয়াকফ দলিলমূলে দান করা হয়।\n\nপরবর্তীতে ১৯৯৮ ও ২০১৬ সালে গ্রামবাসী এবং প্রবাসী ভাইদের বিশেষ অনুদানে আরও ৫৫ শতাংশ জমি ক্রয় করে ঈদগাহের মোট আয়তন ১.৩৫ একরে (১৩৫ শতাংশ) উন্নীত করা হয়। ২০২২-২০২৫ মেয়াদে আধুনিক মিম্বর, দৃষ্টিনন্দন প্রধান তোরণ, দক্ষিণ ও পূর্ব পাশের আরসিসি সীমানা প্রাচীর এবং ওযুখানার কাজ সম্পন্ন হয়েছে।",
+        "Prior to 1965, residents of Manikpur offered Eid prayers in temporary open fields. Through the pioneering leadership of Late Alhaj Maulvi Abdul Jabbar and respected village elders, an initial 80 decimals of land were permanently dedicated via Registered Waqf Deed No. 2841 in 1965.\n\nSubsequently, in 1998 and 2016, generous contributions from local residents and diaspora members enabled the acquisition of an additional 55 decimals, expanding the Eidgah to 1.35 acres (135 decimals). Between 2022 and 2025, a grand Minbar, main archway gate, RCC boundary wall, and ablution (Wudu) facilities were constructed.",
         'text',
         'general',
       ],
@@ -55,8 +57,8 @@ export async function seedDatabase() {
       ],
       [
         'bank_info',
-        "হিসাবের নাম: মানিকপুর কেন্দ্রীয় ঈদগাহ উন্নয়ন তহবিল\nইসলামী ব্যাংক বাংলাদেশ পিএলসি, মানিকপুর শাখা\nচলতি হিসাব নং: ২০৫০-১৯৮-০২০৪৫৮৯১২\nবিকাশ / নগদ: ০১৭১১-২২৩৩৪৪ (সাধারণ সম্পাদক/কোষাধ্যক্ষের সাথে যোগাযোগ করে রশিদ সংগ্রহ করুন)",
-        "Account Name: Manikpur Central Eidgah Development Fund\nIslami Bank Bangladesh PLC, Manikpur Branch\nA/C No: 2050-198-020458912\nbKash / Nagad: +880 1711-223344",
+        "হিসাবের নাম: মানিকপুর ঈদগাহ উন্নয়ন তহবিল\nইসলামী ব্যাংক বাংলাদেশ পিএলসি, মানিকপুর শাখা\nচলতি হিসাব নং: ২০৫০-১৯৮-০২০৪৫৮৯১২\nবিকাশ / নগদ: ০১৭১১-২২৩৩৪৪ (সাধারণ সম্পাদক/কোষাধ্যক্ষের সাথে যোগাযোগ করে রশিদ সংগ্রহ করুন)",
+        "Account Name: Manikpur Eidgah Development Fund\nIslami Bank Bangladesh PLC, Manikpur Branch\nA/C No: 2050-198-020458912\nbKash / Nagad: +880 1711-223344",
         'text',
         'contact',
       ],
@@ -68,13 +70,22 @@ export async function seedDatabase() {
       ['contact_email', 'info@manikpureidgah.org', 'info@manikpureidgah.org', 'text', 'contact'],
       ['facebook_url', 'https://facebook.com/manikpureidgah', 'https://facebook.com/manikpureidgah', 'text', 'social'],
       ['youtube_url', 'https://youtube.com/@manikpureidgah', 'https://youtube.com/@manikpureidgah', 'text', 'social'],
-      ['hero_bg_style', 'eid-dawn', 'eid-dawn', 'text', 'general'],
-      ['hero_image', 'defaults/eidgah-hero.svg', 'defaults/eidgah-hero.svg', 'image', 'general'],
+      ['theme_preset', 'sakinah', 'sakinah', 'text', 'general'],
+      ['hero_bg_style', 'dawn-photo-wave', 'dawn-photo-wave', 'text', 'general'],
+      ['hero_image', '/defaults/eidgah-hero.webp', '/defaults/eidgah-hero.webp', 'image', 'general'],
       ['show_bismillah', '1', '1', 'boolean', 'general'],
       ['show_donation_amount', '1', '1', 'boolean', 'privacy'],
       ['show_member_amount', '1', '1', 'boolean', 'privacy'],
       ['allow_photo_download', '1', '1', 'boolean', 'general'],
       ['committee_title', 'সাত সদস্যবিশিষ্ট উন্নয়ন কমিটি', 'Seven-Member Development Committee', 'text', 'general'],
+      ['enable_money_donors', 'false', 'false', 'boolean', 'general'],
+      ['land_tribute_bn', 'ঐতিহ্যবাহী মানিকপুর ঈদগাহ ময়দানের জন্য নিঃস্বার্থভাবে জমি দানকারী সম্মানিত ব্যক্তিবর্গের তালিকা ও চিরকৃতজ্ঞতা প্রকাশ।', 'Eternal gratitude and register of distinguished patrons who dedicated their valuable land for Manikpur Eidgah.', 'text', 'general'],
+      ['land_tribute_en', 'Eternal gratitude and register of distinguished patrons who dedicated their valuable land for Manikpur Eidgah.', 'Eternal gratitude and register of distinguished patrons who dedicated their valuable land for Manikpur Eidgah.', 'text', 'general'],
+      ['unit_conv_acre', '100', '100', 'number', 'general'],
+      ['unit_conv_bigha', '33', '33', 'number', 'general'],
+      ['unit_conv_katha', '1.65', '1.65', 'number', 'general'],
+      ['unit_conv_sqft', '435.6', '435.6', 'number', 'general'],
+      ['land_default_unit', 'DECIMAL_SHATANGSHO', 'DECIMAL_SHATANGSHO', 'text', 'general'],
     ];
 
     let settingsInserted = 0;
@@ -124,8 +135,8 @@ export async function seedDatabase() {
         { nameBn: 'ভিপি জসিম উদ্দিন চৌধুরী', nameEn: 'VP Jasim Uddin Chowdhury', order: 2 },
         { nameBn: 'প্রফেসর মোঃ হুমায়ুন কবির', nameEn: 'Prof. Md. Humayun Kabir', order: 3 },
         { nameBn: 'লায়ন এবিএম শাহাদাত হোসেন', nameEn: 'Lion ABM Shahadat Hossain', order: 4 },
-        { nameBn: 'সাইফুর রহমান বাবলু', nameEn: 'Saifur Rahman Bablu', order: 5 },
-        { nameBn: 'মিজানুর রহমান সুমন', nameEn: 'Mijanur Rahman Sumon', order: 6 },
+        { nameBn: 'সাইফুর রহমান বাবুল', nameEn: 'Saifur Rahman Babul', order: 5 },
+        { nameBn: 'মিজানুর রহমান সুমন', nameEn: 'Mizanur Rahman Suman', order: 6 },
       ];
 
       for (const coord of coordinators) {
@@ -151,7 +162,31 @@ export async function seedDatabase() {
       }
       console.log(`✓ Committee: Seeded 7-member development committee.`);
     } else {
-      console.log(`✓ Committee: Development committee already exists (skipped).`);
+      // Ensure English names and designations are up to date
+      await prisma.committeeMember.update({
+        where: { id: existingChief.id },
+        data: { nameEn: 'Lion Syed Harun MJF', designationEn: 'Chief Coordinator', roleEn: 'Chief Coordinator' },
+      });
+      const updateList = [
+        { nameBnPattern: 'আলাল', nameEn: 'Rafiqul Islam Alal' },
+        { nameBnPattern: 'জসিম', nameEn: 'VP Jasim Uddin Chowdhury' },
+        { nameBnPattern: 'হুমায়ুন', nameEn: 'Prof. Md. Humayun Kabir' },
+        { nameBnPattern: 'শাহাদাত', nameEn: 'Lion ABM Shahadat Hossain' },
+        { nameBnPattern: 'বাবুল', nameEn: 'Saifur Rahman Babul' },
+        { nameBnPattern: 'সুমন', nameEn: 'Mizanur Rahman Suman' },
+      ];
+      for (const u of updateList) {
+        const found = await prisma.committeeMember.findFirst({
+          where: { nameBn: { contains: u.nameBnPattern }, isCurrent: true },
+        });
+        if (found) {
+          await prisma.committeeMember.update({
+            where: { id: found.id },
+            data: { nameEn: u.nameEn, designationEn: 'Coordinator', roleEn: 'Coordinator' },
+          });
+        }
+      }
+      console.log(`✓ Committee: Development committee updated with exact English designations.`);
     }
 
     // 3. Initial 7 Design Showcase Images (Seed if Design table is completely empty)
@@ -182,6 +217,212 @@ export async function seedDatabase() {
       console.log(`✓ Designs: Seeded ${defaultDesigns.length} architectural design images.`);
     } else {
       console.log(`✓ Designs: Design images already exist (skipped).`);
+    }
+
+    // 4. Initial Land Donors (Historical 135 Decimals matching the 1.35-acre total)
+    const landDonorCount = await prisma.landDonor.count();
+    if (landDonorCount === 0) {
+      const initialLandDonors = [
+        {
+          nameBn: 'আলহাজ্ব মৌলভী আব্দুল জব্বার',
+          nameEn: 'Alhaj Maulvi Abdul Jabbar',
+          fatherNameBn: 'হাজী মোহাম্মদ বক্স',
+          fatherNameEn: 'Haji Mohammad Baksh',
+          villageBn: 'মানিকপুর',
+          villageEn: 'Manikpur',
+          isDeceased: true,
+          areaValue: 40.00,
+          areaUnit: 'DECIMAL_SHATANGSHO',
+          areaInDecimal: 40.00,
+          donationYear: 1965,
+          donationDate: new Date('1965-03-12'),
+          donationType: 'WAQF',
+          deedNumber: '২৮৪১/১৯৬৫',
+          deedDate: new Date('1965-03-12'),
+          khatianType: 'SA',
+          khatianNumber: '১১২',
+          dagNumber: '৩২৪',
+          mouzaBn: 'মানিকপুর',
+          mouzaEn: 'Manikpur',
+          jlNumber: '৪৫',
+          boundaryNorth: 'সরকারী গোপাট',
+          boundarySouth: 'মৌলভী বাড়ির সীমানা',
+          boundaryEast: 'নূরুল ইসলাম সাহেবের জমি',
+          boundaryWest: 'হাজী বাড়ির সীমানা',
+          landUse: 'EIDGAH_GROUND',
+          storyBn: 'মানিকপুর ঈদগাহ প্রতিষ্ঠার সূচনালগ্নে মাঠের মূল অংশের জন্য সর্বপ্রথম এই জমি ওয়াকফ দলিলমূলে দান করেন।',
+          storyEn: 'Dedicated the initial core foundation parcel via Registered Waqf Deed at the founding of Manikpur Eidgah in 1965.',
+          representativeName: 'সৈয়দ হারুন',
+          representativeRelation: 'দৌহিত্র',
+          isPublished: true,
+          sortOrder: 1,
+          showDeedDetails: true,
+          showPlotDetails: true,
+          showBoundaries: true,
+        },
+        {
+          nameBn: 'হাজী মোঃ আলী মিয়া',
+          nameEn: 'Haji Md. Ali Mia',
+          fatherNameBn: 'আব্দুল করিম',
+          fatherNameEn: 'Abdul Karim',
+          villageBn: 'মানিকপুর',
+          villageEn: 'Manikpur',
+          isDeceased: true,
+          areaValue: 25.00,
+          areaUnit: 'DECIMAL_SHATANGSHO',
+          areaInDecimal: 25.00,
+          donationYear: 1965,
+          donationDate: new Date('1965-04-18'),
+          donationType: 'DANPATRA',
+          deedNumber: '২৯০৫/১৯৬৫',
+          deedDate: new Date('1965-04-18'),
+          khatianType: 'SA',
+          khatianNumber: '১১৮',
+          dagNumber: '৩২৫',
+          mouzaBn: 'মানিকপুর',
+          mouzaEn: 'Manikpur',
+          jlNumber: '৪৫',
+          landUse: 'EIDGAH_GROUND',
+          storyBn: 'প্রতিষ্ঠাকালীন সময়ে ঈদগাহ মাঠের উত্তর-পূর্ব অংশের জমি দান করেন।',
+          storyEn: 'Donated the north-eastern parcel of the main prayer ground during establishment.',
+          isPublished: true,
+          sortOrder: 2,
+          showDeedDetails: true,
+          showPlotDetails: true,
+          showBoundaries: false,
+        },
+        {
+          nameBn: 'আব্দুল গফুর সরকার',
+          nameEn: 'Abdul Gafur Sarker',
+          fatherNameBn: 'রমিজ উদ্দিন সরকার',
+          fatherNameEn: 'Ramiz Uddin Sarker',
+          villageBn: 'মানিকপুর',
+          villageEn: 'Manikpur',
+          isDeceased: true,
+          areaValue: 15.00,
+          areaUnit: 'DECIMAL_SHATANGSHO',
+          areaInDecimal: 15.00,
+          donationYear: 1965,
+          donationDate: new Date('1965-05-02'),
+          donationType: 'REGISTERED_DEED',
+          deedNumber: '২৯৮৮/১৯৬৫',
+          deedDate: new Date('1965-05-02'),
+          khatianType: 'SA',
+          khatianNumber: '১৩০',
+          dagNumber: '৩২৬',
+          mouzaBn: 'মানিকপুর',
+          mouzaEn: 'Manikpur',
+          jlNumber: '৪৫',
+          landUse: 'EIDGAH_GROUND',
+          storyBn: 'ঈদগাহ মাঠের সম্প্রসারণ ও মুসল্লিদের যাতায়াতের সুবিধার জন্য এই জমি দান করেন।',
+          storyEn: 'Donated land for ground expansion and pedestrian approach pathways in 1965.',
+          isPublished: true,
+          sortOrder: 3,
+          showDeedDetails: true,
+          showPlotDetails: false,
+          showBoundaries: false,
+        },
+        {
+          nameBn: 'হাজী আব্দুল জলিল',
+          nameEn: 'Haji Abdul Jalil',
+          fatherNameBn: 'ইব্রাহিম মোল্লা',
+          fatherNameEn: 'Ibrahim Molla',
+          villageBn: 'মানিকপুর',
+          villageEn: 'Manikpur',
+          isDeceased: true,
+          areaValue: 20.00,
+          areaUnit: 'DECIMAL_SHATANGSHO',
+          areaInDecimal: 20.00,
+          donationYear: 1998,
+          donationDate: new Date('1998-11-20'),
+          donationType: 'DANPATRA',
+          deedNumber: '৪৮২০/১৯৯৮',
+          deedDate: new Date('1998-11-20'),
+          khatianType: 'RS',
+          khatianNumber: '২৫৪',
+          dagNumber: '৪৮০',
+          mouzaBn: 'মানিকপুর',
+          mouzaEn: 'Manikpur',
+          jlNumber: '৪৫',
+          landUse: 'BOUNDARY_WALL',
+          storyBn: 'মাঠের দক্ষিণ অংশের স্থায়ী আরসিসি সীমানা প্রাচীর নির্মাণের জন্য জমি হস্তান্তর করেন।',
+          storyEn: 'Donated southern boundary land for permanent wall and protection construction.',
+          isPublished: true,
+          sortOrder: 4,
+          showDeedDetails: true,
+          showPlotDetails: true,
+          showBoundaries: true,
+        },
+        {
+          nameBn: 'আলহাজ্ব মোঃ ফজলুর রহমান',
+          nameEn: 'Alhaj Md. Fazlur Rahman',
+          fatherNameBn: 'হাজী মোন্তাজ মিয়া',
+          fatherNameEn: 'Haji Montaj Mia',
+          villageBn: 'মানিকপুর',
+          villageEn: 'Manikpur',
+          isDeceased: false,
+          areaValue: 15.00,
+          areaUnit: 'DECIMAL_SHATANGSHO',
+          areaInDecimal: 15.00,
+          donationYear: 2016,
+          donationDate: new Date('2016-08-14'),
+          donationType: 'HEBA',
+          deedNumber: '৫২১৪/২০১৬',
+          deedDate: new Date('2016-08-14'),
+          khatianType: 'BS',
+          khatianNumber: '৩২০',
+          dagNumber: '৫১০',
+          mouzaBn: 'মানিকপুর',
+          mouzaEn: 'Manikpur',
+          jlNumber: '৪৫',
+          landUse: 'GRAVEYARD',
+          storyBn: 'ঈদগাহ সংলগ্ন কবরস্থান ও মুক্ত জায়গার জন্য হেবামূলে জমি দান করেন।',
+          storyEn: 'Dedicated land adjacent to the Eidgah for graveyard and open grounds.',
+          isPublished: true,
+          sortOrder: 5,
+          showDeedDetails: true,
+          showPlotDetails: true,
+          showBoundaries: false,
+        },
+        {
+          nameBn: 'আলহাজ্ব আফতাব উদ্দিন',
+          nameEn: 'Alhaj Aftab Uddin',
+          fatherNameBn: 'কফিল উদ্দিন',
+          fatherNameEn: 'Kafil Uddin',
+          villageBn: 'মানিকপুর',
+          villageEn: 'Manikpur',
+          isDeceased: true,
+          areaValue: 20.00,
+          areaUnit: 'DECIMAL_SHATANGSHO',
+          areaInDecimal: 20.00,
+          donationYear: 2016,
+          donationDate: new Date('2016-09-05'),
+          donationType: 'REGISTERED_DEED',
+          deedNumber: '৫২৮০/২০১৬',
+          deedDate: new Date('2016-09-05'),
+          khatianType: 'BS',
+          khatianNumber: '৩২৫',
+          dagNumber: '৫১৫',
+          mouzaBn: 'মানিকপুর',
+          mouzaEn: 'Manikpur',
+          jlNumber: '৪৫',
+          landUse: 'ROAD',
+          storyBn: 'ঈদগাহ ওজুখানা কমপ্লেক্স ও প্রধান তোরণ অভিমুখী সংযোগ সড়কের জন্য জমি দান করেন।',
+          storyEn: 'Donated land for access road leading to main archway and wudu khana complex.',
+          isPublished: true,
+          sortOrder: 6,
+          showDeedDetails: true,
+          showPlotDetails: true,
+          showBoundaries: true,
+        },
+      ];
+
+      for (const donor of initialLandDonors) {
+        await prisma.landDonor.create({ data: donor });
+      }
+      console.log(`✓ Land Donors: Seeded ${initialLandDonors.length} historical land donors (Total: 135 Decimals / 1.35 Acres).`);
+    } else {
+      console.log(`✓ Land Donors: Land donor records already exist (skipped).`);
     }
 
     SettingsService.clearCache();

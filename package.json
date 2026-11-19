@@ -2,7 +2,8 @@
   "name": "manikpur-eidgah",
   "version": "1.0.0",
   "private": true,
-  "description": "Manikpur Central Shahi Eidgah (মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ) Web Application",
+  "type": "module",
+  "description": "Manikpur Eidgah (মানিকপুর ঈদগাহ) Web Application",
   "workspaces": [
     "server",
     "client"
@@ -20,6 +21,11 @@
     "admin:create": "npm run admin:create --workspace=server",
     "admin:path": "npm run admin:path --workspace=server",
     "data:import": "npm run data:import --workspace=server",
+    "i18n:check": "node scripts/check-i18n.js",
+    "name:check": "node scripts/check-names.js",
+    "theme:check": "node scripts/check-theme.js",
+    "mobile:check": "node scripts/check-mobile.js",
+    "migrate:names": "node server/src/scripts/migrateOldNames.js",
     "test": "npm run test --workspace=server"
   },
   "keywords": [

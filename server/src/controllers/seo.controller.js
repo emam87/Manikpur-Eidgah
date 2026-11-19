@@ -21,10 +21,9 @@ export class SeoController {
         { path: '', priority: '1.0', changefreq: 'weekly' },
         { path: '/about', priority: '0.8', changefreq: 'monthly' },
         { path: '/lifetime-members', priority: '0.8', changefreq: 'weekly' },
-        { path: '/donors', priority: '0.8', changefreq: 'weekly' },
+        { path: '/land-donors', priority: '0.8', changefreq: 'weekly' },
         { path: '/gallery', priority: '0.8', changefreq: 'weekly' },
         { path: '/designs', priority: '0.8', changefreq: 'monthly' },
-        { path: '/map', priority: '0.7', changefreq: 'monthly' },
         { path: '/documents', priority: '0.7', changefreq: 'monthly' },
         { path: '/land-maps', priority: '0.7', changefreq: 'monthly' },
         { path: '/notices', priority: '0.9', changefreq: 'daily' },
@@ -107,7 +106,7 @@ ${allRoutes
         : `http://${req.headers?.host || 'localhost:5000'}`;
     const adminPath = ENV.ADMIN_PATH || 'eidgah-manage-k29x';
 
-    const robotsTxt = `# Manikpur Central Shahi Eidgah (মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ)
+    const robotsTxt = `# Manikpur Eidgah (মানিকপুর ঈদগাহ)
 User-agent: *
 Allow: /
 Disallow: /api/
@@ -139,11 +138,11 @@ Sitemap: ${baseUrl}/sitemap.xml
     }
 
     const baseUrl = ENV.CLIENT_URL || `http://${req.headers.host || 'localhost:5000'}`;
-    const defaultImage = `${baseUrl}/designs/front-view.jpg`;
+    const defaultImage = `${baseUrl}/og-image.jpg`;
 
-    let title = 'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ | মানিকপুর, বাঞ্ছারামপুর';
+    let title = 'মানিকপুর ঈদগাহ | মানিকপুর, বাঞ্ছারামপুর';
     let description =
-      'ঐতিহ্যবাহী দ্বীনি ও সামাজিক মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ ময়দান (স্থাপিত ১৯৬৫ খ্রি.)। ১.৩৫ একর ওয়াকফ ভূমি। বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া।';
+      'ঐতিহ্যবাহী দ্বীনি ও সামাজিক মানিকপুর ঈদগাহ ময়দান (স্থাপিত ১৯৬৫ খ্রি.)। ১.৩৫ একর ওয়াকফ ভূমি। বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া।';
     let image = defaultImage;
     let url = `${baseUrl}${req.path}`;
     let type = 'website';
@@ -180,7 +179,7 @@ Sitemap: ${baseUrl}/sitemap.xml
           title = `${album.titleBn} | মানিকপুর ঈদগাহ ফটো অ্যালবাম`;
           description =
             album.descriptionBn ||
-            `মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের ${album.titleBn} অনুষ্ঠানের বিশেষ আলোকচিত্র।`;
+            `মানিকপুর ঈদগাহের ${album.titleBn} অনুষ্ঠানের বিশেষ আলোকচিত্র।`;
           if (album.coverPhoto) {
             image = album.coverPhoto.path.startsWith('http')
               ? album.coverPhoto.path
@@ -188,17 +187,17 @@ Sitemap: ${baseUrl}/sitemap.xml
           }
         }
       } else if (req.path === '/lifetime-members') {
-        title = 'আজীবন সদস্যবৃন্দ | মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ';
+        title = 'আজীবন সদস্যবৃন্দ | মানিকপুর ঈদগাহ';
         description =
-          'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের সম্মানিত আজীবন সদস্যগণের তালিকা ও পরিচিতি।';
+          'মানিকপুর ঈদগাহের সম্মানিত আজীবন সদস্যগণের তালিকা ও পরিচিতি।';
       } else if (req.path === '/donors') {
-        title = 'দানশীল শুভানুধ্যায়ীবৃন্দ | মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ';
+        title = 'দানশীল শুভানুধ্যায়ীবৃন্দ | মানিকপুর ঈদগাহ';
         description =
-          'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ ময়দান ও সীমানা প্রাচীর উন্নয়ন তহবিলে অনুদানকারী শুভাকাঙ্ক্ষীদের তালিকা।';
+          'মানিকপুর ঈদগাহ ময়দান ও সীমানা প্রাচীর উন্নয়ন তহবিলে অনুদানকারী শুভাকাঙ্ক্ষীদের তালিকা।';
       } else if (req.path === '/designs') {
         title = 'ঈদগাহ প্রস্তাবিত থ্রি-ডি ডিজাইন ও মহাপরিকল্পনা | মানিকপুর ঈদগাহ';
         description =
-          'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ ও সংলগ্ন পুকুর পাড়ের প্রস্তাবিত ত্রিমাত্রিক (3D) নান্দনিক মাস্টারপ্ল্যান ও ডিজাইন।';
+          'মানিকপুর ঈদগাহ ও সংলগ্ন পুকুর পাড়ের প্রস্তাবিত ত্রিমাত্রিক (3D) নান্দনিক মাস্টারপ্ল্যান ও ডিজাইন।';
         image = `${baseUrl}/designs/layout-plan.jpg`;
       }
     } catch (e) {
@@ -215,7 +214,7 @@ Sitemap: ${baseUrl}/sitemap.xml
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="${type}">
-  <meta property="og:site_name" content="মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ">
+  <meta property="og:site_name" content="মানিকপুর ঈদগাহ">
   <meta property="og:url" content="${escapeHtml(url)}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">

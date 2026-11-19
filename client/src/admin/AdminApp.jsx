@@ -6,6 +6,7 @@ import { AdminLogin } from './pages/AdminLogin.jsx';
 import { ForcePasswordChange } from './pages/ForcePasswordChange.jsx';
 import { AdminDashboard } from './pages/AdminDashboard.jsx';
 import { AdminMembers } from './pages/AdminMembers.jsx';
+import { AdminLandDonors } from './pages/AdminLandDonors.jsx';
 import { AdminDonors } from './pages/AdminDonors.jsx';
 import { AdminCommittee } from './pages/AdminCommittee.jsx';
 import { AdminGallery } from './pages/AdminGallery.jsx';
@@ -13,6 +14,8 @@ import { AdminDocuments } from './pages/AdminDocuments.jsx';
 import { AdminLandMaps } from './pages/AdminLandMaps.jsx';
 import { AdminNotices } from './pages/AdminNotices.jsx';
 import { AdminDesigns } from './pages/AdminDesigns.jsx';
+import { AdminMissingTranslations } from './pages/AdminMissingTranslations.jsx';
+import { AdminNameReview } from './pages/AdminNameReview.jsx';
 import { AdminSettings } from './pages/AdminSettings.jsx';
 import { AdminUsers } from './pages/AdminUsers.jsx';
 import { AdminTrash } from './pages/AdminTrash.jsx';
@@ -33,13 +36,13 @@ class AdminErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-stone-100 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-red-200 text-stone-900 space-y-4 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+        <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-surface rounded-3xl p-6 sm:p-8 shadow-sakinah-card border border-danger/30 text-ink space-y-4 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-danger-soft text-danger flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <h2 className="text-lg font-bold text-red-800">অ্যাডমিন প্যানেল রেন্ডারে সমস্যা হয়েছে</h2>
-            <div className="text-xs text-stone-600 bg-stone-50 border border-stone-200 p-3 rounded-xl font-mono text-left max-h-32 overflow-y-auto">
+            <h2 className="text-lg font-bold text-danger">অ্যাডমিন প্যানেল রেন্ডারে সমস্যা হয়েছে</h2>
+            <div className="text-xs text-ink-muted bg-canvas-alt border border-sand p-3 rounded-xl font-mono text-left max-h-32 overflow-y-auto">
               {this.state.error?.message || 'Unknown render error'}
             </div>
             <button
@@ -47,7 +50,7 @@ class AdminErrorBoundary extends React.Component {
                 this.setState({ hasError: false, error: null });
                 window.location.reload();
               }}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors shadow-md w-full"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold text-sm transition-colors shadow-sakinah-sm w-full"
             >
               <RefreshCw className="w-4 h-4" />
               <span>পেজ রিফ্রেশ করুন (Refresh)</span>
@@ -66,9 +69,9 @@ function AdminContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-900 flex flex-col items-center justify-center text-ivory">
-        <Loader2 className="w-8 h-8 text-gold-400 animate-spin mb-3" />
-        <span className="text-xs text-stone-400 font-mono">অথেনটিকেশন যাচাই হচ্ছে...</span>
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-ink">
+        <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
+        <span className="text-xs text-ink-muted font-mono">অথেনটিকেশন যাচাই হচ্ছে...</span>
       </div>
     );
   }
@@ -93,6 +96,7 @@ function AdminContent() {
           <Route path="/" element={<AdminDashboard />} />
           <Route path="login" element={<Navigate to={`/${ADMIN_PATH}`} replace />} />
           <Route path="members" element={<AdminMembers />} />
+          <Route path="land-donors" element={<AdminLandDonors />} />
           <Route path="donors" element={<AdminDonors />} />
           <Route path="committee" element={<AdminCommittee />} />
           <Route path="gallery" element={<AdminGallery />} />
@@ -100,6 +104,8 @@ function AdminContent() {
           <Route path="land-maps" element={<AdminLandMaps />} />
           <Route path="notices" element={<AdminNotices />} />
           <Route path="designs" element={<AdminDesigns />} />
+          <Route path="missing-translations" element={<AdminMissingTranslations />} />
+          <Route path="name-review" element={<AdminNameReview />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="trash" element={<AdminTrash />} />

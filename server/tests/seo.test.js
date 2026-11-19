@@ -96,7 +96,7 @@ test('seo: sitemap.xml output structure and static routes', async () => {
   assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org</loc>'));
   assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/about</loc>'));
   assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/lifetime-members</loc>'));
-  assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/donors</loc>'));
+  assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/land-donors</loc>'));
   assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/gallery</loc>'));
   assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/designs</loc>'));
   assert.ok(capturedBody.includes('<loc>http://manikpureidgah.org/notices</loc>'));

@@ -3,6 +3,296 @@
 @tailwind utilities;
 
 @layer base {
+  /* ============================================================================
+     SINGLE SOURCE OF TRUTH: SAKINAH DESIGN SYSTEM TOKENS
+     ============================================================================ */
+  :root,
+  [data-theme-preset='sakinah'] {
+    --font-serif: "Noto Serif Bengali", serif;
+    --font-sans: "Hind Siliguri", sans-serif;
+
+    /* Core Sakinah Palette */
+    --bg: #FBF8F1;
+    --bg-rgb: 251 248 241;
+    --bg-alt: #F1F7F2;
+    --bg-alt-rgb: 241 247 242;
+    --surface: #FFFFFF;
+    --surface-rgb: 255 255 255;
+    --surface-hover: #F6FAF7;
+    --surface-hover-rgb: 246 250 247;
+
+    --primary: #247A59;
+    --primary-rgb: 36 122 89;
+    --primary-hover: #1F6A4D;
+    --primary-hover-rgb: 31 106 77;
+    --primary-dark: #1B5E45;
+    --primary-dark-rgb: 27 94 69;
+    --primary-soft: #DCEEE3;
+    --primary-soft-rgb: 220 238 227;
+
+    --sky: #DCEEF0;
+    --sky-rgb: 220 238 240;
+    --dawn-cream: #FFFDF7;
+    --dawn-cream-rgb: 255 253 247;
+    --sage-light: #CFE5D8;
+    --sage-light-rgb: 207 229 216;
+    --sage-mid: #9CC9B1;
+    --sage-mid-rgb: 156 201 177;
+    --sage-deep: #5FA586;
+    --sage-deep-rgb: 95 165 134;
+
+    --gold: #C9A24B;
+    --gold-rgb: 201 162 75;
+    --gold-text: #8A6A1F;
+    --gold-text-rgb: 138 106 31;
+    --gold-plate-from: #E8CB82;
+    --gold-plate-from-rgb: 232 203 130;
+    --gold-plate-to: #C9A24B;
+    --gold-plate-to-rgb: 201 162 75;
+
+    --text: #1F2D2A;
+    --text-rgb: 31 45 42;
+    --text-muted: #55665F;
+    --text-muted-rgb: 85 102 95;
+    --border: #E6E0CE;
+    --border-rgb: 230 224 206;
+
+    --footer: #226B50;
+    --footer-rgb: 34 107 80;
+    --footer-text: #FBF8F1;
+    --footer-text-rgb: 251 248 241;
+
+    --sidebar: #EAF4EE;
+    --sidebar-rgb: 234 244 238;
+    --sidebar-text: #1B5E45;
+    --sidebar-text-rgb: 27 94 69;
+
+    /* Semantic Status Tokens */
+    --success: #1E7E58;
+    --success-rgb: 30 126 88;
+    --success-soft: #DCEEE3;
+    --success-soft-rgb: 220 238 227;
+    --warning: #A66E14;
+    --warning-rgb: 166 110 20;
+    --warning-soft: #FAF1DB;
+    --warning-soft-rgb: 250 241 219;
+    --danger: #B84239;
+    --danger-rgb: 184 66 57;
+    --danger-soft: #FCE8E6;
+    --danger-soft-rgb: 252 232 230;
+    --terracotta: #C86D51;
+    --terracotta-rgb: 200 109 81;
+    --scrim-rgb: 16 32 27;
+
+    /* Soft Green-Tinted Shadows */
+    --shadow-sm: 0 2px 8px rgba(36, 122, 89, 0.06);
+    --shadow-card: 0 8px 24px rgba(36, 122, 89, 0.10);
+    --shadow-lift: 0 16px 36px -6px rgba(36, 122, 89, 0.16);
+    --shadow-gold: 0 6px 20px rgba(201, 162, 75, 0.25);
+    --shadow-gold-lg: 0 10px 32px rgba(201, 162, 75, 0.35);
+
+    /* Preset-Aware Chart Series Palette */
+    --chart-series-1: var(--primary);
+    --chart-series-2: var(--gold);
+    --chart-series-3: var(--sage-deep);
+    --chart-series-4: var(--terracotta);
+    --chart-series-5: #4A8FA3;
+  }
+
+  /* Optional Night Noor Dark Theme */
+  html.dark,
+  html.dark[data-theme-preset='sakinah'] {
+    --bg: #10201B;
+    --bg-rgb: 16 32 27;
+    --bg-alt: #142721;
+    --bg-alt-rgb: 20 39 33;
+    --surface: #172E26;
+    --surface-rgb: 23 46 38;
+    --surface-hover: #1D382E;
+    --surface-hover-rgb: 29 56 46;
+
+    --primary: #247A59;
+    --primary-rgb: 36 122 89;
+    --primary-hover: #2C8E69;
+    --primary-hover-rgb: 44 142 105;
+    --primary-dark: #CFE5D8;
+    --primary-dark-rgb: 207 229 216;
+    --primary-soft: #1D3A30;
+    --primary-soft-rgb: 29 58 48;
+
+    --sky: #183033;
+    --sky-rgb: 24 48 51;
+    --dawn-cream: #10201B;
+    --dawn-cream-rgb: 16 32 27;
+    --sage-light: #1F3C32;
+    --sage-light-rgb: 31 60 50;
+    --sage-mid: #3E735E;
+    --sage-mid-rgb: 62 115 94;
+    --sage-deep: #62AA8A;
+    --sage-deep-rgb: 98 170 138;
+
+    --gold: #D4AE58;
+    --gold-rgb: 212 174 88;
+    --gold-text: #E8CB82;
+    --gold-text-rgb: 232 203 130;
+    --gold-plate-from: #E8CB82;
+    --gold-plate-from-rgb: 232 203 130;
+    --gold-plate-to: #C9A24B;
+    --gold-plate-to-rgb: 201 162 75;
+
+    --text: #EDF4F0;
+    --text-rgb: 237 244 240;
+    --text-muted: #AFC5BC;
+    --text-muted-rgb: 175 197 188;
+    --border: #27443A;
+    --border-rgb: 39 68 58;
+
+    --footer: #0B1713;
+    --footer-rgb: 11 23 19;
+    --footer-text: #EDF4F0;
+    --footer-text-rgb: 237 244 240;
+
+    --sidebar: #142721;
+    --sidebar-rgb: 20 39 33;
+    --sidebar-text: #CFE5D8;
+    --sidebar-text-rgb: 207 229 216;
+
+    --success: #39A57C;
+    --success-rgb: 57 165 124;
+    --success-soft: #18382C;
+    --success-soft-rgb: 24 56 44;
+    --warning: #E8B85D;
+    --warning-rgb: 232 184 93;
+    --warning-soft: #332914;
+    --warning-soft-rgb: 51 41 20;
+    --danger: #E67A73;
+    --danger-rgb: 230 122 115;
+    --danger-soft: #3B1E1C;
+    --danger-soft-rgb: 59 30 28;
+    --terracotta: #DB8468;
+    --terracotta-rgb: 219 132 104;
+    --scrim-rgb: 8 18 14;
+
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.28);
+    --shadow-card: 0 10px 28px rgba(0, 0, 0, 0.34);
+    --shadow-lift: 0 18px 38px rgba(0, 0, 0, 0.45);
+    --shadow-gold: 0 6px 20px rgba(212, 174, 88, 0.22);
+    --shadow-gold-lg: 0 10px 32px rgba(212, 174, 88, 0.30);
+  }
+
+  /* Reversible Legacy Preset: Classic Emerald (select in Admin Settings) */
+  [data-theme-preset='classic-emerald'] {
+    --bg: #FAF7F0;
+    --bg-rgb: 250 247 240;
+    --bg-alt: #F3EFE3;
+    --bg-alt-rgb: 243 239 227;
+    --surface: #FFFFFF;
+    --surface-rgb: 255 255 255;
+    --surface-hover: #F7F4EA;
+    --surface-hover-rgb: 247 244 234;
+
+    --primary: #0F5132;
+    --primary-rgb: 15 81 50;
+    --primary-hover: #0C4128;
+    --primary-hover-rgb: 12 65 40;
+    --primary-dark: #082E1C;
+    --primary-dark-rgb: 8 46 28;
+    --primary-soft: #E1F2E8;
+    --primary-soft-rgb: 225 242 232;
+
+    --sky: #E3F0EC;
+    --sky-rgb: 227 240 236;
+    --dawn-cream: #FFFDF7;
+    --dawn-cream-rgb: 255 253 247;
+    --sage-light: #D5E8DC;
+    --sage-light-rgb: 213 232 220;
+    --sage-mid: #80B998;
+    --sage-mid-rgb: 128 185 152;
+    --sage-deep: #156F45;
+    --sage-deep-rgb: 21 111 69;
+
+    --gold: #B8923F;
+    --gold-rgb: 184 146 63;
+    --gold-text: #82621A;
+    --gold-text-rgb: 130 98 26;
+    --gold-plate-from: #EADBB1;
+    --gold-plate-from-rgb: 234 219 177;
+    --gold-plate-to: #B8923F;
+    --gold-plate-to-rgb: 184 146 63;
+
+    --text: #1C1917;
+    --text-rgb: 28 25 23;
+    --text-muted: #57534E;
+    --text-muted-rgb: 87 83 78;
+    --border: #E2DAC7;
+    --border-rgb: 226 218 199;
+
+    --footer: #0A3D26;
+    --footer-rgb: 10 61 38;
+    --footer-text: #FAF7F0;
+    --footer-text-rgb: 250 247 240;
+
+    --sidebar: #082E1C;
+    --sidebar-rgb: 8 46 28;
+    --sidebar-text: #F5EDD8;
+    --sidebar-text-rgb: 245 237 216;
+  }
+
+  html.dark[data-theme-preset='classic-emerald'] {
+    --bg: #04180E;
+    --bg-rgb: 4 24 14;
+    --bg-alt: #072416;
+    --bg-alt-rgb: 7 36 22;
+    --surface: #0A311E;
+    --surface-rgb: 10 49 30;
+    --surface-hover: #0E3E26;
+    --surface-hover-rgb: 14 62 38;
+    --primary: #0F5132;
+    --primary-rgb: 15 81 50;
+    --primary-hover: #156F45;
+    --primary-hover-rgb: 21 111 69;
+    --primary-dark: #F5EDD8;
+    --primary-dark-rgb: 245 237 216;
+    --primary-soft: #0F3B26;
+    --primary-soft-rgb: 15 59 38;
+    --text: #F5EDD8;
+    --text-rgb: 245 237 216;
+    --text-muted: #A5C4B4;
+    --text-muted-rgb: 165 196 180;
+    --border: #194A32;
+    --border-rgb: 25 74 50;
+    --footer: #04180E;
+    --footer-rgb: 4 24 14;
+    --dawn-cream: #04180E;
+    --dawn-cream-rgb: 4 24 14;
+    --sidebar: #04180E;
+    --sidebar-rgb: 4 24 14;
+    --sidebar-text: #F5EDD8;
+    --sidebar-text-rgb: 245 237 216;
+  }
+
+  html[lang='bn'],
+  html.lang-bn {
+    --font-serif: "Noto Serif Bengali", serif;
+    --font-sans: "Hind Siliguri", sans-serif;
+    font-family: var(--font-sans);
+  }
+
+  html[lang='en'],
+  html.lang-en {
+    --font-serif: "Cormorant Garamond", Georgia, serif;
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-sans);
+    letter-spacing: -0.011em;
+  }
+
+  html[lang='en'] h1,
+  html[lang='en'] h2,
+  html[lang='en'] h3 {
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
@@ -12,76 +302,125 @@
   body {
     overflow-x: hidden;
     max-width: 100vw;
-    background-color: #FAF7F0;
+    background-color: var(--bg);
+    color: var(--text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 250ms cubic-bezier(0.22, 1, 0.36, 1), color 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Accessible Gold Focus Ring with 2px offset across interactive controls */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
   }
 
   /* Prevent mobile 300ms tap delay & smooth touch manipulation */
-  button, a, input, select, textarea {
+  button,
+  a,
+  input,
+  select,
+  textarea {
     touch-action: manipulation;
   }
 
-  /* Text Size Modifier (A- / A / A+) */
-  html.text-size-sm {
-    font-size: 14px;
-  }
-  html.text-size-base {
-    font-size: 16px;
-  }
-  html.text-size-lg {
-    font-size: 18px;
-  }
-
-  /* Accessible Tap Target: Minimum 44px for primary interactive elements */
-  button, a.tap-target, input, select {
+  /* Accessible Tap Target: Minimum 44px for primary interactive elements & form inputs */
+  .tap-target,
+  input:not([type='checkbox']):not([type='radio']),
+  select {
     min-height: 44px;
   }
 
-  /* Mobile Safari font-size zoom prevention: inputs at least 16px on mobile */
+  /* Mobile Safari font-size zoom prevention */
   @media (max-width: 640px) {
-    input, select, textarea {
+    input,
+    select,
+    textarea {
       font-size: 16px !important;
     }
   }
 
-  /* Touch scrolling smoothness */
-  .overflow-y-auto, .overflow-x-auto {
+  .overflow-y-auto,
+  .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Faint Islamic 8-Point Star Geometric Pattern */
-.bg-star-pattern {
-  background-color: #0F5132;
-  background-image: radial-gradient(rgba(184, 146, 63, 0.12) 1px, transparent 1px),
-                    radial-gradient(rgba(184, 146, 63, 0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
-  background-position: 0 0, 16px 16px;
+/* Subtle Sage & Gold Arabesque Star Pattern on Light Ivory/Mint Surfaces */
+.bg-star-pattern-light {
+  background-image:
+    radial-gradient(rgb(var(--sage-mid-rgb) / 0.16) 1.25px, transparent 1.25px),
+    radial-gradient(rgb(var(--gold-rgb) / 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
 }
 
-.bg-star-pattern-light {
-  background-image: radial-gradient(rgba(184, 146, 63, 0.15) 1px, transparent 1px);
-  background-size: 24px 24px;
+/* Mid-Green Footer Pattern */
+.bg-star-pattern,
+.bg-footer-pattern {
+  background-color: var(--footer);
+  background-image:
+    radial-gradient(rgb(var(--sage-mid-rgb) / 0.14) 1.2px, transparent 1.2px),
+    radial-gradient(rgb(var(--gold-rgb) / 0.10) 1px, transparent 1px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+/* Soft Gold-Foil Plate for Amounts & Distinctions */
+.bg-gold-plate {
+  background: linear-gradient(135deg, var(--gold-plate-from) 0%, var(--gold-plate-to) 100%);
+  color: #1F2D2A;
+}
+
+/* Subtle Gold Accent Plate for Badges & Distinctions */
+.bg-gold-plate {
+  background: linear-gradient(135deg, var(--gold-plate-from) 0%, var(--gold-plate-to) 100%);
+  color: #1F2D2A;
 }
 
 /* Arch-Top Image Frame */
 .arch-frame {
-  border-radius: 60px 60px 8px 8px;
+  border-radius: 48px 48px 8px 8px;
   overflow: hidden;
 }
 
-/* Gold Hairline Borders */
+/* Gold Hairline Border */
 .border-gold-hairline {
-  border: 1px solid rgba(184, 146, 63, 0.35);
+  border: 1px solid rgb(var(--gold-rgb) / 0.38);
 }
 
-.border-gold-double {
-  border: 3px double rgba(184, 146, 63, 0.6);
+/* Clean 150ms Page Fade Transition */
+@keyframes pageFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Shimmer Animation for Gold Foil */
-@keyframes goldShimmer {
+.page-enter {
+  animation: pageFade 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Mobile Touch Press Feedback */
+.tap-feedback {
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tap-feedback:active {
+  transform: scale(0.98);
+}
+
+/* Clean Skeleton Shimmer Placeholder */
+@keyframes skeletonShimmer {
   0% {
     background-position: -200% 0;
   }
@@ -90,24 +429,89 @@
   }
 }
 
-.animate-gold-shimmer {
+.skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(184, 146, 63, 0.2) 0%,
-    rgba(255, 235, 179, 0.8) 50%,
-    rgba(184, 146, 63, 0.2) 100%
+    rgb(var(--primary-soft-rgb) / 0.4) 0%,
+    rgb(var(--primary-soft-rgb) / 0.75) 50%,
+    rgb(var(--primary-soft-rgb) / 0.4) 100%
   );
   background-size: 200% 100%;
-  animation: goldShimmer 3s infinite linear;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
 }
 
-/* Respect Reduced Motion */
+/* Focus Heritage Outline */
+.focus-heritage:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Safe Area Insets for Modern Mobile Notches & Gesture Home Bars */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+/* Dynamic Viewport Height Utility */
+.min-h-dvh {
+  min-height: 100dvh;
+}
+
+/* Harmonized Leaflet Map Popup & Control Styling */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: var(--surface) !important;
+  color: var(--primary-dark) !important;
+  border-color: var(--border) !important;
+}
+
+/* Light Dawn Hero Background & Masked Photo Edge Fade */
+.bg-hero-dawn {
+  background:
+    radial-gradient(circle at 74% 34%, rgb(var(--gold-plate-from-rgb) / 0.20) 0%, rgb(var(--gold-rgb) / 0.06) 28%, transparent 56%),
+    linear-gradient(125deg, var(--dawn-cream) 0%, var(--bg) 42%, var(--sky) 100%);
+}
+
+html.dark .bg-hero-dawn {
+  background:
+    radial-gradient(circle at 74% 34%, rgb(var(--gold-rgb) / 0.10) 0%, transparent 48%),
+    linear-gradient(135deg, var(--bg) 0%, var(--bg-alt) 52%, var(--sky) 100%);
+}
+
+.hero-photo-fade {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.48) 14%, #000 30%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.48) 14%, #000 30%, #000 100%);
+}
+
+@media (min-width: 1024px) {
+  .hero-photo-fade {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.42) 13%, #000 25%, #000 100%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.42) 13%, #000 25%, #000 100%);
+  }
+}
+
+.hero-h1-halo {
+  text-shadow: 0 2px 18px rgb(var(--dawn-cream-rgb) / 0.9);
+}
+
+/* Reduced Motion Overrides */
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
+  *,
+  ::before,
+  ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }
-

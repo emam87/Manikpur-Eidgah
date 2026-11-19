@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Compass, Video, Edit, Upload, Check, Eye, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { BilingualInput } from '../components/BilingualInput.jsx';
+import { getImageUrl } from '../../utils/imageUrl.js';
 
 export function AdminDesigns() {
   const { toBanglaNum } = useLanguage();
@@ -12,12 +14,14 @@ export function AdminDesigns() {
   // Edit Design Modal
   const [editDesign, setEditDesign] = useState(null);
   const [designCaptionBn, setDesignCaptionBn] = useState('');
+  const [designCaptionEn, setDesignCaptionEn] = useState('');
   const [designFile, setDesignFile] = useState(null);
   const [savingDesign, setSavingDesign] = useState(false);
 
   // Video Form
   const [videoForm, setVideoForm] = useState({
     titleBn: '',
+    titleEn: '',
     type: 'YOUTUBE',
     url: '',
     isPublished: true,
@@ -39,6 +43,7 @@ export function AdminDesigns() {
           setVideo(data.video);
           setVideoForm({
             titleBn: data.video.titleBn || '',
+            titleEn: data.video.titleEn || '',
             type: data.video.type || 'YOUTUBE',
             url: data.video.url || '',
             isPublished: data.video.isPublished !== false,
@@ -55,11 +60,16 @@ export function AdminDesigns() {
   const handleSaveDesign = async (e) => {
     e.preventDefault();
     if (!editDesign) return;
+    if (!designCaptionBn.trim() || !designCaptionEn.trim()) {
+      alert('নকশার ক্যাপশন বাংলা এবং ইংরেজি উভয় ভাষাতেই পূরণ আবশ্যক।');
+      return;
+    }
 
     setSavingDesign(true);
     try {
       const data = new FormData();
       data.append('captionBn', designCaptionBn);
+      data.append('captionEn', designCaptionEn);
       if (designFile) {
         data.append('photo', designFile);
       }
@@ -108,55 +118,54 @@ export function AdminDesigns() {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-6 rounded-3xl border border-gold-500/30 shadow-sm">
-        <h1 className="font-serif text-2xl font-bold text-stone-900 flex items-center gap-2">
-          <Compass className="w-6 h-6 text-emerald-800" />
+      <div className="bg-surface p-6 rounded-3xl border border-sand shadow-sakinah-sm">
+        <h1 className="font-serif text-2xl font-bold text-ink flex items-center gap-2">
+          <Compass className="w-6 h-6 text-primary-dark" />
           <span>৩ডি স্থাপত্য নকশা ও মাস্টার প্ল্যান ব্যবস্থাপনা</span>
         </h1>
-        <p className="text-xs text-stone-500 mt-1">
+        <p className="text-xs text-ink-muted mt-1">
           প্রস্তাবিত ৩ডি স্থাপত্য রূপরেখার ৭টি মাস্টার ইমেজ এবং ভিডিও ওয়াকথ্রু
         </p>
       </div>
 
       {/* 3D Video Configuration Section */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gold-500/30 shadow-sm space-y-4">
-        <div className="flex items-center gap-2.5 border-b border-stone-100 pb-3">
-          <Video className="w-5 h-5 text-emerald-800" />
-          <h2 className="font-serif font-bold text-lg text-stone-900">
+      <div className="bg-surface rounded-3xl p-6 sm:p-8 border border-sand shadow-sakinah-sm space-y-4">
+        <div className="flex items-center gap-2.5 border-b border-sand pb-3">
+          <Video className="w-5 h-5 text-primary-dark" />
+          <h2 className="font-serif font-bold text-lg text-ink">
             ৩ডি ভিডিও ওয়াকথ্রু সেটিংস
           </h2>
         </div>
 
         <form onSubmit={handleSaveVideo} className="space-y-4 text-xs max-w-2xl">
-          <div>
-            <label className="block font-bold text-stone-700 mb-1">ভিডিওর শিরোনাম</label>
-            <input
-              type="text"
-              value={videoForm.titleBn}
-              onChange={(e) => setVideoForm({ ...videoForm, titleBn: e.target.value })}
-              placeholder="যেমন: প্রস্তাবিত মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ ৩ডি ভার্চুয়াল ভ্রমণ"
-              className="w-full px-3 py-2 rounded-xl border border-stone-300"
-            />
-          </div>
+          <BilingualInput
+            label="ভিডিওর শিরোনাম"
+            valueBn={videoForm.titleBn}
+            valueEn={videoForm.titleEn}
+            onChangeBn={(val) => setVideoForm({ ...videoForm, titleBn: val })}
+            onChangeEn={(val) => setVideoForm({ ...videoForm, titleEn: val })}
+            placeholderBn="যেমন: প্রস্তাবিত মানিকপুর ঈদগাহ ৩ডি ভার্চুয়াল ভ্রমণ"
+            placeholderEn="e.g. Proposed Manikpur Eidgah 3D Virtual Tour"
+          />
 
           <div>
-            <label className="block font-bold text-stone-700 mb-1">ভিডিও লিংক (YouTube / MP4)</label>
+            <label className="block font-bold text-ink mb-1">ভিডিও লিংক (YouTube / MP4)</label>
             <input
               type="url"
               value={videoForm.url}
               onChange={(e) => setVideoForm({ ...videoForm, url: e.target.value })}
               placeholder="https://www.youtube.com/watch?v=..."
-              className="w-full px-3 py-2 rounded-xl border border-stone-300 font-mono"
+              className="w-full px-3 py-2 rounded-xl bg-canvas border border-sand font-mono text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary"
             />
           </div>
 
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer text-ink">
               <input
                 type="checkbox"
                 checked={videoForm.isPublished}
                 onChange={(e) => setVideoForm({ ...videoForm, isPublished: e.target.checked })}
-                className="rounded text-emerald-800"
+                className="rounded accent-primary"
               />
               <span>ওয়েবসাইটে ৩ডি ভিডিও সেকশনটি প্রদর্শন করুন</span>
             </label>
@@ -165,7 +174,7 @@ export function AdminDesigns() {
           <button
             type="submit"
             disabled={savingVideo}
-            className="px-6 py-2 rounded-xl bg-emerald-950 text-gold-200 font-bold hover:bg-emerald-900 transition-colors shadow-md"
+            className="px-6 py-2 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-colors shadow-sakinah-sm disabled:opacity-50"
           >
             {savingVideo ? 'সংরক্ষণ হচ্ছে...' : 'ভিডিও তথ্য সংরক্ষণ করুন'}
           </button>
@@ -174,33 +183,34 @@ export function AdminDesigns() {
 
       {/* 7 Designs Cards */}
       <div className="space-y-4">
-        <h2 className="font-serif font-bold text-lg text-stone-900">
+        <h2 className="font-serif font-bold text-lg text-ink">
           ৭টি প্রস্তাবিত স্থাপত্য নকশা (Master 3D Renders)
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {designs.map((d, index) => (
-            <div key={d.id} className="bg-white rounded-3xl overflow-hidden border border-gold-500/30 shadow-sm flex flex-col justify-between">
-              <div className="relative aspect-[16/10] bg-stone-900">
-                <img src={d.thumbPath || d.path} alt="" className="w-full h-full object-cover" />
-                <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-emerald-950 text-gold-300 font-mono font-bold text-xs">
+            <div key={d.id} className="bg-surface rounded-3xl overflow-hidden border border-sand shadow-sakinah-sm flex flex-col justify-between">
+              <div className="relative aspect-[16/10] bg-canvas-alt">
+                <img src={getImageUrl(d.thumbPath || d.path)} alt="" className="w-full h-full object-cover" />
+                <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-gold-plate text-ink font-mono font-bold text-xs shadow-sakinah-sm">
                   #{toBanglaNum(index + 1)}
                 </div>
               </div>
 
               <div className="p-5 space-y-3">
-                <h3 className="font-serif font-bold text-base text-stone-900">
+                <h3 className="font-serif font-bold text-base text-ink">
                   {d.captionBn}
                 </h3>
 
-                <div className="pt-2 border-t border-stone-100 flex items-center justify-between">
+                <div className="pt-2 border-t border-sand flex items-center justify-between">
                   <button
                     onClick={() => {
                       setEditDesign(d);
                       setDesignCaptionBn(d.captionBn || '');
+                      setDesignCaptionEn(d.captionEn || '');
                       setDesignFile(null);
                     }}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-950 text-gold-200 text-xs font-semibold hover:bg-emerald-900 transition-colors flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-hover transition-colors flex items-center gap-1.5"
                   >
                     <Edit className="w-3.5 h-3.5" />
                     <span>ক্যাপশন / ছবি পরিবর্তন</span>
@@ -214,49 +224,49 @@ export function AdminDesigns() {
 
       {/* Edit Design Modal */}
       {editDesign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-gold-500/40 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h2 className="font-serif font-bold text-lg text-stone-900">নকশা সম্পাদনা</h2>
-              <button onClick={() => setEditDesign(null)} className="p-2 rounded-full hover:bg-stone-100 text-stone-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface rounded-3xl max-w-md w-full p-6 border border-sand shadow-sakinah-lift space-y-4">
+            <div className="flex items-center justify-between border-b border-sand pb-3">
+              <h2 className="font-serif font-bold text-lg text-ink">নকশা সম্পাদনা</h2>
+              <button onClick={() => setEditDesign(null)} className="p-2 rounded-full hover:bg-canvas-alt text-ink-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveDesign} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">ক্যাপশন (বাংলা) *</label>
-                <input
-                  type="text"
-                  required
-                  value={designCaptionBn}
-                  onChange={(e) => setDesignCaptionBn(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                />
-              </div>
+              <BilingualInput
+                label="ক্যাপশন"
+                required={true}
+                valueBn={designCaptionBn}
+                valueEn={designCaptionEn}
+                onChangeBn={(val) => setDesignCaptionBn(val)}
+                onChangeEn={(val) => setDesignCaptionEn(val)}
+                placeholderBn="যেমন: প্রস্তাবিত প্রধান মেহরাব ও গম্বুজ"
+                placeholderEn="e.g. Proposed Main Mehrab & Dome"
+              />
 
               <div>
-                <label className="block font-bold text-stone-700 mb-1">নতুন ছবি আপলোড (ঐচ্ছিক)</label>
+                <label className="block font-bold text-ink mb-1">নতুন ছবি আপলোড (ঐচ্ছিক)</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setDesignFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-950 file:text-gold-200"
+                  className="w-full text-xs text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-hover"
                 />
               </div>
 
-              <div className="pt-3 border-t border-stone-100 flex items-center justify-end gap-3">
+              <div className="pt-3 border-t border-sand flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setEditDesign(null)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 font-semibold"
+                  className="px-4 py-2 rounded-xl border border-sand text-ink-muted hover:bg-canvas-alt font-semibold"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
                   disabled={savingDesign}
-                  className="px-5 py-2 rounded-xl bg-emerald-950 text-gold-200 font-bold shadow-md"
+                  className="px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold shadow-sakinah-sm disabled:opacity-50"
                 >
                   {savingDesign ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
                 </button>

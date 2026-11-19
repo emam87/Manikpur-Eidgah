@@ -19,7 +19,7 @@ test('formatBDT: formats currency amounts with commas and ৳ symbol', () => {
   assert.equal(formatBDT(null, 'bn'), '');
 });
 
-test('getLocalized: handles bilingual resolution with automatic fallback', () => {
+test('getLocalized: handles bilingual resolution with strict zero-fallback by default', () => {
   const item = {
     titleBn: 'মানিকপুর ঈদগাহ',
     titleEn: 'Manikpur Eidgah',
@@ -30,8 +30,9 @@ test('getLocalized: handles bilingual resolution with automatic fallback', () =>
   assert.equal(getLocalized(item, 'title', 'bn'), 'মানিকপুর ঈদগাহ');
   assert.equal(getLocalized(item, 'title', 'en'), 'Manikpur Eidgah');
 
-  // Fallback to Bengali when English is empty string
-  assert.equal(getLocalized(item, 'desc', 'en'), 'বিবরণ বাংলায়');
+  // Zero-fallback: when English is empty string and allowFallback=false, returns empty (never leaks Bengali!)
+  assert.equal(getLocalized(item, 'desc', 'en'), '');
+  assert.equal(getLocalized(item, 'desc', 'en', true), 'বিবরণ বাংলায়');
 
   // Snake_case support
   const snakeItem = {

@@ -1,5 +1,5 @@
 // ==============================================================================
-// Manikpur Central Shahi Eidgah (মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ)
+// Manikpur Eidgah (মানিকপুর ঈদগাহ)
 // Prisma Database Schema — PostgreSQL (Supabase)
 // ==============================================================================
 
@@ -63,6 +63,39 @@ enum LandMapType {
 enum DesignVideoType {
   UPLOAD
   YOUTUBE
+}
+
+enum LandAreaUnit {
+  DECIMAL_SHATANGSHO
+  KATHA
+  BIGHA
+  ACRE
+  SQFT
+}
+
+enum LandDonationType {
+  DANPATRA
+  WAQF
+  HEBA
+  REGISTERED_DEED
+  OTHER
+}
+
+enum LandKhatianType {
+  CS
+  SA
+  RS
+  BS
+  OTHER
+}
+
+enum LandUse {
+  EIDGAH_GROUND
+  GRAVEYARD
+  MOSQUE
+  ROAD
+  BOUNDARY_WALL
+  OTHER
 }
 
 // ------------------------------------------------------------------------------
@@ -251,6 +284,8 @@ model LandMap {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
+  landDonors     LandDonor[]
+
   @@index([isPublished])
   @@index([sortOrder])
   @@index([deletedAt])
@@ -390,5 +425,68 @@ model LoginAttempt {
   @@index([key])
   @@index([lockedUntil])
   @@map("login_attempts")
+}
+
+model LandDonor {
+  id                     Int               @id @default(autoincrement())
+  nameBn                 String            @map("name_bn") @db.VarChar(255)
+  nameEn                 String?           @map("name_en") @db.VarChar(255)
+  fatherNameBn           String?           @map("father_name_bn") @db.VarChar(255)
+  fatherNameEn           String?           @map("father_name_en") @db.VarChar(255)
+  motherNameBn           String?           @map("mother_name_bn") @db.VarChar(255)
+  motherNameEn           String?           @map("mother_name_en") @db.VarChar(255)
+  villageBn              String?           @map("village_bn") @db.VarChar(255)
+  villageEn              String?           @map("village_en") @db.VarChar(255)
+  photoPath              String?           @map("photo_path") @db.VarChar(255)
+  isDeceased             Boolean           @default(true) @map("is_deceased")
+  areaValue              Decimal           @map("area_value") @db.Decimal(12, 4)
+  areaUnit               LandAreaUnit      @default(DECIMAL_SHATANGSHO) @map("area_unit")
+  areaInDecimal          Decimal           @map("area_in_decimal") @db.Decimal(12, 4)
+  donationYear           Int               @map("donation_year")
+  donationDate           DateTime?         @map("donation_date") @db.Date
+  donationType           LandDonationType  @default(DANPATRA) @map("donation_type")
+  deedNumber             String?           @map("deed_number") @db.VarChar(100)
+  deedDate               DateTime?         @map("deed_date") @db.Date
+  khatianType            LandKhatianType?  @map("khatian_type")
+  khatianNumber          String?           @map("khatian_number") @db.VarChar(100)
+  dagNumber              String?           @map("dag_number") @db.VarChar(100)
+  mouzaBn                String?           @map("mouza_bn") @db.VarChar(255)
+  mouzaEn                String?           @map("mouza_en") @db.VarChar(255)
+  jlNumber               String?           @map("jl_number") @db.VarChar(50)
+  upazilaBn              String?           @default("বাঞ্ছারামপুর") @map("upazila_bn") @db.VarChar(100)
+  upazilaEn              String?           @default("Bancharampur") @map("upazila_en") @db.VarChar(100)
+  districtBn             String?           @default("ব্রাহ্মণবাড়িয়া") @map("district_bn") @db.VarChar(100)
+  districtEn             String?           @default("Brahmanbaria") @map("district_en") @db.VarChar(100)
+  boundaryNorth          String?           @map("boundary_north") @db.VarChar(255)
+  boundarySouth          String?           @map("boundary_south") @db.VarChar(255)
+  boundaryEast           String?           @map("boundary_east") @db.VarChar(255)
+  boundaryWest           String?           @map("boundary_west") @db.VarChar(255)
+  landUse                LandUse           @default(EIDGAH_GROUND) @map("land_use")
+  landUseOther           String?           @map("land_use_other") @db.VarChar(255)
+  storyBn                String?           @map("story_bn") @db.Text
+  storyEn                String?           @map("story_en") @db.Text
+  relatedDocumentIds     Json?             @map("related_document_ids")
+  relatedLandMapId       Int?              @map("related_land_map_id")
+  relatedLandMap         LandMap?          @relation(fields: [relatedLandMapId], references: [id])
+  representativeName     String?           @map("representative_name") @db.VarChar(255)
+  representativeRelation String?           @map("representative_relation") @db.VarChar(100)
+  phone                  String?           @db.VarChar(50) // STRICTLY PRIVATE: never serialized to public
+  nid                    String?           @db.VarChar(50) // STRICTLY PRIVATE: never serialized to public
+  representativePhone    String?           @map("representative_phone") @db.VarChar(50) // STRICTLY PRIVATE: never serialized to public
+  isPublished            Boolean           @default(true) @map("is_published")
+  sortOrder              Int               @default(0) @map("sort_order")
+  showDeedDetails        Boolean           @default(false) @map("show_deed_details")
+  showPlotDetails        Boolean           @default(false) @map("show_plot_details")
+  showBoundaries         Boolean           @default(false) @map("show_boundaries")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+  deletedAt              DateTime?         @map("deleted_at")
+
+  @@index([donationYear])
+  @@index([landUse])
+  @@index([mouzaBn])
+  @@index([isPublished])
+  @@index([deletedAt])
+  @@map("land_donors")
 }
 

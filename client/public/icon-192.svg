@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="36" fill="#247A59"/>
+  <rect x="8" y="8" width="176" height="176" rx="30" fill="none" stroke="#C9A24B" stroke-width="2" opacity="0.45"/>
+  <circle cx="96" cy="96" r="70" stroke="#DCEEE3" stroke-width="1.5" fill="none" opacity="0.28"/>
+  <!-- Crescent -->
+  <path d="M96 36 C66 36 56 66 56 96 C56 126 66 156 96 156 C75 140 71 116 75 90 C79 66 88 45 96 36 Z" fill="#FBF8F1"/>
+  <!-- 8-Point Star -->
+  <g transform="translate(108, 66) scale(0.68)">
+    <polygon points="20,0 26,14 40,20 26,26 20,40 14,26 0,20 14,14" fill="#E8CB82"/>
+  </g>
+</svg>

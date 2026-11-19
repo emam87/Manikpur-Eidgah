@@ -1,172 +1,336 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, HeartHandshake, Clock, MapPin, Calendar, Sparkles } from 'lucide-react';
+import { ArrowRight, HeartHandshake, Clock } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
-import { EightPointStar, StarDivider } from '../common/EightPointStar.jsx';
+import { useTheme } from '../../context/ThemeContext.jsx';
+import { getImageUrl } from '../../utils/imageUrl.js';
+import { EightPointStar } from '../common/EightPointStar.jsx';
+
+function GeometricCornerOrnament({ className = '', flip = false }) {
+  return (
+    <svg
+      viewBox="0 0 220 220"
+      fill="none"
+      className={`${className} ${flip ? '-scale-x-100' : ''}`}
+      aria-hidden="true"
+    >
+      <g stroke="var(--sage-deep)" strokeWidth="1" opacity="0.11">
+        <path d="M0 40H140M40 0V140M0 90H90M90 0V90" />
+        <polygon points="70,12 88,52 128,70 88,88 70,128 52,88 12,70 52,52" />
+        <polygon points="70,26 82,58 114,70 82,82 70,114 58,82 26,70 58,58" stroke="var(--gold)" />
+        <circle cx="70" cy="70" r="56" strokeDasharray="4 4" />
+        <circle cx="155" cy="40" r="24" />
+        <circle cx="40" cy="155" r="24" />
+      </g>
+    </svg>
+  );
+}
+
+function SageMosqueSkylineFallback({ className = '' }) {
+  return (
+    <svg
+      viewBox="0 0 900 460"
+      fill="none"
+      preserveAspectRatio="xMaxYMax slice"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M0,460 L0,355 L140,355 Q195,305 250,355 L410,355 L420,265 L430,248 L440,265 L450,355 Q540,295 630,355 L780,355 L790,280 L800,262 L810,280 L820,355 L900,355 L900,460 Z"
+        fill="var(--sage-light)"
+        opacity="0.88"
+      />
+      <path
+        d="M0,460 L0,385 L120,385 Q210,320 300,385 L470,385 Q560,295 650,385 L740,385 L748,295 L758,275 L768,295 L776,385 L900,385 L900,460 Z"
+        fill="var(--sage-mid)"
+        opacity="0.68"
+      />
+      <path
+        d="M0,460 L0,415 L190,415 Q265,375 340,415 L520,415 Q605,365 690,415 L900,415 L900,460 Z"
+        fill="var(--sage-deep)"
+        opacity="0.45"
+      />
+    </svg>
+  );
+}
+
+function HeroWaveDivider() {
+  return (
+    <div
+      className="relative z-10 w-full pointer-events-none leading-none overflow-hidden -mt-px"
+      aria-hidden="true"
+    >
+      <svg
+        className="block w-full h-[60px] lg:h-[108px]"
+        viewBox="0 0 1440 120"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="heroBandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--primary-dark)" />
+            <stop offset="55%" stopColor="var(--primary)" />
+            <stop offset="100%" stopColor="var(--sage-mid)" stopOpacity="0.45" />
+          </linearGradient>
+        </defs>
+
+        {/* Curved Deep Green Band (thick on left, thinning smoothly toward right) */}
+        <path
+          d="M0,26 C320,96 740,12 1440,68 L1440,120 L0,120 Z"
+          fill="url(#heroBandGradient)"
+        />
+
+        {/* Thin Gold Hairline Curve tracing upper edge of the green band */}
+        <path
+          d="M0,24 C320,94 740,10 1440,66"
+          fill="none"
+          stroke="var(--gold)"
+          strokeWidth="2.2"
+          opacity="0.82"
+        />
+
+        {/* Solid Ivory Fill Below matching Page Canvas (--bg) */}
+        <path
+          d="M0,58 C340,114 760,26 1440,76 L1440,120 L0,120 Z"
+          fill="var(--bg)"
+        />
+      </svg>
+    </div>
+  );
+}
 
 export function HeroSection({ jamatSchedule = '' }) {
   const { locale, t } = useLanguage();
-  const { getSetting, isSettingEnabled } = useSettings();
+  const { getSetting } = useSettings();
+  const [imgFailed, setImgFailed] = useState(false);
 
-  const heroBgStyle = getSetting('hero_bg_style', 'bn', 'eid-dawn'); // 'eid-dawn' | 'arcade' | 'photo'
-  const siteName = getSetting('site_name', locale, t('site_name'));
-  const tagline = getSetting('tagline', locale, t('site_tagline'));
-  const showBismillah = isSettingEnabled('show_bismillah');
-  const heroImage = getSetting('hero_image', 'bn', '');
+  const heroBgStyle = getSetting('hero_bg_style', 'bn', 'dawn-photo-wave');
+  const siteName = getSetting('site_name', locale, t('common.site_name'));
+  const tagline = getSetting('tagline', locale, t('common.site_tagline'));
+  const rawHeroImage = getSetting('hero_image', 'bn', '/defaults/eidgah-hero.webp');
+  const resolvedHeroImage = rawHeroImage && rawHeroImage.trim() ? getImageUrl(rawHeroImage, '') : '';
   const schedule = jamatSchedule || getSetting('eid_jamat', locale, '');
 
+  useEffect(() => {
+    setImgFailed(false);
+  }, [resolvedHeroImage]);
+
+  const isDefaultHeroAsset = resolvedHeroImage === '/defaults/eidgah-hero.webp';
+  const showPhotoInDawn = Boolean(resolvedHeroImage) && !imgFailed;
+
+  // Classic optional modes (preserved for Admin hero_bg_style selector alongside new default dawn-photo-wave)
+  const isDawnPhotoWave = !heroBgStyle || heroBgStyle === 'dawn-photo-wave';
+
   return (
-    <section className="relative overflow-hidden pt-8 pb-20 sm:pb-28 lg:pb-32">
-      {/* 1. HERO BACKGROUND STYLES */}
+    <section className="relative overflow-hidden bg-hero-dawn select-none">
+      {/* Decorative Islamic Geometric Corner Line Patterns (8-12% opacity, never behind text) */}
+      <GeometricCornerOrnament className="pointer-events-none absolute -top-2 -left-2 w-40 h-40 sm:w-52 sm:h-52 z-[1]" />
+      <GeometricCornerOrnament flip className="pointer-events-none absolute -top-2 -right-2 w-40 h-40 sm:w-52 sm:h-52 z-[1]" />
+
+      {/* Optional Centered Photo Wash Mode ("photo") */}
+      {heroBgStyle === 'photo' && showPhotoInDawn && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          <img
+            src={resolvedHeroImage}
+            srcSet={
+              isDefaultHeroAsset
+                ? '/defaults/eidgah-hero-640.webp 640w, /defaults/eidgah-hero.webp 1024w'
+                : undefined
+            }
+            sizes="100vw"
+            width={1024}
+            height={520}
+            alt=""
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            onError={() => setImgFailed(true)}
+            className="w-full h-full object-cover object-center opacity-40 dark:opacity-25"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(90deg, rgb(var(--dawn-cream-rgb) / 0.92) 0%, rgb(var(--bg-rgb) / 0.78) 55%, rgb(var(--sky-rgb) / 0.65) 100%)',
+            }}
+          />
+        </div>
+      )}
+
+      {/* Optional Alternative Hero Styles ("eid-dawn" or "arcade" selected in Admin) */}
       {heroBgStyle === 'eid-dawn' && (
-        <div className="absolute inset-0 z-0 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-800">
-          {/* Illustrated SVG Eid Dawn Sky: Crescent, Stars, Clouds, Mosque Silhouette */}
-          <svg
-            className="absolute inset-0 w-full h-full object-cover opacity-35 pointer-events-none"
-            viewBox="0 0 1440 600"
-            fill="none"
-            preserveAspectRatio="none"
-          >
-            {/* Soft Sunrise Golden Horizon Glow */}
-            <radialGradient id="sunriseGlow" cx="50%" cy="45%" r="50%">
-              <stop offset="0%" stopColor="#B8923F" stopOpacity="0.45" />
-              <stop offset="60%" stopColor="#198754" stopOpacity="0.1" />
-              <stop offset="100%" stopColor="#082E1C" stopOpacity="0" />
-            </radialGradient>
-            <rect width="1440" height="600" fill="url(#sunriseGlow)" />
-
-            {/* Glowing Golden Crescent Moon */}
-            <g transform="translate(1150, 70)">
-              <circle cx="30" cy="30" r="28" fill="#F5EDD8" />
-              <circle cx="39" cy="24" r="24" fill="#0C4128" />
-              <polygon points="58,15 60,20 66,20 61,24 63,30 58,26 53,30 55,24 50,20 56,20" fill="#B8923F" />
-            </g>
-
-            {/* Faint Stars */}
-            <g fill="#B8923F" opacity="0.6">
-              <circle cx="150" cy="80" r="2" />
-              <circle cx="320" cy="120" r="1.5" />
-              <circle cx="480" cy="60" r="2" />
-              <circle cx="720" cy="95" r="2.5" />
-              <circle cx="950" cy="70" r="1.8" />
-              <circle cx="1300" cy="140" r="2" />
-            </g>
-
-            {/* 3-Layer Traditional Mosque Skyline Silhouette */}
-            {/* Background Layer: Far domes */}
-            <path
-              d="M0,600 L0,480 Q100,430 200,480 Q350,420 500,480 Q650,400 800,480 Q950,430 1100,480 Q1250,410 1440,480 L1440,600 Z"
-              fill="#062215"
-              opacity="0.4"
-            />
-            {/* Mid Layer: Mosque domes, minarets, and Shahi arches */}
-            <path
-              d="M0,600 L0,510 
-                 L120,510 L120,440 L130,420 L140,440 L140,510 
-                 Q240,450 340,510 
-                 L480,510 Q540,430 600,510 
-                 L720,510 L725,380 L735,360 L745,380 L750,510 
-                 Q850,440 950,510 
-                 L1100,510 Q1160,430 1220,510 
-                 L1320,510 L1330,440 L1340,420 L1350,440 L1360,510 
-                 L1440,510 L1440,600 Z"
-              fill="#04180E"
-              opacity="0.7"
-            />
-          </svg>
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+          <SageMosqueSkylineFallback className="w-full h-full opacity-75" />
         </div>
       )}
 
       {heroBgStyle === 'arcade' && (
-        <div className="absolute inset-0 z-0 bg-emerald-950">
-          {/* Deep Emerald with Pointed Grand Arches & Golden Lantern Light */}
-          <div className="absolute inset-0 bg-star-pattern opacity-40" />
-          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-emerald-950 to-transparent" />
-          <svg className="absolute inset-0 w-full h-full opacity-20 pointer-events-none" viewBox="0 0 1200 400" preserveAspectRatio="none">
-            <path d="M0,400 L0,200 Q150,50 300,200 L300,400 M300,400 L300,200 Q450,50 600,200 L600,400 M600,400 L600,200 Q750,50 900,200 L900,400 M900,400 L900,200 Q1050,50 1200,200 L1200,400" stroke="#B8923F" strokeWidth="3" fill="none" />
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute inset-0 bg-star-pattern-light opacity-70" />
+          <svg
+            className="w-full h-full"
+            viewBox="0 0 1440 560"
+            fill="none"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            {[160, 460, 760, 1060, 1340].map((cx, idx) => (
+              <path
+                key={idx}
+                d={`M${cx - 120},560 L${cx - 120},235 Q${cx - 120},135 ${cx},92 Q${cx + 120},135 ${cx + 120},235 L${cx + 120},560`}
+                stroke="var(--sage-mid)"
+                strokeWidth="1.8"
+                fill="var(--surface)"
+                fillOpacity="0.24"
+              />
+            ))}
           </svg>
         </div>
       )}
 
-      {heroBgStyle === 'photo' && (
-        <div className="absolute inset-0 z-0 bg-emerald-950">
-          {heroImage ? (
-            <img src={heroImage} alt="Manikpur Eidgah" className="w-full h-full object-cover opacity-25" />
-          ) : (
-            <div className="w-full h-full bg-emerald-950" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/90 via-emerald-900/80 to-emerald-950" />
-        </div>
-      )}
+      {/* Main Split / Responsive Hero Wrapper (min-height >= 560px on desktop) */}
+      <div className="relative z-[2] lg:min-h-[560px] flex flex-col lg:block">
+        {/* RIGHT COLUMN (Desktop: 55% anchored right & bottom overlapping cleanly; Mobile: sits BELOW text column) */}
+        {isDawnPhotoWave && (
+          <div className="order-2 lg:order-none relative w-full h-60 sm:h-72 lg:absolute lg:inset-y-0 lg:right-0 lg:w-[55%] lg:h-full overflow-hidden">
+            {/* Dawn Sun Glow Behind Mosque Architecture */}
+            <div
+              className="pointer-events-none absolute top-4 right-[20%] w-52 h-52 sm:w-72 sm:h-72 rounded-full blur-2xl z-[1]"
+              style={{
+                background:
+                  'radial-gradient(circle, rgb(var(--gold-plate-from-rgb) / 0.35) 0%, rgb(var(--gold-rgb) / 0.12) 55%, transparent 75%)',
+              }}
+              aria-hidden="true"
+            />
 
-      {/* Decorative Gold Radial Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gold-500/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Crescent Moon & Birds Sky Accent */}
+            <svg
+              viewBox="0 0 360 120"
+              fill="none"
+              className="pointer-events-none absolute top-4 right-6 w-52 sm:w-72 h-20 z-[3]"
+              aria-hidden="true"
+            >
+              {/* Delicate Golden Crescent */}
+              <path
+                d="M298 16 C284 16 274 26 274 40 C274 54 284 64 298 64 C289 59 285 50 285 40 C285 30 289 21 298 16 Z"
+                fill="var(--gold)"
+                opacity="0.88"
+              />
+              {/* Soft Birds Silhouette */}
+              <g
+                stroke="var(--primary-dark)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                fill="none"
+                opacity="0.48"
+              >
+                <path d="M110 42 Q116 36 122 42 Q128 36 134 42" />
+                <path d="M148 28 Q153 23 158 28 Q163 23 168 28" />
+                <path d="M174 52 Q178 48 182 52 Q186 48 190 52" />
+              </g>
+            </svg>
 
-      {/* Hero Content Container */}
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Optional Bismillah Line */}
-        {showBismillah && (
-          <div className="mb-4">
-            <span className="font-serif text-gold-300/90 text-sm sm:text-base lg:text-lg tracking-widest font-normal">
-              {t('bismillah_text')}
-            </span>
+            {/* Mosque Photo with CSS Edge Mask Fade OR Sage SVG Skyline Fallback */}
+            {showPhotoInDawn ? (
+              <img
+                src={resolvedHeroImage}
+                srcSet={
+                  isDefaultHeroAsset
+                    ? '/defaults/eidgah-hero-640.webp 640w, /defaults/eidgah-hero.webp 1024w'
+                    : undefined
+                }
+                sizes={isDefaultHeroAsset ? '(max-width: 1023px) 100vw, 55vw' : undefined}
+                width={1024}
+                height={520}
+                alt={siteName}
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+                onError={() => setImgFailed(true)}
+                className="w-full h-full object-cover object-bottom lg:object-[right_center] hero-photo-fade"
+              />
+            ) : (
+              <div className="w-full h-full hero-photo-fade flex items-end justify-end">
+                <SageMosqueSkylineFallback className="w-full h-full" />
+              </div>
+            )}
           </div>
         )}
 
-        {/* Establishment Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950/80 border border-gold-500/40 text-gold-300 text-xs sm:text-sm font-semibold mb-6 shadow-sm backdrop-blur-sm">
-          <EightPointStar className="w-3.5 h-3.5 text-gold-400" />
-          <span>{t('hero_badge')}</span>
-          <EightPointStar className="w-3.5 h-3.5 text-gold-400" />
-        </div>
-
-        {/* Grand Title */}
-        <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-ivory-50 tracking-tight leading-tight sm:leading-tight mb-4 drop-shadow-md break-words">
-          {siteName}
-        </h1>
-
-        {/* 8-Point Star Divider */}
-        <StarDivider className="my-4 sm:my-5" />
-
-        {/* Tagline */}
-        <p className="max-w-3xl mx-auto text-sm sm:text-base lg:text-xl text-ivory-100/90 font-sans leading-relaxed mb-6 sm:mb-10 px-2 sm:px-0">
-          {tagline}
-        </p>
-
-        {/* Two Equal Primary CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 max-w-md mx-auto mb-8 sm:mb-10 w-full px-2 sm:px-0">
-          <Link
-            to="/lifetime-members"
-            className="w-full sm:w-1/2 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-gold-500 text-stone-950 font-bold hover:bg-gold-400 active:scale-[0.98] transition-all shadow-lg hover:shadow-gold-500/30 tap-target text-sm sm:text-base min-h-[48px]"
-          >
-            <Users className="w-5 h-5 text-stone-900 shrink-0" />
-            <span className="truncate">{t('hero_cta_members')}</span>
-          </Link>
-
-          <Link
-            to="/donors"
-            className="w-full sm:w-1/2 inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-emerald-950 text-ivory-50 font-bold border border-gold-500/50 hover:bg-emerald-900 active:scale-[0.98] hover:border-gold-400 transition-all shadow-lg tap-target text-sm sm:text-base min-h-[48px]"
-          >
-            <HeartHandshake className="w-5 h-5 text-gold-400 shrink-0" />
-            <span className="truncate">{t('hero_cta_donate')}</span>
-          </Link>
-        </div>
-
-        {/* Holy Eid Jamat Schedule Banner Block */}
-        {schedule ? (
-          <div className="max-w-2xl mx-auto bg-emerald-950/90 border border-gold-500/40 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-md text-ivory-100 text-left sm:text-center space-y-1.5">
-            <div className="flex items-center justify-center gap-2 text-gold-400 text-xs sm:text-sm font-semibold uppercase tracking-wider">
-              <Clock className="w-4 h-4 text-gold-400" />
-              <span>{t('eid_jamat_schedule_title')}</span>
+        {/* LEFT COLUMN (Text Content: ~50% width on desktop, stacked FIRST on mobile) */}
+        <div className="order-1 lg:order-none relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-3 sm:pt-12 sm:pb-4 lg:py-20">
+          <div className="w-full lg:w-[50%] text-left space-y-3.5 sm:space-y-5">
+            {/* 1. Eyebrow with 8-point Gold Star & Gold Hairline */}
+            <div className="inline-flex items-center gap-2.5 max-w-full">
+              <EightPointStar className="w-4 h-4 text-gold shrink-0" />
+              <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.22em] text-primary-dark">
+                {t('hero.eyebrow')}
+              </span>
+              <span
+                className="h-[1.5px] w-12 sm:w-20 bg-gradient-to-r from-gold via-gold/55 to-transparent shrink-0"
+                aria-hidden="true"
+              />
             </div>
-            <p className="text-xs sm:text-sm text-ivory-50 font-medium leading-relaxed whitespace-pre-line text-center">
-              {schedule}
+
+            {/* 2. Site Name as Large Display Serif H1 (with matra-safe line-height + subtle ivory halo) */}
+            <h1
+              className={`font-serif font-extrabold text-primary-dark hero-h1-halo tracking-tight py-1 ${locale === 'bn'
+                ? 'text-[clamp(2.2rem,5vw,3.9rem)] leading-[1.24]'
+                : 'text-[clamp(2.35rem,4.8vw,4rem)] leading-[1.1]'
+                }`}
+            >
+              {siteName}
+            </h1>
+
+            {/* 3. Italic Serif Tagline */}
+            <p className="font-serif italic text-base sm:text-xl lg:text-[22px] text-primary-dark/90 font-medium leading-relaxed max-w-xl">
+              {tagline}
             </p>
+
+            {/* 4. Action Buttons (Desktop >= 1024px: inside left column) */}
+            <div className="hidden lg:flex items-center gap-3 pt-2">
+              <Link
+                to="/lifetime-members"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold shadow-sakinah-card hover:shadow-sakinah-lift active:scale-[0.98] transition-all text-base min-h-[46px] tap-feedback"
+              >
+                <span>{t('hero.cta_members')}</span>
+                <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+              </Link>
+
+              <Link
+                to="/land-donors"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-primary-dark hover:text-primary hover:bg-primary-soft/50 font-bold transition-colors text-base min-h-[46px] tap-feedback"
+              >
+                <HeartHandshake className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
+                <span>{t('hero.cta_land_donors')}</span>
+              </Link>
+            </div>
           </div>
-        ) : null}
+        </div>
+
+        {/* Mobile Action Buttons (< 1024px: placed BELOW the hero picture in a clean 2-col row) */}
+        <div className="order-3 lg:hidden relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-3.5 pb-5">
+          <div className="grid grid-cols-2 gap-2.5 sm:max-w-lg">
+            <Link
+              to="/lifetime-members"
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold shadow-sakinah-card hover:shadow-sakinah-lift active:scale-[0.98] transition-all text-xs sm:text-sm min-h-[44px] tap-feedback text-center leading-tight"
+            >
+              <span className="truncate">{t('hero.cta_members')}</span>
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            </Link>
+
+            <Link
+              to="/land-donors"
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-surface/95 border border-primary/25 text-primary-dark hover:text-primary hover:bg-primary-soft/50 font-bold shadow-sakinah-sm transition-colors text-xs sm:text-sm min-h-[44px] tap-feedback text-center leading-tight"
+            >
+              <HeartHandshake className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
+              <span className="truncate">{t('hero.cta_land_donors')}</span>
+            </Link>
+          </div>
+        </div>
       </div>
+
+      {/* Bottom Curved Green + Gold Wave Transition into Ivory Canvas */}
+      <HeroWaveDivider />
     </section>
   );
 }
-

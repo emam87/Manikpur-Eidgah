@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const SettingsContext = createContext();
 
 const DEFAULT_SETTINGS = {
-  site_name: { bn: 'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ', en: 'Manikpur Central Shahi Eidgah' },
+  site_name: { bn: 'মানিকপুর ঈদগাহ', en: 'Manikpur Eidgah' },
   tagline: {
     bn: 'ঐতিহ্যবাহী দ্বীনি ও সামাজিক ঈদগাহ ময়দান • স্থাপিত ১৯৬৫ খ্রি.',
     en: 'Historic Community Eidgah Ground & Waqf Estate • Est. 1965',
@@ -17,13 +17,15 @@ const DEFAULT_SETTINGS = {
     en: 'Eid-ul-Fitr: 1st Jamat at 8:00 AM, 2nd Jamat at 9:00 AM | Eid-ul-Adha: Main Jamat at 7:30 AM.',
   },
   bank_info: {
-    bn: 'হিসাবের নাম: মানিকপুর কেন্দ্রীয় ঈদগাহ উন্নয়ন তহবিল\nইসলামী ব্যাংক বাংলাদেশ পিএলসি, মানিকপুর শাখা\nচলতি হিসাব নং: ২০৫০-১৯৮-০২০৪৫৮৯১২\nবিকাশ / নগদ: ০১৭১১-২২৩৩৪৪',
-    en: 'Account Name: Manikpur Central Eidgah Development Fund\nIslami Bank Bangladesh PLC, Manikpur Branch\nA/C No: 2050-198-020458912\nbKash / Nagad: +880 1711-223344',
+    bn: 'হিসাবের নাম: মানিকপুর ঈদগাহ উন্নয়ন তহবিল\nইসলামী ব্যাংক বাংলাদেশ পিএলসি, মানিকপুর শাখা\nচলতি হিসাব নং: ২০৫০-১৯৮-০২০৪৫৮৯১২\nবিকাশ / নগদ: ০১৭১১-২২৩৩৪৪',
+    en: 'Account Name: Manikpur Eidgah Development Fund\nIslami Bank Bangladesh PLC, Manikpur Branch\nA/C No: 2050-198-020458912\nbKash / Nagad: +880 1711-223344',
   },
   map_lat: { bn: '23.9875', en: '23.9875' },
   map_lng: { bn: '90.8214', en: '90.8214' },
   map_zoom: { bn: '17', en: '17' },
-  hero_bg_style: { bn: 'eid-dawn', en: 'eid-dawn' },
+  theme_preset: { bn: 'sakinah', en: 'sakinah' },
+  hero_bg_style: { bn: 'dawn-photo-wave', en: 'dawn-photo-wave' },
+  hero_image: { bn: '/defaults/eidgah-hero.webp', en: '/defaults/eidgah-hero.webp' },
   show_bismillah: { bn: '1', en: '1' },
   show_donation_amount: { bn: '1', en: '1' },
   show_member_amount: { bn: '1', en: '1' },
@@ -39,41 +41,74 @@ export function SettingsProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isWakingUp, setIsWakingUp] = useState(false);
 
+  const fetchPublicSettings = async () => {
+    try {
+      const res = await fetch('/api/public/settings');
+      if (!res.ok) throw new Error('Failed to fetch settings');
+      const data = await res.json();
+      if (data && data.settings) {
+        setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
+      }
+      setIsWakingUp(false);
+    } catch {
+      // Fall back to default settings without crashing
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let timer = setTimeout(() => {
+    const timer = setTimeout(() => {
       // If after 3.5s settings haven't loaded, server might be cold starting on Render
       if (loading) {
         setIsWakingUp(true);
       }
     }, 3500);
 
-    fetch('/api/public/settings')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch settings');
-        return res.json();
-      })
-      .then((data) => {
-        if (data && data.settings) {
-          setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
-        }
-        setIsWakingUp(false);
-      })
-      .catch(() => {
-        // Fall back to default settings without crashing
-      })
-      .finally(() => {
-        setLoading(false);
-        clearTimeout(timer);
-      });
+    fetchPublicSettings().finally(() => clearTimeout(timer));
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Synchronize theme_preset attribute & theme-color meta on DOM root whenever settings update
+  const activePreset = (() => {
+    const entry = settings.theme_preset;
+    const raw = typeof entry === 'string' ? entry : entry?.bn || entry?.en || 'sakinah';
+    return raw === 'classic-emerald' ? 'classic-emerald' : 'sakinah';
+  })();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme-preset', activePreset);
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      const isDark = root.classList.contains('dark');
+      const cssVar = isDark ? '--bg' : '--primary';
+      const resolvedColor = getComputedStyle(root).getPropertyValue(cssVar).trim();
+      if (resolvedColor) {
+        metaThemeColor.setAttribute('content', resolvedColor);
+      }
+    }
+  }, [activePreset]);
 
   const getSetting = (key, locale = 'bn', fallback = '') => {
     const entry = settings[key];
     if (!entry) return fallback;
     if (typeof entry === 'string') return entry;
-    return entry[locale] || entry.bn || entry.en || fallback;
+    
+    // Strict separation: when locale is 'en', only look at en (never fall back to bn!)
+    if (locale === 'en') {
+      if (entry.en && typeof entry.en === 'string' && entry.en.trim() !== '') {
+        return entry.en.trim();
+      }
+      return fallback;
+    }
+    
+    // When locale is 'bn': look at bn
+    if (entry.bn && typeof entry.bn === 'string' && entry.bn.trim() !== '') {
+      return entry.bn.trim();
+    }
+    return fallback;
   };
 
   const isSettingEnabled = (key) => {
@@ -87,6 +122,8 @@ export function SettingsProvider({ children }) {
         settings,
         loading,
         isWakingUp,
+        themePreset: activePreset,
+        refreshSettings: fetchPublicSettings,
         getSetting,
         isSettingEnabled,
       }}

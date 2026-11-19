@@ -2,9 +2,13 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, List
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { ENV } from '../config/env.js';
 
-const isR2Configured = Boolean(
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export const isR2Configured = Boolean(
   ENV.R2_ACCOUNT_ID &&
   ENV.R2_ACCESS_KEY_ID &&
   ENV.R2_SECRET_ACCESS_KEY &&
@@ -22,11 +26,21 @@ if (isR2Configured) {
       secretAccessKey: ENV.R2_SECRET_ACCESS_KEY,
     },
   });
+} else if (ENV.NODE_ENV === 'production') {
+  console.warn(
+    '⚠️  [STORAGE WARNING] Cloudflare R2 is NOT configured in production! Uploaded images/PDFs will be saved to local disk (uploads/). Ensure your host uses a persistent volume or configure R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_PUBLIC_BUCKET_NAME.'
+  );
 }
 
 // Local fallback storage directory for development/testing when R2 is not connected
-const LOCAL_STORAGE_DIR = path.resolve(process.cwd(), 'uploads');
-const LOCAL_PRIVATE_DIR = path.resolve(process.cwd(), 'uploads/private');
+const serverUploadsDir = path.resolve(__dirname, '../../uploads');
+const LOCAL_STORAGE_DIR = fs.existsSync(serverUploadsDir)
+  ? serverUploadsDir
+  : fs.existsSync(path.resolve(process.cwd(), 'server/uploads'))
+  ? path.resolve(process.cwd(), 'server/uploads')
+  : path.resolve(process.cwd(), 'uploads');
+
+const LOCAL_PRIVATE_DIR = path.join(LOCAL_STORAGE_DIR, 'private');
 
 function ensureLocalDir(filePath) {
   const dir = path.dirname(filePath);
@@ -136,7 +150,7 @@ export const getPrivateSignedDownloadUrl = getSignedDocumentUrl;
  */
 export async function deletePublicFile(key) {
   if (!key) return;
-  const cleanKey = key.replace(/^\/+/, '');
+  const cleanKey = key.replace(/^\/+/, '').replace(/^uploads\//, '');
 
   if (s3Client) {
     try {
@@ -246,5 +260,50 @@ export async function getStorageUsage() {
   countDir(LOCAL_STORAGE_DIR);
 
   return { totalBytes, totalFiles, isR2: false };
+}
+
+/**
+ * Appends all uploaded media files & private documents (from R2 buckets and/or local disk)
+ * to an archiver ZIP instance for full backup.
+ *
+ * @param {import('archiver').Archiver} archive
+ */
+export async function archiveAllMediaFiles(archive) {
+  async function appendBucket(bucketName, prefix) {
+    if (!s3Client || !bucketName) return;
+    let isTruncated = true;
+    let continuationToken = undefined;
+
+    while (isTruncated) {
+      const listResp = await s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: bucketName,
+          ContinuationToken: continuationToken,
+        })
+      );
+
+      for (const obj of listResp.Contents || []) {
+        if (!obj.Key || obj.Key.endsWith('/')) continue;
+        const getResp = await s3Client.send(
+          new GetObjectCommand({ Bucket: bucketName, Key: obj.Key })
+        );
+        if (getResp.Body) {
+          archive.append(getResp.Body, { name: `${prefix}/${obj.Key}` });
+        }
+      }
+
+      isTruncated = Boolean(listResp.IsTruncated);
+      continuationToken = listResp.NextContinuationToken;
+    }
+  }
+
+  if (s3Client) {
+    await appendBucket(ENV.R2_PUBLIC_BUCKET_NAME, 'r2-public');
+    await appendBucket(ENV.R2_PRIVATE_BUCKET_NAME, 'r2-private');
+  }
+
+  if (fs.existsSync(LOCAL_STORAGE_DIR)) {
+    archive.directory(LOCAL_STORAGE_DIR, 'uploads');
+  }
 }
 

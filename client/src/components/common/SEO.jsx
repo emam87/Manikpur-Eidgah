@@ -20,11 +20,11 @@ export function SEO({
   const finalDesc = description || defaultDesc;
   const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
   const finalUrl = url ? `${siteUrl}${url}` : window.location.href;
-  const defaultImage = `${siteUrl}/uploads/defaults/eidgah-hero.svg`;
+  const defaultImage = `${siteUrl}/og-image.jpg`;
   const finalImage = image || defaultImage;
 
   return (
-    <Helmet>
+    <Helmet htmlAttributes={{ lang: locale }}>
       <title>{finalTitle}</title>
       <meta name="description" content={finalDesc} />
 
@@ -47,6 +47,25 @@ export function SEO({
       <meta name="twitter:title" content={finalTitle} />
       <meta name="twitter:description" content={finalDesc} />
       <meta name="twitter:image" content={finalImage} />
+
+      {/* JSON-LD Structured Data */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Place',
+          name: siteName,
+          alternateName: locale === 'bn' ? 'Manikpur Eidgah' : 'মানিকপুর ঈদগাহ',
+          url: siteUrl,
+          description: finalDesc,
+          image: finalImage,
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: 'Manikpur',
+            addressRegion: 'Brahmanbaria',
+            addressCountry: 'BD',
+          },
+        })}
+      </script>
     </Helmet>
   );
 }

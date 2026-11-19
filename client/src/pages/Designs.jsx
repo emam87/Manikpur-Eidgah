@@ -6,6 +6,9 @@ import {
 import { SEO } from '../components/common/SEO.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { EightPointStar, StarDivider } from '../components/common/EightPointStar.jsx';
+import { Breadcrumb } from '../components/common/Breadcrumb.jsx';
+import { ImageWithBlur } from '../components/common/ImageWithBlur.jsx';
+import { getImageUrl } from '../utils/imageUrl.js';
 
 export function Designs() {
   const { locale, t, toBanglaNum, getLocalized } = useLanguage();
@@ -15,6 +18,8 @@ export function Designs() {
   const [loading, setLoading] = useState(true);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
 
   // Default fallback design assets (seeded in public/designs)
   const fallbackDesigns = [
@@ -37,16 +42,16 @@ export function Designs() {
     {
       id: 3,
       path: '/designs/mihrab-wall-front.jpg',
-      captionBn: 'শাহী মিম্বর সম্মুখ দৃশ্য',
-      captionEn: 'Shahi Mihrab Front View',
-      descriptionBn: 'ঐতিহ্যবাহী ইসলামিক স্থাপত্যরীতি ও খিলান সমন্বয়ে সুদৃশ্য শাহী মিম্বর ও প্রধান দেওয়ালের সম্মুখ রূপ।',
-      descriptionEn: 'Grand facade of the proposed Shahi Mihrab featuring traditional Islamic arch aesthetics.',
+      captionBn: 'মিম্বর সম্মুখ দৃশ্য',
+      captionEn: 'Mihrab Front View',
+      descriptionBn: 'ঐতিহ্যবাহী ইসলামিক স্থাপত্যরীতি ও খিলান সমন্বয়ে সুদৃশ্য মিম্বর ও প্রধান দেওয়ালের সম্মুখ রূপ।',
+      descriptionEn: 'Grand facade of the proposed Mihrab featuring traditional Islamic arch aesthetics.',
     },
     {
       id: 4,
       path: '/designs/mihrab-wall-closeup.jpg',
-      captionBn: 'শাহী মিম্বর ক্লোজ-আপ',
-      captionEn: 'Shahi Mihrab Closeup',
+      captionBn: 'মিম্বর ক্লোজ-আপ',
+      captionEn: 'Mihrab Closeup',
       descriptionBn: 'ইমাম সাহেবের খুতবা পাঠের স্থান, ক্যালিগ্রাফি ও কারুকার্যের নিখুঁত ৩ডি ক্লোজ-আপ প্রেজেন্টেশন।',
       descriptionEn: 'Detailed closeup render of the pulpit, calligraphy panels, and stone craftsmanship.',
     },
@@ -84,7 +89,6 @@ export function Designs() {
       })
       .then((data) => {
         if (data && data.success && data.designs && data.designs.length > 0) {
-          // Normalize paths if starting with designs/
           const normalized = data.designs.map((d) => ({
             ...d,
             path: d.path.startsWith('/') ? d.path : `/${d.path}`,
@@ -113,70 +117,106 @@ export function Designs() {
     document.body.style.overflow = '';
   };
 
+  const handleNextDesign = () => {
+    if (!designs.length) return;
+    setActiveLightboxIndex((prev) => (prev + 1) % designs.length);
+    setZoomLevel(1);
+  };
+
+  const handlePrevDesign = () => {
+    if (!designs.length) return;
+    setActiveLightboxIndex((prev) => (prev - 1 + designs.length) % designs.length);
+    setZoomLevel(1);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      const startX = e.touches[0].clientX;
+      if (startX < 20 || startX > window.innerWidth - 20) {
+        setTouchStartX(null);
+        setTouchStartY(null);
+        return;
+      }
+      setTouchStartX(startX);
+      setTouchStartY(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null || touchStartY === null) return;
+    const diffX = touchStartX - e.changedTouches[0].clientX;
+    const diffY = e.changedTouches[0].clientY - touchStartY;
+
+    if (diffY > 90 && Math.abs(diffX) < 60) {
+      closeLightbox();
+      setTouchStartX(null);
+      setTouchStartY(null);
+      return;
+    }
+    if (diffX > 50) {
+      handleNextDesign();
+    } else if (diffX < -50) {
+      handlePrevDesign();
+    }
+    setTouchStartX(null);
+    setTouchStartY(null);
+  };
+
   const activeDesign = activeLightboxIndex !== null ? designs[activeLightboxIndex] : null;
 
   return (
-    <div className="py-10 sm:py-16">
+    <div className="py-6 sm:py-12">
       <SEO 
         title={locale === 'bn' ? 'প্রস্তাবিত ৩ডি ডিজাইন ও মাস্টার প্ল্যান' : 'Proposed 3D Architectural Designs'} 
-        description={locale === 'bn' ? 'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের প্রস্তাবিত ৩ডি স্থাপত্য নকশা, শাহী মিম্বর ও উন্নয়ন মহাপরিকল্পনা।' : 'Proposed 3D architectural renders, Shahi Mihrab plans, and master development layout for Manikpur Eidgah.'}
+        description={locale === 'bn' ? 'মানিকপুর ঈদগাহের প্রস্তাবিত ৩ডি স্থাপত্য নকশা, মিম্বর ও উন্নয়ন মহাপরিকল্পনা।' : 'Proposed 3D architectural renders, Mihrab plans, and master development layout for Manikpur Eidgah.'}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950 text-gold-300 text-xs sm:text-sm font-semibold mb-3 border border-gold-500/40">
-            <Compass className="w-3.5 h-3.5 text-gold-400" />
-            <span>{locale === 'bn' ? 'স্থাপত্য রূপরেখা ও মাস্টার প্ল্যান' : 'Architectural Master Plan'}</span>
-            <EightPointStar className="w-3.5 h-3.5 text-gold-400" />
-          </div>
-          <h1 className="font-serif text-3xl sm:text-5xl font-extrabold text-stone-900 tracking-tight mb-4">
-            {locale === 'bn' ? 'ডিজাইন ও উন্নয়ন পরিকল্পনা' : 'Proposed 3D Designs & Plan'}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
+        <Breadcrumb items={[{ label: locale === 'bn' ? 'প্রস্তাবিত ডিজাইন' : 'Proposed Designs' }]} />
+
+        {/* Single Page Title */}
+        <div className="border-b border-sand pb-3">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary-dark tracking-tight">
+            {locale === 'bn' ? 'নকশা ও মহাপরিকল্পনা' : 'Proposed 3D Designs & Plan'}
           </h1>
-          <p className="text-stone-600 text-sm sm:text-base leading-relaxed">
-            {locale === 'bn' 
-              ? 'ঐতিহ্যবাহী মানিকপুর কেন্দ্রীয় শাহী ঈদগাহকে একটি পূর্ণাঙ্গ আধুনিক ও নান্দনিক রূপ দিতে বিশেষজ্ঞ প্রকৌশলীদের দ্বারা প্রণীত প্রস্তাবিত ৩ডি নকশা।' 
-              : 'Proposed 3D architectural concepts and master layout envisioned to elevate Manikpur Central Shahi Eidgah into a timeless Islamic landmark.'}
+          <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
+            {locale === 'bn'
+              ? 'মানিকপুর ঈদগাহের আধুনিকায়ন প্রকল্পের ৩ডি স্থাপত্য নকশা ও রূপরেখা'
+              : 'Proposed 3D architectural concepts and master layout for Manikpur Eidgah'}
           </p>
-          <StarDivider className="my-4" />
         </div>
 
         {/* Disclaimer / Notice Banner */}
-        <div className="bg-gradient-to-r from-amber-50 via-emerald-50/40 to-amber-50 rounded-2xl p-4 sm:p-6 border border-gold-400/60 shadow-sm flex items-start gap-4 text-stone-800">
-          <div className="w-10 h-10 rounded-xl bg-gold-500/20 text-emerald-900 border border-gold-500/40 flex items-center justify-center shrink-0 mt-0.5">
-            <Info className="w-5 h-5 text-emerald-800" />
+        <div className="bg-canvas-alt rounded-2xl p-4 border border-gold/40 shadow-sakinah-sm flex items-start gap-3.5 text-ink">
+          <div className="w-9 h-9 rounded-xl bg-gold/15 text-gold-text border border-gold/40 flex items-center justify-center shrink-0 mt-0.5">
+            <Info className="w-4 h-4 text-gold-text" />
           </div>
-          <div className="space-y-1 text-xs sm:text-sm leading-relaxed">
-            <h2 className="font-serif font-bold text-emerald-950 text-sm sm:text-base">
-              {locale === 'bn' ? 'দৃষ্টি আকর্ষণ: প্রস্তাবিত ৩ডি স্থাপত্য নকশা' : 'Notice: Proposed 3D Architectural Renders'}
-            </h2>
-            <p className="text-stone-700">
-              {locale === 'bn' 
-                ? 'নিম্নে প্রদর্শিত চিত্রসমূহ মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের আধুনিকায়ন প্রকল্পের প্রস্তাবিত ৩ডি কম্পিউটার রেন্ডার। মূল নির্মাণ কার্যক্রম বাস্তবায়নকালে পরিচালনা কমিটির সিদ্ধান্ত ও বাস্তব পরিবেশের সাথে সামঞ্জস্য রেখে নকশায় আংশিক পরিবর্তন বা পরিমার্জন হতে পারে।' 
-                : 'The visuals displayed below are proposed 3D architectural computer renders. Actual execution may vary slightly based on structural assessments and managing committee resolutions.'}
-            </p>
-          </div>
+          <p className="text-xs text-ink-muted leading-relaxed">
+            {locale === 'bn'
+              ? 'নিম্নে প্রদর্শিত চিত্রসমূহ মানিকপুর ঈদগাহের আধুনিকায়ন প্রকল্পের প্রস্তাবিত ৩ডি কম্পিউটার রেন্ডার। মূল নির্মাণকালে সিদ্ধান্ত সাপেক্ষে আংশিক পরিমার্জন হতে পারে।'
+              : 'The visuals displayed below are proposed 3D architectural computer renders. Execution may vary slightly based on structural assessments.'}
+          </p>
         </div>
 
         {/* 3D Video Section (Displayed only when video exists) */}
         {video && video.isPublished && (
-          <div className="bg-emerald-950 text-ivory rounded-3xl p-6 sm:p-10 border-2 border-gold-500/40 shadow-2xl space-y-6">
-            <div className="flex items-center gap-3 border-b border-gold-500/30 pb-4">
-              <div className="w-10 h-10 rounded-xl bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-300">
-                <Video className="w-5 h-5" />
+          <div className="bg-surface text-ink rounded-2xl p-4 sm:p-6 border border-sand shadow-sakinah-sm space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-sand pb-3">
+              <div className="w-9 h-9 rounded-xl bg-primary-soft border border-primary/20 flex items-center justify-center text-primary-dark">
+                <Video className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <span className="text-xs uppercase tracking-wider text-gold-300 font-bold block">
-                  {locale === 'bn' ? 'ত্রিমাত্রিক স্থাপত্য ওয়াকথ্রু' : '3D Architectural Walkthrough'}
+                <span className="text-[10px] uppercase tracking-wider text-gold-text font-bold block">
+                  {locale === 'bn' ? 'ত্রিমাত্রিক ওয়াকথ্রু' : '3D Walkthrough'}
                 </span>
-                <h2 className="font-serif font-bold text-xl sm:text-2xl text-gold-100">
+                <h2 className="font-serif font-bold text-base sm:text-lg text-primary-dark">
                   {getLocalized(video, 'title')}
                 </h2>
               </div>
             </div>
 
             {/* Video Player */}
-            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black border border-gold-500/30 shadow-inner">
+            <div className="aspect-video w-full rounded-xl overflow-hidden bg-scrim border border-sand shadow-inner">
               {video.type === 'YOUTUBE' && video.url ? (
                 <iframe
                   src={video.url.replace('watch?v=', 'embed/')}
@@ -197,80 +237,77 @@ export function Designs() {
           </div>
         )}
 
-        {/* 7 Designs Grid */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-gold-500/20 pb-3">
-            <h2 className="font-serif font-bold text-xl sm:text-2xl text-emerald-950 flex items-center gap-2">
-              <EightPointStar className="w-5 h-5 text-gold-500" />
-              <span>{locale === 'bn' ? 'প্রস্তাবিত ৩ডি রেন্ডার গ্যালারি' : '3D Architectural Renders'}</span>
-            </h2>
-            <span className="text-xs text-stone-500 font-mono">
-              {toBanglaNum(designs.length)} {locale === 'bn' ? 'টি মূল নকশা' : 'design items'}
-            </span>
-          </div>
+        {/* Designs Single-Column List on Mobile, 3-Column on Desktop */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {designs.map((design, index) => {
+              const caption = getLocalized(design, 'caption');
+              if (locale === 'en' && !caption) return null;
+              const description = getLocalized(design, 'description');
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {designs.map((design, index) => (
-              <div
-                key={design.id}
-                onClick={() => openLightbox(index)}
-                className="group cursor-pointer bg-white rounded-3xl overflow-hidden border border-gold-500/30 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between transform hover:-translate-y-1.5"
-              >
-                {/* Image Frame */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-stone-900">
-                  <img
-                    src={design.thumbPath || design.path}
-                    alt={getLocalized(design, 'caption')}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  {/* Zoom overlay badge */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="px-4 py-2 rounded-xl bg-emerald-950/90 text-gold-200 border border-gold-400 text-xs font-bold flex items-center gap-2 backdrop-blur-md">
-                      <Eye className="w-4 h-4" />
-                      <span>{locale === 'bn' ? 'বড় করে দেখুন' : 'Full Preview'}</span>
+              return (
+                <div
+                  key={design.id}
+                  onClick={() => openLightbox(index)}
+                  className="group cursor-pointer bg-surface rounded-2xl overflow-hidden border border-sand hover:border-gold/60 shadow-sakinah-sm hover:shadow-sakinah-card transition-all flex flex-col justify-between active:scale-[0.98] tap-feedback"
+                >
+                  {/* Image Frame */}
+                  <div className="relative aspect-[16/10] overflow-hidden bg-canvas-alt">
+                    <ImageWithBlur
+                      src={design.thumbPath || design.path}
+                      alt={caption}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {/* Zoom overlay badge */}
+                    <div className="absolute inset-0 bg-scrim/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <div className="px-3.5 py-1.5 rounded-xl bg-surface/95 text-primary-dark border border-gold text-xs font-bold flex items-center gap-1.5 backdrop-blur-md shadow-sakinah-sm">
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>{locale === 'bn' ? 'বড় করে দেখুন' : 'Full Preview'}</span>
+                      </div>
+                    </div>
+                    {/* Serial Tag */}
+                    <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg bg-surface/90 backdrop-blur-md text-primary-dark text-[10px] font-mono font-bold border border-sand tabular-nums shadow-sm">
+                      #{locale === 'bn' ? toBanglaNum(index + 1) : index + 1}
                     </div>
                   </div>
-                  {/* Serial Number Tag */}
-                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-emerald-950/80 backdrop-blur-md text-gold-300 text-[11px] font-mono font-bold border border-gold-500/30">
-                    #{toBanglaNum(index + 1)}
+
+                  {/* Caption & Description */}
+                  <div className="p-4 space-y-1.5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-serif font-bold text-base text-primary-dark group-hover:text-primary transition-colors">
+                        {caption}
+                      </h3>
+                      {description && (
+                        <p className="text-xs text-ink-muted mt-1 leading-relaxed line-clamp-2">
+                          {description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2.5 mt-2.5 border-t border-sand flex items-center justify-between text-xs text-primary-dark font-semibold">
+                      <span>{locale === 'bn' ? '৩ডি স্থাপত্য নকশা' : '3D Render'}</span>
+                      <span>{locale === 'bn' ? 'ট্যাপ করুন →' : 'View →'}</span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Caption & Description */}
-                <div className="p-5 space-y-2 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-serif font-bold text-lg text-stone-900 group-hover:text-emerald-900 transition-colors">
-                      {getLocalized(design, 'caption')}
-                    </h3>
-                    {design.descriptionBn && (
-                      <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-                        {getLocalized(design, 'description')}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400 font-medium">
-                    <span>{locale === 'bn' ? '৩ডি স্থাপত্য নকশা' : '3D Architectural Model'}</span>
-                    <span className="text-emerald-800 font-bold group-hover:text-gold-600 flex items-center gap-1 transition-colors">
-                      {locale === 'bn' ? 'ক্লিক করুন' : 'View'} &rarr;
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* FULL IN-PAGE LIGHTBOX */}
       {activeLightboxIndex !== null && activeDesign && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between select-none animate-fade-in">
+        <div 
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="fixed inset-0 z-50 bg-scrim/95 backdrop-blur-md flex flex-col justify-between select-none animate-fade-in"
+        >
           {/* Top Bar */}
-          <div className="p-4 sm:p-5 flex items-center justify-between text-white z-10 bg-gradient-to-b from-black/80 to-transparent">
+          <div className="p-4 sm:p-5 flex items-center justify-between text-white z-10 bg-gradient-to-b from-scrim/80 to-transparent">
             <div>
-              <span className="font-mono text-xs text-gold-300 font-bold px-3 py-1 rounded-full bg-white/10 backdrop-blur-md mr-2">
-                {toBanglaNum(activeLightboxIndex + 1)} / {toBanglaNum(designs.length)}
+              <span className="font-mono text-xs text-gold-plate-from font-bold px-3 py-1 rounded-full bg-surface/15 backdrop-blur-md mr-2 tabular-nums">
+                {locale === 'bn' ? toBanglaNum(activeLightboxIndex + 1) : activeLightboxIndex + 1} / {locale === 'bn' ? toBanglaNum(designs.length) : designs.length}
               </span>
               <span className="font-serif font-bold text-sm sm:text-base text-white">
                 {getLocalized(activeDesign, 'caption')}
@@ -280,28 +317,28 @@ export function Designs() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setZoomLevel((z) => Math.min(3, +(z + 0.3).toFixed(1)))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                className="p-2 rounded-xl bg-surface/15 hover:bg-surface/25 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setZoomLevel((z) => Math.max(0.7, +(z - 0.3).toFixed(1)))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                className="p-2 rounded-xl bg-surface/15 hover:bg-surface/25 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setZoomLevel(1)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                className="p-2 rounded-xl bg-surface/15 hover:bg-surface/25 text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                 title="Reset Zoom"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={closeLightbox}
-                className="p-2 rounded-xl bg-white/20 hover:bg-red-600/80 text-white transition-colors ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center tap-target"
+                className="p-2 rounded-xl bg-surface/20 hover:bg-danger/90 text-white transition-colors ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center tap-target"
                 title="Close (Esc)"
                 aria-label="Close lightbox"
               >
@@ -317,7 +354,7 @@ export function Designs() {
               style={{ transform: `scale(${zoomLevel})` }}
             >
               <img
-                src={activeDesign.path}
+                src={getImageUrl(activeDesign.path)}
                 alt={getLocalized(activeDesign, 'caption')}
                 className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl"
               />
@@ -325,8 +362,8 @@ export function Designs() {
           </div>
 
           {/* Bottom Bar: Caption and Mini Strip */}
-          <div className="p-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent z-10 space-y-3">
-            <p className="text-center text-xs sm:text-sm text-stone-200 max-w-2xl mx-auto font-medium">
+          <div className="p-4 bg-gradient-to-t from-scrim/90 via-scrim/70 to-transparent z-10 space-y-3">
+            <p className="text-center text-xs sm:text-sm text-white/90 max-w-2xl mx-auto font-medium">
               {getLocalized(activeDesign, 'caption')}
               {activeDesign.descriptionBn && ` — ${getLocalized(activeDesign, 'description')}`}
             </p>
@@ -339,13 +376,13 @@ export function Designs() {
                     setActiveLightboxIndex(idx);
                     setZoomLevel(1);
                   }}
-                  className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                  className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-all min-h-[44px] ${
                     idx === activeLightboxIndex
-                      ? 'border-gold-400 scale-105 shadow-lg ring-2 ring-gold-400/50'
+                      ? 'border-gold scale-105 shadow-lg ring-2 ring-gold/50'
                       : 'border-white/30 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={d.thumbPath || d.path} alt="" className="w-full h-full object-cover" />
+                  <img src={getImageUrl(d.thumbPath || d.path)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

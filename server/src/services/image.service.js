@@ -83,6 +83,7 @@ export async function processAndUploadImage({
   const mainUpload = await uploadPublicFile(mainKey, mainBuffer, 'image/webp');
 
   let thumbKey = null;
+  let thumbUrl = null;
 
   // 2. Process Thumbnail
   if (createThumb) {
@@ -98,12 +99,15 @@ export async function processAndUploadImage({
 
     const thumbBuffer = await thumbSharp.toBuffer();
     thumbKey = `${cleanDir}/${randomId}_thumb.webp`;
-    await uploadPublicFile(thumbKey, thumbBuffer, 'image/webp');
+    const thumbUpload = await uploadPublicFile(thumbKey, thumbBuffer, 'image/webp');
+    thumbUrl = thumbUpload?.url || `/uploads/${thumbKey}`;
   }
 
   return {
-    path: mainUpload.key,
-    thumbPath: thumbKey,
+    path: mainUpload?.url || `/uploads/${mainKey}`,
+    thumbPath: thumbUrl || (thumbKey ? `/uploads/${thumbKey}` : null),
+    key: mainUpload.key,
+    thumbKey,
     width: mainMeta.width || null,
     height: mainMeta.height || null,
     fileSize: mainBuffer.length,

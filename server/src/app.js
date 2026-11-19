@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { ENV } from './config/env.js';
 import { generalLimiter } from './middleware/rateLimit.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
@@ -65,8 +66,13 @@ app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 // 5. Global Rate Limiting
 app.use('/api', generalLimiter);
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // 6. Static local files for development/testing when R2 is not used
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'server', 'uploads')));
+app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
 
 // 7. SEO: Sitemap & Robots.txt
 app.use(seoRoutes);

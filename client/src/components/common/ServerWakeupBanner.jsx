@@ -10,8 +10,8 @@ export function ServerWakeupBanner() {
   if (!isWakingUp) return null;
 
   return (
-    <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-900 text-sm py-2.5 px-4 text-center flex items-center justify-center gap-2 animate-fade-in sticky top-0 z-50 backdrop-blur-md">
-      <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+    <div className="bg-warning-soft border-b border-warning/30 text-warning text-sm py-2.5 px-4 text-center flex items-center justify-center gap-2 animate-fade-in sticky top-0 z-50 backdrop-blur-md">
+      <Loader2 className="w-4 h-4 animate-spin text-warning" />
       <span>{t('server_waking_up')}</span>
     </div>
   );

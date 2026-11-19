@@ -1,12 +1,166 @@
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
+import { Parser } from 'json2csv';
+import archiver from 'archiver';
 import { prisma } from '../db/prisma.js';
+import { ENV } from '../config/env.js';
 import { logActivity } from '../services/activityLogger.service.js';
 import { SettingsService } from '../services/settings.service.js';
-import { processAndUploadImage } from '../services/image.service.js';
+import { processAndUploadImage, deleteImageAssets } from '../services/image.service.js';
+import { computeAreaInDecimal, DEFAULT_UNIT_CONVERSION } from '../utils/landUnit.js';
 import { 
   uploadPublicFile, uploadPrivateFile, getPrivateSignedDownloadUrl, 
-  deletePublicFile, deletePrivateFile 
+  deletePublicFile, deletePrivateFile, getStorageUsage, archiveAllMediaFiles 
 } from '../services/r2.service.js';
+
+function isBundledAsset(filePath) {
+  if (!filePath || typeof filePath !== 'string') return true;
+  return (
+    filePath.startsWith('/designs/') ||
+    filePath.startsWith('defaults/') ||
+    filePath.startsWith('/defaults/') ||
+    filePath.startsWith('http://') ||
+    filePath.startsWith('https://')
+  );
+}
+
+function deriveThumbPath(filePath) {
+  if (!filePath || typeof filePath !== 'string') return null;
+  if (filePath.endsWith('.webp') && !filePath.endsWith('_thumb.webp')) {
+    return filePath.replace(/\.webp$/, '_thumb.webp');
+  }
+  return null;
+}
+
+async function cleanupPublicMedia(filePath, explicitThumbPath = null) {
+  const mainPath = isBundledAsset(filePath) ? null : filePath;
+  const thumbPath =
+    explicitThumbPath && !isBundledAsset(explicitThumbPath)
+      ? explicitThumbPath
+      : mainPath
+      ? deriveThumbPath(mainPath)
+      : null;
+  await deleteImageAssets(mainPath, thumbPath);
+}
+
+const ENTITY_DELETE_CONFIG = {
+  Member: {
+    prismaKey: 'member',
+    subjectType: 'Member',
+    notFound: 'সদস্য পাওয়া যায়নি।',
+    afterFiles: (record) => cleanupPublicMedia(record.photoPath),
+  },
+  Donor: {
+    prismaKey: 'donor',
+    subjectType: 'Donor',
+    notFound: 'অনুদানকারী পাওয়া যায়নি।',
+  },
+  LandDonor: {
+    prismaKey: 'landDonor',
+    subjectType: 'LandDonor',
+    notFound: 'জমিদাতা রেকর্ড পাওয়া যায়নি।',
+    afterFiles: (record) => cleanupPublicMedia(record.photoPath),
+  },
+  CommitteeMember: {
+    prismaKey: 'committeeMember',
+    subjectType: 'CommitteeMember',
+    notFound: 'সদস্য পাওয়া যায়নি।',
+    beforeTx: (tx, id) =>
+      tx.committeeMember.updateMany({ where: { parentId: id }, data: { parentId: null } }),
+    afterFiles: (record) => cleanupPublicMedia(record.photoPath),
+  },
+  Album: {
+    prismaKey: 'album',
+    subjectType: 'Album',
+    notFound: 'অ্যালবাম পাওয়া যায়নি।',
+    include: { photos: { select: { path: true, thumbPath: true } } },
+    beforeTx: (tx, id) =>
+      tx.album.update({ where: { id }, data: { coverPhotoId: null } }),
+    afterFiles: (record) =>
+      Promise.all((record.photos || []).map((p) => cleanupPublicMedia(p.path, p.thumbPath))),
+  },
+  Photo: {
+    prismaKey: 'photo',
+    subjectType: 'Photo',
+    notFound: 'ছবি পাওয়া যায়নি।',
+    beforeTx: (tx, id) =>
+      tx.album.updateMany({ where: { coverPhotoId: id }, data: { coverPhotoId: null } }),
+    afterFiles: (record) => cleanupPublicMedia(record.path, record.thumbPath),
+  },
+  Document: {
+    prismaKey: 'document',
+    subjectType: 'Document',
+    notFound: 'দলিল পাওয়া যায়নি।',
+    afterFiles: (record) =>
+      record.filePath ? deletePrivateFile(record.filePath) : Promise.resolve(),
+  },
+  LandMap: {
+    prismaKey: 'landMap',
+    subjectType: 'LandMap',
+    notFound: 'নকশা পাওয়া যায়নি।',
+    beforeTx: (tx, id) =>
+      tx.landDonor.updateMany({ where: { relatedLandMapId: id }, data: { relatedLandMapId: null } }),
+    afterFiles: (record) => cleanupPublicMedia(record.filePath, record.thumbPath),
+  },
+  Notice: {
+    prismaKey: 'notice',
+    subjectType: 'Notice',
+    notFound: 'নোটিশ পাওয়া যায়নি।',
+    afterFiles: (record) =>
+      record.attachmentPath && !isBundledAsset(record.attachmentPath)
+        ? deletePublicFile(record.attachmentPath)
+        : Promise.resolve(),
+  },
+  Design: {
+    prismaKey: 'design',
+    subjectType: 'Design',
+    notFound: 'নকশা পাওয়া যায়নি।',
+    afterFiles: (record) => cleanupPublicMedia(record.path, record.thumbPath),
+  },
+};
+
+/**
+ * Permanently deletes an entity from PostgreSQL, clears dependent FK links,
+ * removes uploaded storage assets, and writes an activity log entry.
+ */
+async function permanentlyDeleteEntity({ type, id, req, getDescription, action = 'DELETED' }) {
+  const cfg = ENTITY_DELETE_CONFIG[type];
+  if (!cfg) return { invalidType: true };
+
+  const numericId = parseInt(id, 10);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    return { notFound: true, notFoundMessage: cfg.notFound };
+  }
+
+  const existing = await prisma[cfg.prismaKey].findUnique({
+    where: { id: numericId },
+    ...(cfg.include ? { include: cfg.include } : {}),
+  });
+  if (!existing) {
+    return { notFound: true, notFoundMessage: cfg.notFound };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (cfg.beforeTx) {
+      await cfg.beforeTx(tx, numericId);
+    }
+    await tx[cfg.prismaKey].delete({ where: { id: numericId } });
+  });
+
+  if (cfg.afterFiles) {
+    await cfg.afterFiles(existing);
+  }
+
+  await logActivity({
+    req,
+    action,
+    subjectType: cfg.subjectType,
+    subjectId: numericId,
+    description: getDescription ? getDescription(existing, numericId) : `'${cfg.subjectType} #${numericId}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
+  });
+
+  return { deleted: existing };
+}
 
 // ==============================================================================
 // 1. DASHBOARD & ANALYTICS
@@ -23,11 +177,15 @@ export async function getDashboardStats(req, res, next) {
       noticesCount,
       landMapsCount,
       designsCount,
+      landDonorsCount,
       trashCount,
       totalDonorsSum,
       totalMembersSum,
+      totalLandSum,
       donorsByPurpose,
       membersByYear,
+      landByYear,
+      landByUsage,
       recentActivity,
     ] = await Promise.all([
       prisma.member.count({ where: { deletedAt: null } }),
@@ -39,6 +197,7 @@ export async function getDashboardStats(req, res, next) {
       prisma.notice.count({ where: { deletedAt: null } }),
       prisma.landMap.count({ where: { deletedAt: null } }),
       prisma.design.count({ where: { deletedAt: null } }),
+      prisma.landDonor.count({ where: { deletedAt: null } }),
       // Count total trash items
       Promise.all([
         prisma.member.count({ where: { deletedAt: { not: null } } }),
@@ -50,6 +209,7 @@ export async function getDashboardStats(req, res, next) {
         prisma.notice.count({ where: { deletedAt: { not: null } } }),
         prisma.landMap.count({ where: { deletedAt: { not: null } } }),
         prisma.design.count({ where: { deletedAt: { not: null } } }),
+        prisma.landDonor.count({ where: { deletedAt: { not: null } } }),
       ]).then((counts) => counts.reduce((a, b) => a + b, 0)),
       prisma.donor.aggregate({
         where: { deletedAt: null },
@@ -59,7 +219,11 @@ export async function getDashboardStats(req, res, next) {
         where: { deletedAt: null },
         _sum: { amountPaid: true },
       }),
-      // Donations by purpose
+      prisma.landDonor.aggregate({
+        where: { deletedAt: null },
+        _sum: { areaInDecimal: true },
+      }),
+      // Monetary donations by purpose (archived)
       prisma.donor.groupBy({
         by: ['purpose'],
         where: { deletedAt: null },
@@ -73,6 +237,21 @@ export async function getDashboardStats(req, res, next) {
         _count: true,
         orderBy: { memberSince: 'asc' },
       }),
+      // Land donated by year
+      prisma.landDonor.groupBy({
+        by: ['donationYear'],
+        where: { deletedAt: null },
+        _sum: { areaInDecimal: true },
+        _count: true,
+        orderBy: { donationYear: 'asc' },
+      }),
+      // Land donated by usage
+      prisma.landDonor.groupBy({
+        by: ['landUse'],
+        where: { deletedAt: null },
+        _sum: { areaInDecimal: true },
+        _count: true,
+      }),
       // Recent activities
       prisma.activityLog.findMany({
         orderBy: { createdAt: 'desc' },
@@ -83,8 +262,22 @@ export async function getDashboardStats(req, res, next) {
 
     const totalFunds = (totalDonorsSum._sum.amount || 0) + (totalMembersSum._sum.amountPaid || 0);
 
+    const missingTranslationsCount = await Promise.all([
+      prisma.member.count({ where: { deletedAt: null, OR: [{ nameEn: null }, { nameEn: '' }, { nameBn: '' }] } }).catch(() => 0),
+      prisma.landDonor.count({ where: { deletedAt: null, OR: [{ nameEn: null }, { nameEn: '' }, { nameBn: '' }] } }).catch(() => 0),
+      prisma.committeeMember.count({ where: { deletedAt: null, isCurrent: true, OR: [{ nameEn: null }, { nameEn: '' }, { designationEn: null }, { designationEn: '' }] } }).catch(() => 0),
+      prisma.album.count({ where: { deletedAt: null, OR: [{ titleEn: null }, { titleEn: '' }] } }).catch(() => 0),
+      prisma.notice.count({ where: { deletedAt: null, OR: [{ titleEn: null }, { titleEn: '' }] } }).catch(() => 0),
+    ]).then(counts => counts.reduce((a, b) => a + b, 0)).catch(() => 0);
+
+    const storageStats = await getStorageUsage().catch(() => ({ totalBytes: 0, totalFiles: 0, isR2: false }));
+
     return res.status(200).json({
       success: true,
+      storage: {
+        ...storageStats,
+        isProduction: ENV.NODE_ENV === 'production',
+      },
       stats: {
         membersCount,
         donorsCount,
@@ -95,10 +288,13 @@ export async function getDashboardStats(req, res, next) {
         noticesCount,
         landMapsCount,
         designsCount,
+        landDonorsCount,
         trashCount,
+        missingTranslationsCount,
         totalDonations: totalDonorsSum._sum.amount || 0,
         totalMemberContributions: totalMembersSum._sum.amountPaid || 0,
         totalFunds,
+        totalLandInDecimal: totalLandSum._sum.areaInDecimal || 0,
       },
       charts: {
         donorsByPurpose: donorsByPurpose.map((d) => ({
@@ -109,6 +305,16 @@ export async function getDashboardStats(req, res, next) {
         membersByYear: membersByYear.map((m) => ({
           year: m.memberSince,
           count: m._count,
+        })),
+        landByYear: landByYear.map((l) => ({
+          year: l.donationYear,
+          totalArea: l._sum.areaInDecimal || 0,
+          count: l._count,
+        })),
+        landByUsage: landByUsage.map((u) => ({
+          landUse: u.landUse,
+          totalArea: u._sum.areaInDecimal || 0,
+          count: u._count,
         })),
       },
       recentActivity,
@@ -173,6 +379,14 @@ export async function getMembers(req, res, next) {
 export async function createMember(req, res, next) {
   try {
     const body = req.body;
+
+    if (!body.nameBn || !body.nameBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'সদস্যের বাংলা নাম আবশ্যক' });
+    }
+    if (!body.nameEn || !body.nameEn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_EN', error: 'Member English name is required' });
+    }
+
     let photoPath = body.photoPath || null;
 
     if (req.file) {
@@ -185,9 +399,12 @@ export async function createMember(req, res, next) {
       photoPath = processed.path;
     }
 
+    const trimmedMembershipNo = body.membershipNo ? body.membershipNo.trim() : '';
+    const membershipNo = trimmedMembershipNo || `LM-${Date.now().toString().slice(-6)}`;
+
     const member = await prisma.member.create({
       data: {
-        membershipNo: body.membershipNo ? body.membershipNo.trim() : null,
+        membershipNo,
         nameBn: body.nameBn.trim(),
         nameEn: body.nameEn ? body.nameEn.trim() : null,
         fatherNameBn: body.fatherNameBn ? body.fatherNameBn.trim() : null,
@@ -277,25 +494,17 @@ export async function updateMember(req, res, next) {
 
 export async function deleteMember(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
-    const existing = await prisma.member.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ success: false, error: 'সদস্য পাওয়া যায়নি।' });
-
-    // Safe Soft Delete
-    await prisma.member.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type: 'Member',
+      id: req.params.id,
       req,
-      action: 'DELETED',
-      subjectType: 'Member',
-      subjectId: id,
-      description: `আজীবন সদস্য '${existing.nameBn}' ট্র্যাশে পাঠানো হয়েছে।`,
+      getDescription: (existing) => `আজীবন সদস্য '${existing.nameBn}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'সদস্য ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'সদস্য ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -475,24 +684,17 @@ export async function updateDonor(req, res, next) {
 
 export async function deleteDonor(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
-    const existing = await prisma.donor.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ success: false, error: 'অনুদানকারী পাওয়া যায়নি।' });
-
-    await prisma.donor.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type: 'Donor',
+      id: req.params.id,
       req,
-      action: 'DELETED',
-      subjectType: 'Donor',
-      subjectId: id,
-      description: `অনুদান রেকর্ড '${existing.donorNameBn}' ট্র্যাশে পাঠানো হয়েছে।`,
+      getDescription: (existing) => `অনুদান রেকর্ড '${existing.donorNameBn}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'অনুদান রেকর্ড ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'অনুদান রেকর্ড ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -539,6 +741,602 @@ export async function importDonors(req, res, next) {
 }
 
 // ==============================================================================
+// 3.1 LAND DONORS MANAGEMENT (জমিদাতা পরিষদ)
+// ==============================================================================
+
+const landDonorValidationSchema = z.object({
+  nameBn: z.string().min(2, 'দাতার বাংলা নাম আবশ্যক (কমপক্ষে ২ অক্ষর)'),
+  nameEn: z.string().min(2, 'English name is required (at least 2 characters)'),
+  areaValue: z.union([z.number(), z.string()]).refine((val) => {
+    const n = parseFloat(val);
+    return !isNaN(n) && n > 0;
+  }, 'জমির পরিমাণ শূন্যের বেশি একটি বৈধ সংখ্যা হতে হবে'),
+  areaUnit: z.enum(['DECIMAL_SHATANGSHO', 'KATHA', 'BIGHA', 'ACRE', 'SQFT']).default('DECIMAL_SHATANGSHO'),
+  donationYear: z.union([z.number(), z.string()]).refine((val) => {
+    const y = parseInt(val, 10);
+    return !isNaN(y) && y >= 1900 && y <= 2100;
+  }, 'দানের সাল ১৯০০ থেকে ২১০০ এর মধ্যে হতে হবে'),
+  donationType: z.enum(['DANPATRA', 'WAQF', 'HEBA', 'REGISTERED_DEED', 'OTHER']).default('DANPATRA'),
+  landUse: z.enum(['EIDGAH_GROUND', 'GRAVEYARD', 'MOSQUE', 'ROAD', 'BOUNDARY_WALL', 'OTHER']).default('EIDGAH_GROUND'),
+});
+
+export async function getAdminLandDonors(req, res, next) {
+  try {
+    const q = (req.query.q || '').trim();
+    const year = req.query.year ? parseInt(req.query.year, 10) : null;
+    const landUse = (req.query.landUse || '').trim();
+    const donationType = (req.query.donationType || '').trim();
+    const isPublished = req.query.isPublished;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '15', 10)));
+    const skip = (page - 1) * limit;
+
+    const where = { deletedAt: null };
+
+    if (year && !isNaN(year)) where.donationYear = year;
+    if (landUse) where.landUse = landUse;
+    if (donationType) where.donationType = donationType;
+    if (isPublished === 'true') where.isPublished = true;
+    if (isPublished === 'false') where.isPublished = false;
+
+    if (q) {
+      where.OR = [
+        { nameBn: { contains: q, mode: 'insensitive' } },
+        { nameEn: { contains: q, mode: 'insensitive' } },
+        { fatherNameBn: { contains: q, mode: 'insensitive' } },
+        { villageBn: { contains: q, mode: 'insensitive' } },
+        { mouzaBn: { contains: q, mode: 'insensitive' } },
+        { deedNumber: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, donors, totalLandSum] = await Promise.all([
+      prisma.landDonor.count({ where }),
+      prisma.landDonor.findMany({
+        where,
+        orderBy: [{ sortOrder: 'asc' }, { donationYear: 'asc' }, { id: 'asc' }],
+        skip,
+        take: limit,
+        include: {
+          relatedLandMap: {
+            select: { id: true, titleBn: true, surveyType: true },
+          },
+        },
+      }),
+      prisma.landDonor.aggregate({
+        where,
+        _sum: { areaInDecimal: true },
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      donors,
+      totalLandInDecimal: totalLandSum._sum.areaInDecimal || 0,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createLandDonor(req, res, next) {
+  try {
+    const body = req.body;
+    
+    // Zod validation
+    const parsed = landDonorValidationSchema.safeParse(body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        error: parsed.error.issues[0]?.message || 'প্রদত্ত তথ্যে ত্রুটি রয়েছে।',
+      });
+    }
+
+    let photoPath = body.photoPath || null;
+    if (req.file) {
+      const processed = await processAndUploadImage({
+        buffer: req.file.buffer,
+        directory: 'land-donors',
+        maxWidth: 800,
+        maxHeight: 1000,
+      });
+      photoPath = processed.path;
+    }
+
+    // Compute standardized area in Decimal (শতাংশ) using settings or defaults
+    const [convAcre, convBigha, convKatha, convSqft] = await Promise.all([
+      SettingsService.getValue('unit_conv_acre', '100'),
+      SettingsService.getValue('unit_conv_bigha', '33'),
+      SettingsService.getValue('unit_conv_katha', '1.65'),
+      SettingsService.getValue('unit_conv_sqft', '435.6'),
+    ]);
+
+    const factors = {
+      acre: parseFloat(convAcre) || 100,
+      bigha: parseFloat(convBigha) || 33,
+      katha: parseFloat(convKatha) || 1.65,
+      sqft: parseFloat(convSqft) || 435.6,
+    };
+
+    const areaValue = parseFloat(body.areaValue);
+    const areaUnit = body.areaUnit || 'DECIMAL_SHATANGSHO';
+    const areaInDecimal = computeAreaInDecimal(areaValue, areaUnit, factors);
+
+    // Parse relatedDocumentIds
+    let relatedDocumentIds = null;
+    if (body.relatedDocumentIds) {
+      try {
+        relatedDocumentIds = typeof body.relatedDocumentIds === 'string'
+          ? JSON.parse(body.relatedDocumentIds)
+          : body.relatedDocumentIds;
+      } catch (e) {
+        relatedDocumentIds = null;
+      }
+    }
+
+    const donor = await prisma.landDonor.create({
+      data: {
+        nameBn: body.nameBn.trim(),
+        nameEn: body.nameEn ? body.nameEn.trim() : null,
+        fatherNameBn: body.fatherNameBn ? body.fatherNameBn.trim() : null,
+        fatherNameEn: body.fatherNameEn ? body.fatherNameEn.trim() : null,
+        motherNameBn: body.motherNameBn ? body.motherNameBn.trim() : null,
+        motherNameEn: body.motherNameEn ? body.motherNameEn.trim() : null,
+        villageBn: body.villageBn ? body.villageBn.trim() : null,
+        villageEn: body.villageEn ? body.villageEn.trim() : null,
+        photoPath,
+        isDeceased: body.isDeceased !== false && body.isDeceased !== 'false' && body.isDeceased !== '0',
+        areaValue,
+        areaUnit,
+        areaInDecimal,
+        donationYear: parseInt(body.donationYear, 10),
+        donationDate: body.donationDate ? new Date(body.donationDate) : null,
+        donationType: body.donationType || 'DANPATRA',
+        deedNumber: body.deedNumber ? body.deedNumber.trim() : null,
+        deedDate: body.deedDate ? new Date(body.deedDate) : null,
+        khatianType: body.khatianType || null,
+        khatianNumber: body.khatianNumber ? body.khatianNumber.trim() : null,
+        dagNumber: body.dagNumber ? body.dagNumber.trim() : null,
+        mouzaBn: body.mouzaBn ? body.mouzaBn.trim() : null,
+        mouzaEn: body.mouzaEn ? body.mouzaEn.trim() : null,
+        jlNumber: body.jlNumber ? body.jlNumber.trim() : null,
+        upazilaBn: body.upazilaBn ? body.upazilaBn.trim() : 'বাঞ্ছারামপুর',
+        upazilaEn: body.upazilaEn ? body.upazilaEn.trim() : 'Bancharampur',
+        districtBn: body.districtBn ? body.districtBn.trim() : 'ব্রাহ্মণবাড়িয়া',
+        districtEn: body.districtEn ? body.districtEn.trim() : 'Brahmanbaria',
+        boundaryNorth: body.boundaryNorth ? body.boundaryNorth.trim() : null,
+        boundarySouth: body.boundarySouth ? body.boundarySouth.trim() : null,
+        boundaryEast: body.boundaryEast ? body.boundaryEast.trim() : null,
+        boundaryWest: body.boundaryWest ? body.boundaryWest.trim() : null,
+        landUse: body.landUse || 'EIDGAH_GROUND',
+        landUseOther: body.landUseOther ? body.landUseOther.trim() : null,
+        storyBn: body.storyBn ? body.storyBn.trim() : null,
+        storyEn: body.storyEn ? body.storyEn.trim() : null,
+        relatedDocumentIds,
+        relatedLandMapId: body.relatedLandMapId ? parseInt(body.relatedLandMapId, 10) : null,
+        representativeName: body.representativeName ? body.representativeName.trim() : null,
+        representativeRelation: body.representativeRelation ? body.representativeRelation.trim() : null,
+        phone: body.phone ? body.phone.trim() : null,
+        nid: body.nid ? body.nid.trim() : null,
+        representativePhone: body.representativePhone ? body.representativePhone.trim() : null,
+        isPublished: body.isPublished !== false && body.isPublished !== 'false' && body.isPublished !== '0',
+        sortOrder: body.sortOrder ? parseInt(body.sortOrder, 10) : 0,
+        showDeedDetails: body.showDeedDetails === true || body.showDeedDetails === 'true' || body.showDeedDetails === '1',
+        showPlotDetails: body.showPlotDetails === true || body.showPlotDetails === 'true' || body.showPlotDetails === '1',
+        showBoundaries: body.showBoundaries === true || body.showBoundaries === 'true' || body.showBoundaries === '1',
+      },
+    });
+
+    await logActivity({
+      req,
+      action: 'CREATED',
+      subjectType: 'LandDonor',
+      subjectId: donor.id,
+      description: `নতুন জমিদাতা '${donor.nameBn}' যোগ করা হয়েছে (${donor.areaValue} ${donor.areaUnit})।`,
+    });
+
+    return res.status(201).json({ success: true, donor });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateLandDonor(req, res, next) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const body = req.body;
+
+    const existing = await prisma.landDonor.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: 'জমিদাতা রেকর্ড পাওয়া যায়নি।' });
+
+    let photoPath = existing.photoPath;
+    if (req.file) {
+      const processed = await processAndUploadImage({
+        buffer: req.file.buffer,
+        directory: 'land-donors',
+        maxWidth: 800,
+        maxHeight: 1000,
+      });
+      photoPath = processed.path;
+    } else if (body.photoPath === '' || body.photoPath === null) {
+      photoPath = null;
+    }
+
+    const areaValue = body.areaValue !== undefined ? parseFloat(body.areaValue) : Number(existing.areaValue);
+    const areaUnit = body.areaUnit || existing.areaUnit;
+
+    const [convAcre, convBigha, convKatha, convSqft] = await Promise.all([
+      SettingsService.getValue('unit_conv_acre', '100'),
+      SettingsService.getValue('unit_conv_bigha', '33'),
+      SettingsService.getValue('unit_conv_katha', '1.65'),
+      SettingsService.getValue('unit_conv_sqft', '435.6'),
+    ]);
+
+    const factors = {
+      acre: parseFloat(convAcre) || 100,
+      bigha: parseFloat(convBigha) || 33,
+      katha: parseFloat(convKatha) || 1.65,
+      sqft: parseFloat(convSqft) || 435.6,
+    };
+    const areaInDecimal = computeAreaInDecimal(areaValue, areaUnit, factors);
+
+    let relatedDocumentIds = existing.relatedDocumentIds;
+    if (body.relatedDocumentIds !== undefined) {
+      try {
+        relatedDocumentIds = typeof body.relatedDocumentIds === 'string'
+          ? JSON.parse(body.relatedDocumentIds)
+          : body.relatedDocumentIds;
+      } catch (e) {
+        relatedDocumentIds = null;
+      }
+    }
+
+    const updated = await prisma.landDonor.update({
+      where: { id },
+      data: {
+        nameBn: body.nameBn ? body.nameBn.trim() : undefined,
+        nameEn: body.nameEn !== undefined ? (body.nameEn ? body.nameEn.trim() : null) : undefined,
+        fatherNameBn: body.fatherNameBn !== undefined ? (body.fatherNameBn ? body.fatherNameBn.trim() : null) : undefined,
+        fatherNameEn: body.fatherNameEn !== undefined ? (body.fatherNameEn ? body.fatherNameEn.trim() : null) : undefined,
+        motherNameBn: body.motherNameBn !== undefined ? (body.motherNameBn ? body.motherNameBn.trim() : null) : undefined,
+        motherNameEn: body.motherNameEn !== undefined ? (body.motherNameEn ? body.motherNameEn.trim() : null) : undefined,
+        villageBn: body.villageBn !== undefined ? (body.villageBn ? body.villageBn.trim() : null) : undefined,
+        villageEn: body.villageEn !== undefined ? (body.villageEn ? body.villageEn.trim() : null) : undefined,
+        photoPath,
+        isDeceased: body.isDeceased !== undefined ? (body.isDeceased !== false && body.isDeceased !== 'false' && body.isDeceased !== '0') : undefined,
+        areaValue,
+        areaUnit,
+        areaInDecimal,
+        donationYear: body.donationYear ? parseInt(body.donationYear, 10) : undefined,
+        donationDate: body.donationDate !== undefined ? (body.donationDate ? new Date(body.donationDate) : null) : undefined,
+        donationType: body.donationType || undefined,
+        deedNumber: body.deedNumber !== undefined ? (body.deedNumber ? body.deedNumber.trim() : null) : undefined,
+        deedDate: body.deedDate !== undefined ? (body.deedDate ? new Date(body.deedDate) : null) : undefined,
+        khatianType: body.khatianType !== undefined ? (body.khatianType || null) : undefined,
+        khatianNumber: body.khatianNumber !== undefined ? (body.khatianNumber ? body.khatianNumber.trim() : null) : undefined,
+        dagNumber: body.dagNumber !== undefined ? (body.dagNumber ? body.dagNumber.trim() : null) : undefined,
+        mouzaBn: body.mouzaBn !== undefined ? (body.mouzaBn ? body.mouzaBn.trim() : null) : undefined,
+        mouzaEn: body.mouzaEn !== undefined ? (body.mouzaEn ? body.mouzaEn.trim() : null) : undefined,
+        jlNumber: body.jlNumber !== undefined ? (body.jlNumber ? body.jlNumber.trim() : null) : undefined,
+        upazilaBn: body.upazilaBn !== undefined ? (body.upazilaBn ? body.upazilaBn.trim() : null) : undefined,
+        upazilaEn: body.upazilaEn !== undefined ? (body.upazilaEn ? body.upazilaEn.trim() : null) : undefined,
+        districtBn: body.districtBn !== undefined ? (body.districtBn ? body.districtBn.trim() : null) : undefined,
+        districtEn: body.districtEn !== undefined ? (body.districtEn ? body.districtEn.trim() : null) : undefined,
+        boundaryNorth: body.boundaryNorth !== undefined ? (body.boundaryNorth ? body.boundaryNorth.trim() : null) : undefined,
+        boundarySouth: body.boundarySouth !== undefined ? (body.boundarySouth ? body.boundarySouth.trim() : null) : undefined,
+        boundaryEast: body.boundaryEast !== undefined ? (body.boundaryEast ? body.boundaryEast.trim() : null) : undefined,
+        boundaryWest: body.boundaryWest !== undefined ? (body.boundaryWest ? body.boundaryWest.trim() : null) : undefined,
+        landUse: body.landUse || undefined,
+        landUseOther: body.landUseOther !== undefined ? (body.landUseOther ? body.landUseOther.trim() : null) : undefined,
+        storyBn: body.storyBn !== undefined ? (body.storyBn ? body.storyBn.trim() : null) : undefined,
+        storyEn: body.storyEn !== undefined ? (body.storyEn ? body.storyEn.trim() : null) : undefined,
+        relatedDocumentIds,
+        relatedLandMapId: body.relatedLandMapId !== undefined ? (body.relatedLandMapId ? parseInt(body.relatedLandMapId, 10) : null) : undefined,
+        representativeName: body.representativeName !== undefined ? (body.representativeName ? body.representativeName.trim() : null) : undefined,
+        representativeRelation: body.representativeRelation !== undefined ? (body.representativeRelation ? body.representativeRelation.trim() : null) : undefined,
+        phone: body.phone !== undefined ? (body.phone ? body.phone.trim() : null) : undefined,
+        nid: body.nid !== undefined ? (body.nid ? body.nid.trim() : null) : undefined,
+        representativePhone: body.representativePhone !== undefined ? (body.representativePhone ? body.representativePhone.trim() : null) : undefined,
+        isPublished: body.isPublished !== undefined ? (body.isPublished !== false && body.isPublished !== 'false' && body.isPublished !== '0') : undefined,
+        sortOrder: body.sortOrder !== undefined ? parseInt(body.sortOrder, 10) : undefined,
+        showDeedDetails: body.showDeedDetails !== undefined ? (body.showDeedDetails === true || body.showDeedDetails === 'true' || body.showDeedDetails === '1') : undefined,
+        showPlotDetails: body.showPlotDetails !== undefined ? (body.showPlotDetails === true || body.showPlotDetails === 'true' || body.showPlotDetails === '1') : undefined,
+        showBoundaries: body.showBoundaries !== undefined ? (body.showBoundaries === true || body.showBoundaries === 'true' || body.showBoundaries === '1') : undefined,
+      },
+    });
+
+    await logActivity({
+      req,
+      action: 'UPDATED',
+      subjectType: 'LandDonor',
+      subjectId: id,
+      description: `জমিদাতা রেকর্ড আপডেট করা হয়েছে: '${updated.nameBn}'।`,
+    });
+
+    return res.status(200).json({ success: true, donor: updated });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteLandDonor(req, res, next) {
+  try {
+    const result = await permanentlyDeleteEntity({
+      type: 'LandDonor',
+      id: req.params.id,
+      req,
+      getDescription: (existing) => `জমিদাতা রেকর্ড '${existing.nameBn}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
+    });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
+
+    return res.status(200).json({ success: true, message: 'জমিদাতা রেকর্ড ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportLandDonorsCsv(req, res, next) {
+  try {
+    const donors = await prisma.landDonor.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ sortOrder: 'asc' }, { donationYear: 'asc' }, { id: 'asc' }],
+    });
+
+    const fields = [
+      'id', 'nameBn', 'nameEn', 'fatherNameBn', 'fatherNameEn', 'motherNameBn', 'motherNameEn',
+      'villageBn', 'villageEn', 'isDeceased', 'areaValue', 'areaUnit', 'areaInDecimal',
+      'donationYear', 'donationDate', 'donationType', 'deedNumber', 'deedDate',
+      'khatianType', 'khatianNumber', 'dagNumber', 'mouzaBn', 'mouzaEn', 'jlNumber',
+      'upazilaBn', 'districtBn', 'boundaryNorth', 'boundarySouth', 'boundaryEast', 'boundaryWest',
+      'landUse', 'landUseOther', 'storyBn', 'representativeName', 'representativeRelation',
+      'phone', 'nid', 'representativePhone', 'isPublished', 'sortOrder',
+      'showDeedDetails', 'showPlotDetails', 'showBoundaries'
+    ];
+
+    const json2csv = new Parser({ fields, withBOM: true });
+    const csv = json2csv.parse(donors);
+
+    await logActivity({
+      req,
+      action: 'EXPORT',
+      subjectType: 'LandDonor',
+      description: `${donors.length} জন জমিদাতার CSV ফাইল এক্সপোর্ট করা হয়েছে।`,
+    });
+
+    res.header('Content-Type', 'text/csv; charset=utf-8');
+    res.attachment(`manikpur-eidgah-land-donors-${Date.now()}.csv`);
+    return res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function importLandDonorsCsv(req, res, next) {
+  try {
+    const { donors } = req.body;
+    if (!Array.isArray(donors) || donors.length === 0) {
+      return res.status(400).json({ success: false, error: 'জমিদাতাদের বৈধ তালিকা প্রদান করুন।' });
+    }
+
+    const [convAcre, convBigha, convKatha, convSqft] = await Promise.all([
+      SettingsService.getValue('unit_conv_acre', '100'),
+      SettingsService.getValue('unit_conv_bigha', '33'),
+      SettingsService.getValue('unit_conv_katha', '1.65'),
+      SettingsService.getValue('unit_conv_sqft', '435.6'),
+    ]);
+
+    const factors = {
+      acre: parseFloat(convAcre) || 100,
+      bigha: parseFloat(convBigha) || 33,
+      katha: parseFloat(convKatha) || 1.65,
+      sqft: parseFloat(convSqft) || 435.6,
+    };
+
+    let inserted = 0;
+    const errors = [];
+
+    for (let i = 0; i < donors.length; i++) {
+      const d = donors[i];
+      if (!d.nameBn || !d.areaValue || !d.donationYear) {
+        errors.push({ row: i + 1, error: 'বাংলা নাম, জমির পরিমাণ এবং সাল আবশ্যক।' });
+        continue;
+      }
+
+      const areaValue = parseFloat(d.areaValue);
+      if (isNaN(areaValue) || areaValue <= 0) {
+        errors.push({ row: i + 1, error: 'জমির পরিমাণ শূন্যের বেশি হতে হবে।' });
+        continue;
+      }
+
+      const areaUnit = d.areaUnit || 'DECIMAL_SHATANGSHO';
+      const areaInDecimal = computeAreaInDecimal(areaValue, areaUnit, factors);
+
+      await prisma.landDonor.create({
+        data: {
+          nameBn: String(d.nameBn).trim(),
+          nameEn: d.nameEn ? String(d.nameEn).trim() : null,
+          fatherNameBn: d.fatherNameBn ? String(d.fatherNameBn).trim() : null,
+          fatherNameEn: d.fatherNameEn ? String(d.fatherNameEn).trim() : null,
+          motherNameBn: d.motherNameBn ? String(d.motherNameBn).trim() : null,
+          motherNameEn: d.motherNameEn ? String(d.motherNameEn).trim() : null,
+          villageBn: d.villageBn ? String(d.villageBn).trim() : null,
+          villageEn: d.villageEn ? String(d.villageEn).trim() : null,
+          isDeceased: d.isDeceased !== false && d.isDeceased !== 'false' && d.isDeceased !== '0',
+          areaValue,
+          areaUnit,
+          areaInDecimal,
+          donationYear: parseInt(d.donationYear, 10) || new Date().getFullYear(),
+          donationDate: d.donationDate ? new Date(d.donationDate) : null,
+          donationType: d.donationType || 'DANPATRA',
+          deedNumber: d.deedNumber ? String(d.deedNumber).trim() : null,
+          deedDate: d.deedDate ? new Date(d.deedDate) : null,
+          khatianType: d.khatianType || null,
+          khatianNumber: d.khatianNumber ? String(d.khatianNumber).trim() : null,
+          dagNumber: d.dagNumber ? String(d.dagNumber).trim() : null,
+          mouzaBn: d.mouzaBn ? String(d.mouzaBn).trim() : null,
+          mouzaEn: d.mouzaEn ? String(d.mouzaEn).trim() : null,
+          jlNumber: d.jlNumber ? String(d.jlNumber).trim() : null,
+          upazilaBn: d.upazilaBn ? String(d.upazilaBn).trim() : 'বাঞ্ছারামপুর',
+          upazilaEn: d.upazilaEn ? String(d.upazilaEn).trim() : 'Bancharampur',
+          districtBn: d.districtBn ? String(d.districtBn).trim() : 'ব্রাহ্মণবাড়িয়া',
+          districtEn: d.districtEn ? String(d.districtEn).trim() : 'Brahmanbaria',
+          boundaryNorth: d.boundaryNorth ? String(d.boundaryNorth).trim() : null,
+          boundarySouth: d.boundarySouth ? String(d.boundarySouth).trim() : null,
+          boundaryEast: d.boundaryEast ? String(d.boundaryEast).trim() : null,
+          boundaryWest: d.boundaryWest ? String(d.boundaryWest).trim() : null,
+          landUse: d.landUse || 'EIDGAH_GROUND',
+          landUseOther: d.landUseOther ? String(d.landUseOther).trim() : null,
+          storyBn: d.storyBn ? String(d.storyBn).trim() : null,
+          storyEn: d.storyEn ? String(d.storyEn).trim() : null,
+          representativeName: d.representativeName ? String(d.representativeName).trim() : null,
+          representativeRelation: d.representativeRelation ? String(d.representativeRelation).trim() : null,
+          phone: d.phone ? String(d.phone).trim() : null,
+          nid: d.nid ? String(d.nid).trim() : null,
+          representativePhone: d.representativePhone ? String(d.representativePhone).trim() : null,
+          isPublished: d.isPublished !== false && d.isPublished !== 'false' && d.isPublished !== '0',
+          sortOrder: d.sortOrder ? parseInt(d.sortOrder, 10) : 0,
+          showDeedDetails: d.showDeedDetails === true || d.showDeedDetails === 'true' || d.showDeedDetails === '1',
+          showPlotDetails: d.showPlotDetails === true || d.showPlotDetails === 'true' || d.showPlotDetails === '1',
+          showBoundaries: d.showBoundaries === true || d.showBoundaries === 'true' || d.showBoundaries === '1',
+        },
+      });
+      inserted++;
+    }
+
+    await logActivity({
+      req,
+      action: 'IMPORTED',
+      subjectType: 'LandDonor',
+      description: `CSV ইম্পোর্টের মাধ্যমে ${inserted} জন জমিদাতা যোগ করা হয়েছে।`,
+    });
+
+    return res.status(200).json({ success: true, count: inserted, errors });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getLandDonorsTemplate(req, res, next) {
+  try {
+    const fields = [
+      'nameBn', 'nameEn', 'fatherNameBn', 'fatherNameEn', 'motherNameBn', 'motherNameEn',
+      'villageBn', 'villageEn', 'isDeceased', 'areaValue', 'areaUnit',
+      'donationYear', 'donationDate', 'donationType', 'deedNumber', 'deedDate',
+      'khatianType', 'khatianNumber', 'dagNumber', 'mouzaBn', 'mouzaEn', 'jlNumber',
+      'upazilaBn', 'districtBn', 'boundaryNorth', 'boundarySouth', 'boundaryEast', 'boundaryWest',
+      'landUse', 'storyBn', 'representativeName', 'representativeRelation',
+      'phone', 'nid', 'representativePhone', 'isPublished', 'sortOrder',
+      'showDeedDetails', 'showPlotDetails', 'showBoundaries'
+    ];
+
+    const sampleData = [
+      {
+        nameBn: 'আলহাজ্ব মৌলভী আব্দুল জব্বার',
+        nameEn: 'Alhaj Maulvi Abdul Jabbar',
+        fatherNameBn: 'হাজী মোহাম্মদ বক্স',
+        fatherNameEn: 'Haji Mohammad Baksh',
+        motherNameBn: 'মরহুমা রাবেয়া খাতুন',
+        motherNameEn: 'Late Rabeya Khatun',
+        villageBn: 'মানিকপুর',
+        villageEn: 'Manikpur',
+        isDeceased: true,
+        areaValue: 40.0,
+        areaUnit: 'DECIMAL_SHATANGSHO',
+        donationYear: 1965,
+        donationDate: '1965-03-12',
+        donationType: 'WAQF',
+        deedNumber: '২৮৪১/১৯৬৫',
+        deedDate: '1965-03-12',
+        khatianType: 'SA',
+        khatianNumber: '১১২',
+        dagNumber: '৩২৪',
+        mouzaBn: 'মানিকপুর',
+        mouzaEn: 'Manikpur',
+        jlNumber: '৪৫',
+        upazilaBn: 'বাঞ্ছারামপুর',
+        districtBn: 'ব্রাহ্মণবাড়িয়া',
+        boundaryNorth: 'সরকারী গোপাট',
+        boundarySouth: 'মৌলভী বাড়ির সীমানা',
+        boundaryEast: 'নূরুল ইসলাম সাহেবের জমি',
+        boundaryWest: 'হাজী বাড়ির সীমানা',
+        landUse: 'EIDGAH_GROUND',
+        storyBn: 'মানিকপুর ঈদগাহ প্রতিষ্ঠার মূল জমি দান।',
+        representativeName: 'সৈয়দ হারুন',
+        representativeRelation: 'দৌহিত্র',
+        phone: '01711000000',
+        nid: '1965123456789',
+        representativePhone: '01811000000',
+        isPublished: true,
+        sortOrder: 1,
+        showDeedDetails: true,
+        showPlotDetails: true,
+        showBoundaries: true,
+      },
+      {
+        nameBn: 'হাজী মোঃ আলী মিয়া',
+        nameEn: 'Haji Md. Ali Mia',
+        fatherNameBn: 'আব্দুল করিম',
+        fatherNameEn: 'Abdul Karim',
+        motherNameBn: '',
+        motherNameEn: '',
+        villageBn: 'মানিকপুর',
+        villageEn: 'Manikpur',
+        isDeceased: true,
+        areaValue: 25.0,
+        areaUnit: 'DECIMAL_SHATANGSHO',
+        donationYear: 1965,
+        donationDate: '1965-04-18',
+        donationType: 'DANPATRA',
+        deedNumber: '২৯০৫/১৯৬৫',
+        deedDate: '1965-04-18',
+        khatianType: 'SA',
+        khatianNumber: '১১৮',
+        dagNumber: '৩২৫',
+        mouzaBn: 'মানিকপুর',
+        mouzaEn: 'Manikpur',
+        jlNumber: '৪৫',
+        upazilaBn: 'বাঞ্ছারামপুর',
+        districtBn: 'ব্রাহ্মণবাড়িয়া',
+        boundaryNorth: '',
+        boundarySouth: '',
+        boundaryEast: '',
+        boundaryWest: '',
+        landUse: 'EIDGAH_GROUND',
+        storyBn: 'মাঠের উত্তর-পূর্ব অংশের জমি দান।',
+        representativeName: '',
+        representativeRelation: '',
+        phone: '',
+        nid: '',
+        representativePhone: '',
+        isPublished: true,
+        sortOrder: 2,
+        showDeedDetails: true,
+        showPlotDetails: false,
+        showBoundaries: false,
+      },
+    ];
+
+    const json2csv = new Parser({ fields, withBOM: true });
+    const csv = json2csv.parse(sampleData);
+
+    res.header('Content-Type', 'text/csv; charset=utf-8');
+    res.attachment('manikpur-eidgah-land-donors-sample-template.csv');
+    return res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ==============================================================================
 // 4. COMMITTEE MANAGEMENT
 // ==============================================================================
 export async function getCommitteeMembers(req, res, next) {
@@ -556,6 +1354,20 @@ export async function getCommitteeMembers(req, res, next) {
 export async function createCommitteeMember(req, res, next) {
   try {
     const body = req.body;
+
+    if (!body.nameBn || !body.nameBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'কমিটি সদস্যের বাংলা নাম আবশ্যক' });
+    }
+    if (!body.nameEn || !body.nameEn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_EN', error: 'Committee member English name is required' });
+    }
+    if (!body.designationBn || !body.designationBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'বাংলা পদবী আবশ্যক' });
+    }
+    if (!body.designationEn || !body.designationEn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_EN', error: 'English designation is required' });
+    }
+
     let photoPath = body.photoPath || null;
 
     if (req.file) {
@@ -664,24 +1476,17 @@ export async function updateCommitteeMember(req, res, next) {
 
 export async function deleteCommitteeMember(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
-    const existing = await prisma.committeeMember.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ success: false, error: 'সদস্য পাওয়া যায়নি।' });
-
-    await prisma.committeeMember.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type: 'CommitteeMember',
+      id: req.params.id,
       req,
-      action: 'DELETED',
-      subjectType: 'CommitteeMember',
-      subjectId: id,
-      description: `কমিটি সদস্য '${existing.nameBn}' ট্র্যাশে পাঠানো হয়েছে।`,
+      getDescription: (existing) => `কমিটি সদস্য '${existing.nameBn}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'কমিটি সদস্য ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'কমিটি সদস্য ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -756,6 +1561,14 @@ export async function getAlbumById(req, res, next) {
 export async function createAlbum(req, res, next) {
   try {
     const body = req.body;
+
+    if (!body.titleBn || !body.titleBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'অ্যালবামের বাংলা শিরোনাম আবশ্যক' });
+    }
+    if (!body.titleEn || !body.titleEn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_EN', error: 'Album English title is required' });
+    }
+
     const slug = body.slug ? body.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') : `album-${Date.now()}`;
 
     const album = await prisma.album.create({
@@ -826,24 +1639,17 @@ export async function updateAlbum(req, res, next) {
 
 export async function deleteAlbum(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
-    const existing = await prisma.album.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ success: false, error: 'অ্যালবাম পাওয়া যায়নি।' });
-
-    await prisma.album.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type: 'Album',
+      id: req.params.id,
       req,
-      action: 'DELETED',
-      subjectType: 'Album',
-      subjectId: id,
-      description: `অ্যালবাম '${existing.titleBn}' ট্র্যাশে পাঠানো হয়েছে।`,
+      getDescription: (existing) => `অ্যালবাম '${existing.titleBn}' ও এর ছবিগুলো ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'অ্যালবাম ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'অ্যালবাম ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -929,13 +1735,17 @@ export async function updatePhoto(req, res, next) {
 
 export async function deletePhoto(req, res, next) {
   try {
-    const id = parseInt(req.params.photoId, 10);
-    await prisma.photo.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    const result = await permanentlyDeleteEntity({
+      type: 'Photo',
+      id: req.params.photoId,
+      req,
+      getDescription: (existing, id) => `ছবি '${existing.captionBn || existing.originalName || `#${id}`}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'ছবি ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'ছবি ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -1008,6 +1818,12 @@ export async function getDocuments(req, res, next) {
 export async function createDocument(req, res, next) {
   try {
     const body = req.body;
+    if (!body.titleBn || !body.titleBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'দলিলের বাংলা শিরোনাম আবশ্যক' });
+    }
+    if (!body.titleEn || !body.titleEn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_EN', error: 'Document English title is required' });
+    }
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'দলিলের ফাইল আপলোড করা আবশ্যক।' });
     }
@@ -1098,27 +1914,20 @@ export async function deleteDocument(req, res, next) {
   try {
     // EDITOR cannot delete documents — only ADMIN can
     if (req.user?.role !== 'ADMIN') {
-      return res.status(403).json({ success: false, error: 'শুধুমাত্র অ্যাডমিন দলিল ট্র্যাশে পাঠাতে পারেন।' });
+      return res.status(403).json({ success: false, error: 'শুধুমাত্র অ্যাডমিন দলিল মুছে ফেলতে পারেন।' });
     }
 
-    const id = parseInt(req.params.id, 10);
-    const existing = await prisma.document.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ success: false, error: 'দলিল পাওয়া যায়নি।' });
-
-    await prisma.document.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type: 'Document',
+      id: req.params.id,
       req,
-      action: 'DELETED',
-      subjectType: 'Document',
-      subjectId: id,
-      description: `দলিল '${existing.titleBn}' ট্র্যাশে পাঠানো হয়েছে।`,
+      getDescription: (existing) => `দলিল '${existing.titleBn}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'দলিল ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'দলিল ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -1160,6 +1969,12 @@ export async function getLandMaps(req, res, next) {
 export async function createLandMap(req, res, next) {
   try {
     const body = req.body;
+    if (!body.titleBn || !body.titleBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'মৌজা নকশার বাংলা নাম আবশ্যক' });
+    }
+    if (!body.titleEn || !body.titleEn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_EN', error: 'Land map English title is required' });
+    }
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'মৌজা নকশার ফাইল প্রদান আবশ্যক।' });
     }
@@ -1237,24 +2052,17 @@ export async function updateLandMap(req, res, next) {
 
 export async function deleteLandMap(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
-    const existing = await prisma.landMap.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ success: false, error: 'নকশা পাওয়া যায়নি।' });
-
-    await prisma.landMap.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type: 'LandMap',
+      id: req.params.id,
       req,
-      action: 'DELETED',
-      subjectType: 'LandMap',
-      subjectId: id,
-      description: `মৌজা নকশা '${existing.titleBn}' ট্র্যাশে পাঠানো হয়েছে।`,
+      getDescription: (existing) => `মৌজা নকশা '${existing.titleBn}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'নকশা ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'নকশা ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -1307,6 +2115,17 @@ export async function getNotices(req, res, next) {
 export async function createNotice(req, res, next) {
   try {
     const body = req.body;
+
+    if (!body.titleBn || !body.titleBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'নোটিশের বাংলা শিরোনাম আবশ্যক' });
+    }
+    if (!body.titleEn || !body.titleEn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_EN', error: 'Notice English title is required' });
+    }
+    if (!body.bodyBn || !body.bodyBn.trim()) {
+      return res.status(400).json({ success: false, code: 'REQUIRED_FIELD_BN', error: 'নোটিশের মূল বিবরণ আবশ্যক' });
+    }
+
     let attachmentPath = null;
 
     if (req.file) {
@@ -1400,24 +2219,17 @@ export async function updateNotice(req, res, next) {
 
 export async function deleteNotice(req, res, next) {
   try {
-    const id = parseInt(req.params.id, 10);
-    const existing = await prisma.notice.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ success: false, error: 'নোটিশ পাওয়া যায়নি।' });
-
-    await prisma.notice.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type: 'Notice',
+      id: req.params.id,
       req,
-      action: 'DELETED',
-      subjectType: 'Notice',
-      subjectId: id,
-      description: `নোটিশ '${existing.titleBn}' ট্র্যাশে পাঠানো হয়েছে।`,
+      getDescription: (existing) => `নোটিশ '${existing.titleBn}' ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।`,
     });
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage });
+    }
 
-    return res.status(200).json({ success: true, message: 'নোটিশ ট্র্যাশে পাঠানো হয়েছে।' });
+    return res.status(200).json({ success: true, message: 'নোটিশ ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
     next(err);
   }
@@ -1585,6 +2397,53 @@ export async function updateSettings(req, res, next) {
   }
 }
 
+export async function uploadHeroImageSetting(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'অনুগ্রহ করে একটি হিরো ছবি নির্বাচন করুন।' });
+    }
+
+    const existing = await prisma.siteSetting.findUnique({ where: { key: 'hero_image' } });
+    const processed = await processAndUploadImage({
+      buffer: req.file.buffer,
+      directory: 'settings',
+      maxWidth: 1600,
+      maxHeight: 1000,
+      quality: 84,
+      createThumb: false,
+    });
+
+    const newPath = processed.path;
+    await prisma.siteSetting.upsert({
+      where: { key: 'hero_image' },
+      update: { valueBn: newPath, valueEn: newPath, type: 'image', group: 'general' },
+      create: { key: 'hero_image', valueBn: newPath, valueEn: newPath, type: 'image', group: 'general' },
+    });
+
+    if (existing?.valueBn && existing.valueBn !== newPath) {
+      await cleanupPublicMedia(existing.valueBn).catch(() => {});
+    }
+
+    SettingsService.clearCache();
+
+    await logActivity({
+      req,
+      action: 'UPDATED',
+      subjectType: 'SiteSetting',
+      description: `হিরো ব্যাকগ্রাউন্ড ছবি আপলোড ও পরিবর্তন করা হয়েছে (${newPath})।`,
+    });
+
+    return res.status(200).json({
+      success: true,
+      path: newPath,
+      fullUrl: processed.fullUrl,
+      message: 'হিরো ছবি সফলভাবে আপলোড হয়েছে।',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ==============================================================================
 // 11. USERS MANAGEMENT (ADMIN ONLY)
 // ==============================================================================
@@ -1744,7 +2603,7 @@ export async function deleteUser(req, res, next) {
 // ==============================================================================
 export async function getTrashItems(req, res, next) {
   try {
-    const [members, donors, committee, albums, photos, documents, landMaps, notices, designs] =
+    const [members, donors, committee, albums, photos, documents, landMaps, notices, designs, landDonors] =
       await Promise.all([
         prisma.member.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
         prisma.donor.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
@@ -1755,6 +2614,7 @@ export async function getTrashItems(req, res, next) {
         prisma.landMap.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
         prisma.notice.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
         prisma.design.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
+        prisma.landDonor.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
       ]);
 
     const formatted = [
@@ -1767,6 +2627,7 @@ export async function getTrashItems(req, res, next) {
       ...landMaps.map((l) => ({ type: 'LandMap', id: l.id, title: l.titleBn, deletedAt: l.deletedAt })),
       ...notices.map((n) => ({ type: 'Notice', id: n.id, title: n.titleBn, deletedAt: n.deletedAt })),
       ...designs.map((ds) => ({ type: 'Design', id: ds.id, title: ds.captionBn || '৩ডি নকশা', deletedAt: ds.deletedAt })),
+      ...landDonors.map((ld) => ({ type: 'LandDonor', id: ld.id, title: `${ld.nameBn} (${ld.areaValue} ${ld.areaUnit})`, deletedAt: ld.deletedAt })),
     ].sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
 
     return res.status(200).json({ success: true, items: formatted });
@@ -1790,6 +2651,7 @@ export async function restoreTrashItem(req, res, next) {
       LandMap: prisma.landMap,
       Notice: prisma.notice,
       Design: prisma.design,
+      LandDonor: prisma.landDonor,
     };
 
     const model = modelMap[type];
@@ -1825,31 +2687,19 @@ export async function permanentDeleteTrashItem(req, res, next) {
       return res.status(400).json({ success: false, error: 'নিশ্চিতকরণের জন্য DELETE শব্দটি লিখুন।' });
     }
 
-    const numericId = parseInt(id, 10);
-    const modelMap = {
-      Member: prisma.member,
-      Donor: prisma.donor,
-      CommitteeMember: prisma.committeeMember,
-      Album: prisma.album,
-      Photo: prisma.photo,
-      Document: prisma.document,
-      LandMap: prisma.landMap,
-      Notice: prisma.notice,
-      Design: prisma.design,
-    };
-
-    const model = modelMap[type];
-    if (!model) return res.status(400).json({ success: false, error: 'ভুল আইটেম ধরন।' });
-
-    await model.delete({ where: { id: numericId } });
-
-    await logActivity({
+    const result = await permanentlyDeleteEntity({
+      type,
+      id,
       req,
       action: 'PERMANENT_DELETE',
-      subjectType: type,
-      subjectId: numericId,
-      description: `'${type} #${numericId}' স্থায়ীভাবে ডাটাবেজ থেকে মুছে ফেলা হয়েছে।`,
+      getDescription: (_existing, numericId) => `'${type} #${numericId}' স্থায়ীভাবে ডাটাবেজ থেকে মুছে ফেলা হয়েছে।`,
     });
+    if (result.invalidType) {
+      return res.status(400).json({ success: false, error: 'ভুল আইটেম ধরন।' });
+    }
+    if (result.notFound) {
+      return res.status(404).json({ success: false, error: result.notFoundMessage || 'আইটেম পাওয়া যায়নি।' });
+    }
 
     return res.status(200).json({ success: true, message: 'আইটেম স্থায়ীভাবে মুছে ফেলা হয়েছে।' });
   } catch (err) {
@@ -1910,7 +2760,10 @@ export async function getDatabaseBackup(req, res, next) {
       landMaps,
       notices,
       designs,
+      designVideos,
+      landDonors,
       settings,
+      activityLogs,
       users,
     ] = await Promise.all([
       prisma.member.findMany(),
@@ -1922,16 +2775,19 @@ export async function getDatabaseBackup(req, res, next) {
       prisma.landMap.findMany(),
       prisma.notice.findMany(),
       prisma.design.findMany(),
+      prisma.designVideo.findMany(),
+      prisma.landDonor.findMany(),
       prisma.siteSetting.findMany(),
+      prisma.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 1000 }),
       prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true } }),
     ]);
 
     const backupData = {
       meta: {
-        site: 'Manikpur Central Shahi Eidgah',
+        site: 'Manikpur Eidgah',
         exportedAt: new Date().toISOString(),
         exportedBy: req.user.email,
-        version: '1.0.0',
+        version: '1.1.0',
       },
       data: {
         members,
@@ -1943,7 +2799,10 @@ export async function getDatabaseBackup(req, res, next) {
         landMaps,
         notices,
         designs,
+        designVideos,
+        landDonors,
         settings,
+        activityLogs,
         users,
       },
     };
@@ -1955,10 +2814,423 @@ export async function getDatabaseBackup(req, res, next) {
     });
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename=manikpur_eidgah_backup_${Date.now()}.json`);
+    res.setHeader('Content-Disposition', `attachment; filename=manikpur-eidgah-backup-${Date.now()}.json`);
     return res.send(JSON.stringify(backupData, null, 2));
   } catch (err) {
     next(err);
   }
 }
+
+export async function getMediaBackup(req, res, next) {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'শুধুমাত্র অ্যাডমিন মিডিয়া ব্যাকআপ ডাউনলোড করতে পারেন।' });
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename=manikpur-eidgah-media-${Date.now()}.zip`);
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', (err) => {
+      console.error('Media archive error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: 'মিডিয়া জিপ তৈরি করতে সমস্যা হয়েছে।' });
+      }
+    });
+
+    archive.pipe(res);
+    await archiveAllMediaFiles(archive);
+    await archive.finalize();
+
+    await logActivity({
+      req,
+      action: 'EXPORT',
+      description: 'সকল আপলোড করা ছবি ও দলিলের পূর্ণাঙ্গ ব্যাকআপ (ZIP) ডাউনলোড করা হয়েছে।',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ==============================================================================
+// 12. MISSING TRANSLATIONS AUDIT REPORT
+// ==============================================================================
+export async function getMissingTranslationsReport(req, res, next) {
+  try {
+    const adminPath = process.env.VITE_ADMIN_PATH || 'eidgah-manage-k29x';
+    const items = [];
+    const breakdown = {
+      members: 0,
+      landDonors: 0,
+      donors: 0,
+      committee: 0,
+      albums: 0,
+      photos: 0,
+      documents: 0,
+      landMaps: 0,
+      notices: 0,
+      designs: 0,
+    };
+
+    const [
+      members,
+      landDonors,
+      donors,
+      committee,
+      albums,
+      photos,
+      documents,
+      landMaps,
+      notices,
+      designs,
+    ] = await Promise.all([
+      prisma.member.findMany({
+        where: { deletedAt: null },
+        select: { id: true, nameBn: true, nameEn: true, fatherNameBn: true, fatherNameEn: true, addressBn: true, addressEn: true },
+      }),
+      prisma.landDonor.findMany({
+        where: { deletedAt: null },
+        select: { id: true, nameBn: true, nameEn: true, fatherNameBn: true, fatherNameEn: true, villageBn: true, villageEn: true },
+      }),
+      prisma.donor.findMany({
+        where: { deletedAt: null },
+        select: { id: true, donorNameBn: true, donorNameEn: true, addressBn: true, addressEn: true },
+      }),
+      prisma.committeeMember.findMany({
+        where: { deletedAt: null },
+        select: { id: true, nameBn: true, nameEn: true, designationBn: true, designationEn: true },
+      }),
+      prisma.album.findMany({
+        where: { deletedAt: null },
+        select: { id: true, titleBn: true, titleEn: true, descriptionBn: true, descriptionEn: true },
+      }),
+      prisma.photo.findMany({
+        where: { deletedAt: null },
+        select: { id: true, captionBn: true, captionEn: true, albumId: true },
+      }),
+      prisma.document.findMany({
+        where: { deletedAt: null },
+        select: { id: true, titleBn: true, titleEn: true },
+      }),
+      prisma.landMap.findMany({
+        where: { deletedAt: null },
+        select: { id: true, titleBn: true, titleEn: true },
+      }),
+      prisma.notice.findMany({
+        where: { deletedAt: null },
+        select: { id: true, titleBn: true, titleEn: true, bodyBn: true, bodyEn: true },
+      }),
+      prisma.design.findMany({
+        where: { deletedAt: null },
+        select: { id: true, captionBn: true, captionEn: true },
+      }),
+    ]);
+
+    // Check members
+    for (const m of members) {
+      const missing = [];
+      if (!m.nameBn || !m.nameBn.trim()) missing.push('nameBn');
+      if (!m.nameEn || !m.nameEn.trim()) missing.push('nameEn');
+      if (m.fatherNameBn && (!m.fatherNameEn || !m.fatherNameEn.trim())) missing.push('fatherNameEn');
+      if (m.addressBn && (!m.addressEn || !m.addressEn.trim())) missing.push('addressEn');
+      if (missing.length > 0) {
+        breakdown.members++;
+        items.push({
+          model: 'Member',
+          modelLabelBn: 'আজীবন সদস্য',
+          modelLabelEn: 'Lifetime Member',
+          id: m.id,
+          title: m.nameBn || m.nameEn || `সদস্য #${m.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/members`,
+        });
+      }
+    }
+
+    // Check landDonors
+    for (const d of landDonors) {
+      const missing = [];
+      if (!d.nameBn || !d.nameBn.trim()) missing.push('nameBn');
+      if (!d.nameEn || !d.nameEn.trim()) missing.push('nameEn');
+      if (d.villageBn && (!d.villageEn || !d.villageEn.trim())) missing.push('villageEn');
+      if (missing.length > 0) {
+        breakdown.landDonors++;
+        items.push({
+          model: 'LandDonor',
+          modelLabelBn: 'জমিদাতা',
+          modelLabelEn: 'Land Donor',
+          id: d.id,
+          title: d.nameBn || d.nameEn || `জমিদাতা #${d.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/land-donors`,
+        });
+      }
+    }
+
+    // Check legacy donors
+    for (const dn of donors) {
+      const missing = [];
+      if (!dn.donorNameBn || !dn.donorNameBn.trim()) missing.push('donorNameBn');
+      if (!dn.donorNameEn || !dn.donorNameEn.trim()) missing.push('donorNameEn');
+      if (missing.length > 0) {
+        breakdown.donors++;
+        items.push({
+          model: 'Donor',
+          modelLabelBn: 'অনুদানকারী (পুরনো)',
+          modelLabelEn: 'Legacy Donor',
+          id: dn.id,
+          title: dn.donorNameBn || dn.donorNameEn || `অনুদান #${dn.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/donors`,
+        });
+      }
+    }
+
+    // Check committee
+    for (const c of committee) {
+      const missing = [];
+      if (!c.nameBn || !c.nameBn.trim()) missing.push('nameBn');
+      if (!c.nameEn || !c.nameEn.trim()) missing.push('nameEn');
+      if (!c.designationBn || !c.designationBn.trim()) missing.push('designationBn');
+      if (!c.designationEn || !c.designationEn.trim()) missing.push('designationEn');
+      if (missing.length > 0) {
+        breakdown.committee++;
+        items.push({
+          model: 'CommitteeMember',
+          modelLabelBn: 'কমিটি সদস্য',
+          modelLabelEn: 'Committee Member',
+          id: c.id,
+          title: c.nameBn || c.nameEn || `কমিটি #${c.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/committee`,
+        });
+      }
+    }
+
+    // Check albums
+    for (const a of albums) {
+      const missing = [];
+      if (!a.titleBn || !a.titleBn.trim()) missing.push('titleBn');
+      if (!a.titleEn || !a.titleEn.trim()) missing.push('titleEn');
+      if (missing.length > 0) {
+        breakdown.albums++;
+        items.push({
+          model: 'Album',
+          modelLabelBn: 'ফটো অ্যালবাম',
+          modelLabelEn: 'Photo Album',
+          id: a.id,
+          title: a.titleBn || a.titleEn || `অ্যালবাম #${a.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/gallery`,
+        });
+      }
+    }
+
+    // Check notices
+    for (const n of notices) {
+      const missing = [];
+      if (!n.titleBn || !n.titleBn.trim()) missing.push('titleBn');
+      if (!n.titleEn || !n.titleEn.trim()) missing.push('titleEn');
+      if (n.bodyBn && (!n.bodyEn || !n.bodyEn.trim())) missing.push('bodyEn');
+      if (missing.length > 0) {
+        breakdown.notices++;
+        items.push({
+          model: 'Notice',
+          modelLabelBn: 'নোটিশ',
+          modelLabelEn: 'Notice',
+          id: n.id,
+          title: n.titleBn || n.titleEn || `নোটিশ #${n.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/notices`,
+        });
+      }
+    }
+
+    // Check documents
+    for (const doc of documents) {
+      const missing = [];
+      if (!doc.titleBn || !doc.titleBn.trim()) missing.push('titleBn');
+      if (!doc.titleEn || !doc.titleEn.trim()) missing.push('titleEn');
+      if (missing.length > 0) {
+        breakdown.documents++;
+        items.push({
+          model: 'Document',
+          modelLabelBn: 'দলিল',
+          modelLabelEn: 'Document',
+          id: doc.id,
+          title: doc.titleBn || doc.titleEn || `দলিল #${doc.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/documents`,
+        });
+      }
+    }
+
+    // Check landMaps
+    for (const lm of landMaps) {
+      const missing = [];
+      if (!lm.titleBn || !lm.titleBn.trim()) missing.push('titleBn');
+      if (!lm.titleEn || !lm.titleEn.trim()) missing.push('titleEn');
+      if (missing.length > 0) {
+        breakdown.landMaps++;
+        items.push({
+          model: 'LandMap',
+          modelLabelBn: 'মৌজা নকশা',
+          modelLabelEn: 'Land Map',
+          id: lm.id,
+          title: lm.titleBn || lm.titleEn || `নকশা #${lm.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/land-maps`,
+        });
+      }
+    }
+
+    // Check designs
+    for (const d of designs) {
+      const missing = [];
+      if (!d.captionBn || !d.captionBn.trim()) missing.push('captionBn');
+      if (!d.captionEn || !d.captionEn.trim()) missing.push('captionEn');
+      if (missing.length > 0) {
+        breakdown.designs++;
+        items.push({
+          model: 'Design',
+          modelLabelBn: '৩ডি ডিজাইন',
+          modelLabelEn: '3D Design',
+          id: d.id,
+          title: d.captionBn || d.captionEn || `ডিজাইন #${d.id}`,
+          missingFields: missing,
+          editUrl: `/${adminPath}/designs`,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      totalMissing: items.length,
+      breakdown,
+      items,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/admin/name-review
+ * Scans free-text content across all models to detect old organization names
+ * for manual administrator review without auto-editing.
+ */
+export async function getNameReviewReport(req, res, next) {
+  try {
+    const adminPath = process.env.VITE_ADMIN_PATH || 'eidgah-manage-k29x';
+    const OLD_PATTERNS = [
+      /মানিকপুর\s*কেন্দ্রীয়\s*শাহী\s*ঈদগাহ/gi,
+      /মানিকপুর\s*কেন্দ্রীয়\s*ঈদগাহ/gi,
+      /কেন্দ্রীয়\s*শাহী\s*ঈদগাহ/gi,
+      /কেন্দ্রীয়\s*শাহী/gi,
+      /শাহী\s*ঈদগাহ/gi,
+      /কেন্দ্রীয়\s*ঈদগাহ/gi,
+      /Manikpur\s+Central\s+Shahi\s+Eidgah/gi,
+      /Manikpur\s+Central\s+Eidgah/gi,
+      /Central\s+Shahi\s+Eidgah/gi,
+      /Central\s+Shahi/gi,
+      /Shahi\s+Eidgah/gi,
+    ];
+
+    const findings = [];
+
+    function checkText(text, model, id, title, fieldName, editUrl) {
+      if (!text || typeof text !== 'string') return;
+      for (const pattern of OLD_PATTERNS) {
+        pattern.lastIndex = 0;
+        const match = pattern.exec(text);
+        if (match) {
+          const start = Math.max(0, match.index - 40);
+          const end = Math.min(text.length, match.index + match[0].length + 40);
+          const snippet = (start > 0 ? '...' : '') + text.slice(start, end) + (end < text.length ? '...' : '');
+
+          findings.push({
+            model,
+            id,
+            title,
+            fieldName,
+            matchedText: match[0],
+            snippet,
+            editUrl,
+          });
+          break;
+        }
+      }
+    }
+
+    const [settings, notices, landDonors, committee, albums, documents, landMaps] = await Promise.all([
+      prisma.siteSetting.findMany({ select: { id: true, key: true, valueBn: true, valueEn: true } }),
+      prisma.notice.findMany({ where: { deletedAt: null }, select: { id: true, titleBn: true, titleEn: true, bodyBn: true, bodyEn: true } }),
+      prisma.landDonor.findMany({ where: { deletedAt: null }, select: { id: true, nameBn: true, nameEn: true, storyBn: true, storyEn: true } }),
+      prisma.committeeMember.findMany({ where: { deletedAt: null }, select: { id: true, nameBn: true, nameEn: true, bioBn: true, bioEn: true } }),
+      prisma.album.findMany({ where: { deletedAt: null }, select: { id: true, titleBn: true, titleEn: true, descriptionBn: true, descriptionEn: true } }),
+      prisma.document.findMany({ where: { deletedAt: null }, select: { id: true, titleBn: true, titleEn: true, descriptionBn: true, descriptionEn: true } }),
+      prisma.landMap.findMany({ where: { deletedAt: null }, select: { id: true, titleBn: true, titleEn: true, descriptionBn: true, descriptionEn: true } }),
+    ]);
+
+    // Check Site Settings (excluding exact site_name which is migrated)
+    for (const s of settings) {
+      if (s.key === 'site_name' || s.key === 'eidgahNameBn' || s.key === 'eidgahNameEn') continue;
+      checkText(s.valueBn, 'SiteSetting', s.id, `সেটিংস: ${s.key}`, 'valueBn', `/${adminPath}/settings`);
+      checkText(s.valueEn, 'SiteSetting', s.id, `Setting: ${s.key}`, 'valueEn', `/${adminPath}/settings`);
+    }
+
+    // Check Notices
+    for (const n of notices) {
+      const t = n.titleBn || n.titleEn || `নোটিশ #${n.id}`;
+      checkText(n.titleBn, 'Notice', n.id, t, 'titleBn', `/${adminPath}/notices`);
+      checkText(n.titleEn, 'Notice', n.id, t, 'titleEn', `/${adminPath}/notices`);
+      checkText(n.bodyBn, 'Notice', n.id, t, 'bodyBn', `/${adminPath}/notices`);
+      checkText(n.bodyEn, 'Notice', n.id, t, 'bodyEn', `/${adminPath}/notices`);
+    }
+
+    // Check Land Donors
+    for (const ld of landDonors) {
+      const t = ld.nameBn || ld.nameEn || `জমিদাতা #${ld.id}`;
+      checkText(ld.storyBn, 'LandDonor', ld.id, t, 'storyBn', `/${adminPath}/land-donors`);
+      checkText(ld.storyEn, 'LandDonor', ld.id, t, 'storyEn', `/${adminPath}/land-donors`);
+    }
+
+    // Check Committee
+    for (const c of committee) {
+      const t = c.nameBn || c.nameEn || `কমিটি সদস্য #${c.id}`;
+      checkText(c.bioBn, 'CommitteeMember', c.id, t, 'bioBn', `/${adminPath}/committee`);
+      checkText(c.bioEn, 'CommitteeMember', c.id, t, 'bioEn', `/${adminPath}/committee`);
+    }
+
+    // Check Albums
+    for (const a of albums) {
+      const t = a.titleBn || a.titleEn || `অ্যালবাম #${a.id}`;
+      checkText(a.descriptionBn, 'Album', a.id, t, 'descriptionBn', `/${adminPath}/albums`);
+      checkText(a.descriptionEn, 'Album', a.id, t, 'descriptionEn', `/${adminPath}/albums`);
+    }
+
+    // Check Documents
+    for (const d of documents) {
+      const t = d.titleBn || d.titleEn || `দলিল #${d.id}`;
+      checkText(d.descriptionBn, 'Document', d.id, t, 'descriptionBn', `/${adminPath}/documents`);
+      checkText(d.descriptionEn, 'Document', d.id, t, 'descriptionEn', `/${adminPath}/documents`);
+    }
+
+    // Check Land Maps
+    for (const lm of landMaps) {
+      const t = lm.titleBn || lm.titleEn || `নকশা #${lm.id}`;
+      checkText(lm.descriptionBn, 'LandMap', lm.id, t, 'descriptionBn', `/${adminPath}/land-maps`);
+      checkText(lm.descriptionEn, 'LandMap', lm.id, t, 'descriptionEn', `/${adminPath}/land-maps`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: findings.length,
+      findings,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 

@@ -11,17 +11,17 @@ export function PagePlaceholder({ titleBn, titleEn, descBn, descEn }) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
       <SEO title={title} />
-      <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-gold-500/30 flex items-center justify-center text-emerald-800 mx-auto">
-        <Clock className="w-8 h-8 text-gold-500" />
+      <div className="w-16 h-16 rounded-2xl bg-primary-soft border border-gold/40 flex items-center justify-center text-primary-dark mx-auto">
+        <Clock className="w-8 h-8 text-gold-text" />
       </div>
-      <h1 className="font-serif text-3xl sm:text-4xl font-bold text-stone-900">{title}</h1>
-      <p className="text-stone-600 max-w-xl mx-auto">{desc}</p>
+      <h1 className="font-serif text-3xl sm:text-4xl font-bold text-primary-dark">{title}</h1>
+      <p className="text-ink-muted max-w-xl mx-auto">{desc}</p>
     </div>
   );
 }
 
 export function About() {
-  return <PagePlaceholder titleBn="পরিচিতি ও ইতিহাস" titleEn="About & History" descBn="মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের ঐতিহাসিক পটভূমি ও কমিটি।" descEn="History and managing committee of Manikpur Central Shahi Eidgah." />;
+  return <PagePlaceholder titleBn="পরিচিতি ও ইতিহাস" titleEn="About & History" descBn="মানিকপুর ঈদগাহের ঐতিহাসিক পটভূমি ও কমিটি।" descEn="History and managing committee of Manikpur Eidgah." />;
 }
 
 export function LifetimeMembers() {
@@ -41,11 +41,7 @@ export function GalleryFolder() {
 }
 
 export function Designs() {
-  return <PagePlaceholder titleBn="ডিজাইন ও পরিকল্পনা" titleEn="Design & Plan" descBn="প্রস্তাবিত ৩ডি স্থাপত্য নকশা ও শাহী মিম্বর পরিকল্পনা।" descEn="Proposed 3D architectural renders and layout plans." />;
-}
-
-export function MapPage() {
-  return <PagePlaceholder titleBn="অবস্থান মানচিত্র" titleEn="Location Map" descBn="ঈদগাহ ময়দানের ভৌগোলিক অবস্থান ও সীমানা।" descEn="Geographical location and 1.35-acre boundary overlay." />;
+  return <PagePlaceholder titleBn="ডিজাইন ও পরিকল্পনা" titleEn="Design & Plan" descBn="প্রস্তাবিত ৩ডি স্থাপত্য নকশা ও মিম্বর পরিকল্পনা।" descEn="Proposed 3D architectural renders and layout plans." />;
 }
 
 export function LandMaps() {

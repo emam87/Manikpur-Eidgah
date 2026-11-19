@@ -10,7 +10,7 @@ try {
 
   app.listen(PORT, () => {
     console.log(`\n======================================================`);
-    console.log(`🕌 Manikpur Central Shahi Eidgah REST API`);
+    console.log(`🕌 Manikpur Eidgah REST API`);
     console.log(`📡 Server running on http://localhost:${PORT}`);
     console.log(`🔒 Secret Admin Path: /${validAdminPath}`);
     console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);

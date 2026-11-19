@@ -1,50 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, Search, Filter, ArrowUpDown, LayoutGrid, Table as TableIcon, 
-  MapPin, Calendar, User, X, ChevronLeft, ChevronRight, Award, Sparkles 
+import {
+  Users,
+  Search,
+  Filter,
+  ArrowUpDown,
+  Sparkles,
+  MapPin,
+  Calendar,
+  X,
+  User,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
-import { EightPointStar, StarDivider } from '../components/common/EightPointStar.jsx';
-import { SkeletonLoader } from '../components/common/SkeletonLoader.jsx';
+import { BottomSheet } from '../components/common/BottomSheet.jsx';
+import { Breadcrumb } from '../components/common/Breadcrumb.jsx';
+import { ImageWithBlur } from '../components/common/ImageWithBlur.jsx';
+import { getImageUrl } from '../utils/imageUrl.js';
 
 export function LifetimeMembers() {
   const { locale, t, toBanglaNum, formatBDT, getLocalized } = useLanguage();
 
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('card'); // 'card' | 'table'
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [sortBy, setSortBy] = useState('membership_no');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
   const [availableYears, setAvailableYears] = useState([]);
   const [globalShowAmount, setGlobalShowAmount] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  // Lock body scroll when member modal is open
+  // Reset & load page 1 when filters change
   useEffect(() => {
-    if (selectedMember) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [selectedMember]);
+    setCurrentPage(1);
+    loadMembers(1, false);
+  }, [searchQuery, selectedYear, sortBy]);
 
-  useEffect(() => {
-    fetchMembers();
-  }, [searchQuery, selectedYear, sortBy, currentPage]);
+  const loadMembers = async (page = 1, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
 
-  const fetchMembers = async () => {
-    setLoading(true);
     try {
       const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '12',
+        page: page.toString(),
+        limit: '20',
         sort: sortBy,
       });
       if (searchQuery.trim()) params.append('q', searchQuery.trim());
@@ -54,8 +56,12 @@ export function LifetimeMembers() {
       if (!res.ok) throw new Error('Failed to load members');
       const data = await res.json();
       if (data.success) {
-        setMembers(data.members || []);
-        setPagination(data.pagination || { page: 1, limit: 12, total: 0, totalPages: 1 });
+        if (append) {
+          setMembers((prev) => [...prev, ...(data.members || [])]);
+        } else {
+          setMembers(data.members || []);
+        }
+        setPagination(data.pagination || { page, limit: 20, total: 0, totalPages: 1 });
         if (data.years && data.years.length > 0) {
           setAvailableYears(data.years);
         }
@@ -65,411 +71,349 @@ export function LifetimeMembers() {
       console.error('Error fetching members:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    fetchMembers();
+  const handleLoadMore = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    loadMembers(nextPage, true);
   };
 
-  return (
-    <div className="py-10 sm:py-16">
-      <SEO 
-        title={locale === 'bn' ? 'আজীবন সদস্যবৃন্দ' : 'Lifetime Members'} 
-        description={locale === 'bn' ? 'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের সম্মানিত আজীবন সদস্যবৃন্দের তালিকা।' : 'Honored Lifetime Members of Manikpur Central Shahi Eidgah.'}
-      />
+  const hasMore = members.length < pagination.total;
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950 text-gold-300 text-xs sm:text-sm font-semibold mb-3 border border-gold-500/40">
-            <EightPointStar className="w-3.5 h-3.5 text-gold-400" />
-            <span>{locale === 'bn' ? 'সম্মাননা ও ঐতিহ্য' : 'Honor & Heritage'}</span>
-            <EightPointStar className="w-3.5 h-3.5 text-gold-400" />
+  return (
+    <div className="py-4 sm:py-8 page-enter">
+      <SEO title={t('members.title')} description={t('members.subtitle')} />
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <Breadcrumb items={[{ label: t('members.title') }]} />
+
+        {/* Page Title & Total Count Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sand pb-3">
+          <div>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary-dark tracking-tight">
+              {t('members.title')}
+            </h1>
+            <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
+              {t('members.subtitle')}
+            </p>
           </div>
-          <h1 className="font-serif text-3xl sm:text-5xl font-extrabold text-stone-900 tracking-tight mb-4">
-            {locale === 'bn' ? 'আজীবন সদস্যবৃন্দ' : 'Lifetime Members'}
-          </h1>
-          <p className="text-stone-600 text-sm sm:text-base leading-relaxed">
-            {locale === 'bn' 
-              ? 'যাঁদের ত্যাগ ও সার্বিক সহযোগিতায় মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ আজ এক অনন্য উচ্চতায় পৌঁছেছে।' 
-              : 'Honoring the patrons whose generous support and commitment built Manikpur Central Shahi Eidgah.'}
-          </p>
-          <StarDivider className="my-4" />
+          <div className="text-xs font-semibold text-primary-dark bg-primary-soft px-3 py-1 rounded-full border border-primary/20 w-fit">
+            <span>{t('members.total_count')}: </span>
+            <span className="font-bold tabular-nums">
+              {locale === 'bn' ? toBanglaNum(pagination.total) : pagination.total}
+            </span>
+            <span>{locale === 'bn' ? ' জন' : ''}</span>
+          </div>
         </div>
 
-        {/* Filter and Control Bar */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-gold-500/30 shadow-sm space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Search Input */}
-            <form onSubmit={handleSearchSubmit} className="relative sm:col-span-2">
+        {/* Sticky Search Field + Filter Button */}
+        <div className="sticky top-14 sm:top-16 z-20 bg-canvas/95 backdrop-blur-md py-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder={locale === 'bn' ? 'নাম, পিতার নাম, ঠিকানা বা সদস্য নং দিয়ে খুঁজুন...' : 'Search by name, father, address, or number...'}
+                placeholder={t('members.search_placeholder') || 'Search by name or number...'}
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-sm bg-stone-50/50"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-sand bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 shadow-sakinah-sm"
               />
-              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5" />
-            </form>
-
-            {/* Year Filter */}
-            <div className="relative">
-              <select
-                value={selectedYear}
-                onChange={(e) => {
-                  setSelectedYear(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-sm bg-stone-50/50 appearance-none text-stone-700"
-              >
-                <option value="">{locale === 'bn' ? 'সব বছর (যোগদান)' : 'All Years'}</option>
-                {availableYears.map((y) => (
-                  <option key={y} value={y}>
-                    {toBanglaNum(y)} {locale === 'bn' ? 'সাল' : ''}
-                  </option>
-                ))}
-              </select>
-              <Filter className="w-4 h-4 text-stone-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-ink-muted hover:text-ink"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            {/* Sort Dropdown */}
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-sm bg-stone-50/50 appearance-none text-stone-700"
-              >
-                <option value="membership_no">{locale === 'bn' ? 'সদস্য নং অনুসারে' : 'By Member No.'}</option>
-                <option value="name">{locale === 'bn' ? 'নাম অনুসারে (বর্ণানুক্রমিক)' : 'By Name'}</option>
-                <option value="member_since">{locale === 'bn' ? 'যোগদানের সাল অনুসারে' : 'By Year Joined'}</option>
-                {globalShowAmount && (
-                  <option value="amount">{locale === 'bn' ? 'অনুদানের পরিমাণ অনুসারে' : 'By Amount'}</option>
-                )}
-              </select>
-              <ArrowUpDown className="w-4 h-4 text-stone-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Bar Bottom Row: View Toggle & Record Count */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-stone-100 text-xs sm:text-sm text-stone-600">
-            <div>
-              {locale === 'bn' ? 'মোট নিবন্ধিত সদস্য: ' : 'Total Registered Members: '}
-              <span className="font-bold text-emerald-900 font-serif text-base">{toBanglaNum(pagination.total)}</span>
-              {locale === 'bn' ? ' জন' : ''}
-            </div>
-
-            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg">
-              <button
-                onClick={() => setViewMode('card')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
-                  viewMode === 'card' ? 'bg-white text-emerald-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'
-                }`}
-                title="কার্ড ভিউ"
-              >
-                <LayoutGrid className="w-4 h-4" />
-                <span className="hidden sm:inline">{locale === 'bn' ? 'কার্ড ভিউ' : 'Cards'}</span>
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
-                  viewMode === 'table' ? 'bg-white text-emerald-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'
-                }`}
-                title="টেবিল ভিউ"
-              >
-                <TableIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">{locale === 'bn' ? 'টেবিল ভিউ' : 'Table'}</span>
-              </button>
-            </div>
+            {/* Filter Button (Opens Bottom Sheet) */}
+            <button
+              type="button"
+              onClick={() => setFilterSheetOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-all min-h-[44px] tap-feedback shrink-0 ${
+                selectedYear || sortBy !== 'membership_no'
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-surface text-primary-dark border-sand hover:bg-primary-soft/50'
+              }`}
+              aria-label="Open filter options"
+            >
+              <Filter className="w-4 h-4" />
+              <span>{locale === 'bn' ? 'ফিল্টার' : 'Filter'}</span>
+              {(selectedYear || sortBy !== 'membership_no') && (
+                <span className="w-2 h-2 rounded-full bg-gold" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Content Section */}
+        {/* Members List: Mobile 56px Card List, Desktop Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="space-y-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-96 rounded-3xl bg-emerald-950/20 animate-pulse border border-gold-500/20" />
+              <div
+                key={i}
+                className="h-20 sm:h-64 rounded-2xl bg-surface border border-sand animate-pulse"
+              />
             ))}
           </div>
         ) : members.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-stone-200 space-y-4">
-            <Users className="w-12 h-12 text-stone-300 mx-auto" />
-            <h3 className="font-serif text-xl font-bold text-stone-800">
-              {locale === 'bn' ? 'কোনো আজীবন সদস্যের তথ্য পাওয়া যায়নি' : 'No Lifetime Members Found'}
+          <div className="text-center py-16 bg-surface rounded-2xl border border-sand shadow-sakinah-sm space-y-3">
+            <Users className="w-10 h-10 text-ink-muted/50 mx-auto" />
+            <h3 className="font-serif text-lg font-bold text-primary-dark">
+              {locale === 'bn' ? 'কোনো সদস্য পাওয়া যায়নি' : 'No Members Found'}
             </h3>
-            <p className="text-stone-500 text-sm max-w-md mx-auto">
-              {locale === 'bn' ? 'আপনার অনুসন্ধানের সাথে মিলে এমন কোনো সদস্য পাওয়া যায়নি। অনুসন্ধান পরিমার্জন করুন।' : 'Try adjusting your search criteria or filter options.'}
+            <p className="text-xs text-ink-muted">
+              {locale === 'bn'
+                ? 'অনুসন্ধান বা ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন।'
+                : 'Try adjusting your search criteria.'}
             </p>
           </div>
-        ) : viewMode === 'card' ? (
-          /* "Membership Certificate Card" Grid: desktop 3 per row with 3D tilt feel, mobile 1 per row */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {members.map((member) => (
-              <div
-                key={member.id}
-                onClick={() => setSelectedMember(member)}
-                className="group relative cursor-pointer rounded-3xl overflow-hidden p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1.5 hover:shadow-2xl"
-                style={{
-                  background: 'linear-gradient(145deg, #093721 0%, #0F5132 45%, #072818 100%)',
-                  boxShadow: '0 12px 30px -10px rgba(15, 81, 50, 0.4), inset 0 0 0 1.5px rgba(184, 146, 63, 0.45)',
-                }}
-              >
-                {/* Double Gold Hairline Border & Corner Star Accents */}
-                <div className="absolute inset-2 pointer-events-none rounded-2xl border border-gold-500/30" />
-                <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-gold-400/60" />
-                <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-gold-400/60" />
-                <div className="absolute bottom-3 left-3 w-2 h-2 rounded-full bg-gold-400/60" />
-                <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-gold-400/60" />
-
-                {/* Membership Ribbon Badge */}
-                <div className="relative mb-5 z-10">
-                  <div className="px-4 py-1 rounded-full bg-gradient-to-r from-gold-600 via-gold-400 to-gold-600 text-emerald-950 font-bold text-xs tracking-wider uppercase shadow-md flex items-center gap-1.5 border border-gold-200">
-                    <Sparkles className="w-3 h-3 text-emerald-950" />
-                    <span>
-                      {locale === 'bn' ? 'সদস্য নং: ' : 'Member No: '}
-                      {toBanglaNum(member.membershipNo || member.id)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Arch-Top Photo Frame with Gold Glow */}
-                <div className="relative mb-5 z-10">
-                  <div className="w-28 h-36 rounded-t-full rounded-b-2xl overflow-hidden p-1 bg-gradient-to-b from-gold-400 via-gold-600 to-gold-800 shadow-xl group-hover:shadow-gold-500/20 transition-all">
-                    <div className="w-full h-full rounded-t-full rounded-b-xl overflow-hidden bg-emerald-900 flex items-center justify-center">
-                      {member.photoPath ? (
-                        <img
-                          src={member.photoPath}
-                          alt={getLocalized(member, 'name')}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-gold-300">
-                          <User className="w-12 h-12 opacity-80" />
-                          <span className="text-[10px] mt-1 font-serif text-gold-200/80">
-                            {getLocalized(member, 'name').substring(0, 2)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Member Info */}
-                <div className="relative z-10 w-full flex-1 flex flex-col justify-between space-y-3">
-                  <div>
-                    <h3 className="font-serif font-bold text-xl sm:text-2xl text-ivory tracking-wide leading-snug group-hover:text-gold-200 transition-colors">
-                      {getLocalized(member, 'name')}
-                    </h3>
-                    {member.fatherNameBn && (
-                      <p className="text-xs text-gold-200/70 mt-1">
-                        {locale === 'bn' ? 'পিতা: ' : 'Father: '}
-                        {getLocalized(member, 'fatherName')}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5 text-xs text-stone-300/80 pt-2 border-t border-gold-500/20">
-                    {member.addressBn && (
-                      <p className="flex items-center justify-center gap-1.5 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-gold-400 shrink-0" />
-                        <span className="truncate">{getLocalized(member, 'address')}</span>
-                      </p>
-                    )}
-                    {member.memberSince && (
-                      <p className="flex items-center justify-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-gold-400 shrink-0" />
-                        <span>
-                          {locale === 'bn' ? 'যোগদান: ' : 'Member Since: '}
-                          {toBanglaNum(member.memberSince)}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Gold-foil Plate: ONLY shown when amountPaid is non-null (controlled strictly by server) */}
-                  {member.amountPaid !== null && member.amountPaid !== undefined && (
-                    <div className="mt-3 pt-3">
-                      <div className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-200 via-amber-100 to-amber-200 text-stone-900 border border-amber-300/80 shadow-md flex items-center justify-center gap-1.5 transform group-hover:scale-[1.02] transition-transform">
-                        <Award className="w-4 h-4 text-emerald-800 shrink-0" />
-                        <span className="font-serif font-bold text-sm tracking-tight text-emerald-950">
-                          {formatBDT(member.amountPaid)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
-          /* Table View Toggle */
-          <div className="bg-white rounded-2xl border border-gold-500/30 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-stone-700">
-                <thead className="bg-emerald-950 text-gold-200 text-xs uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th scope="col" className="px-6 py-4">{locale === 'bn' ? 'সদস্য নং' : 'Member No'}</th>
-                    <th scope="col" className="px-6 py-4">{locale === 'bn' ? 'সদস্যের নাম' : 'Member Name'}</th>
-                    <th scope="col" className="px-6 py-4">{locale === 'bn' ? 'পিতার নাম' : 'Father’s Name'}</th>
-                    <th scope="col" className="px-6 py-4">{locale === 'bn' ? 'ঠিকানা' : 'Address'}</th>
-                    <th scope="col" className="px-6 py-4">{locale === 'bn' ? 'যোগদানের সাল' : 'Year'}</th>
-                    {globalShowAmount && (
-                      <th scope="col" className="px-6 py-4 text-right">{locale === 'bn' ? 'অনুদান' : 'Contribution'}</th>
+          <div className="space-y-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
+            {members.map((member) => {
+              const name = getLocalized(member, 'name');
+              if (locale === 'en' && !name) return null;
+              const photoUrl = member.photoPath ? getImageUrl(member.photoPath) : null;
+              const memberNo = locale === 'bn' ? toBanglaNum(member.membershipNo || member.id) : member.membershipNo || member.id;
+
+              return (
+                <div
+                  key={member.id}
+                  onClick={() => setSelectedMember(member)}
+                  className="bg-surface rounded-2xl border border-sand hover:border-gold/60 p-3 sm:p-5 shadow-sakinah-sm hover:shadow-sakinah-card transition-all cursor-pointer flex items-center gap-3.5 sm:flex-col sm:text-center active:scale-[0.98] tap-feedback overflow-hidden"
+                >
+                  {/* Photo: 56px square on mobile, arch frame on desktop */}
+                  <div className="w-14 h-14 sm:w-24 sm:h-28 rounded-xl sm:rounded-t-full sm:rounded-b-lg overflow-hidden bg-primary-soft border border-sand flex-shrink-0 flex items-center justify-center">
+                    {photoUrl ? (
+                      <ImageWithBlur
+                        src={photoUrl}
+                        alt={name}
+                        aspectRatio=""
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <span className="font-serif text-xl sm:text-3xl font-bold text-primary-dark">
+                        {name?.charAt(0) || 'M'}
+                      </span>
                     )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {members.map((member) => (
-                    <tr
-                      key={member.id}
-                      onClick={() => setSelectedMember(member)}
-                      className="hover:bg-emerald-50/60 cursor-pointer transition-colors"
-                    >
-                      <td className="px-6 py-4 font-mono font-bold text-emerald-900">
-                        {toBanglaNum(member.membershipNo || member.id)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-emerald-900 text-gold-300 flex items-center justify-center shrink-0 border border-gold-500/40">
-                            {member.photoPath ? (
-                              <img src={member.photoPath} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <User className="w-4 h-4" />
-                            )}
-                          </div>
-                          <span className="font-serif font-bold text-stone-900">{getLocalized(member, 'name')}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-stone-600">{getLocalized(member, 'fatherName') || '—'}</td>
-                      <td className="px-6 py-4 text-stone-600 max-w-xs truncate">{getLocalized(member, 'address') || '—'}</td>
-                      <td className="px-6 py-4 text-stone-600">{toBanglaNum(member.memberSince) || '—'}</td>
-                      {globalShowAmount && (
-                        <td className="px-6 py-4 text-right font-serif font-semibold text-emerald-900">
-                          {member.amountPaid !== null ? formatBDT(member.amountPaid) : '—'}
-                        </td>
+                  </div>
+
+                  {/* Info: 1 key fact on mobile */}
+                  <div className="min-w-0 flex-1 sm:w-full">
+                    <div className="flex items-center gap-1.5 sm:justify-center mb-0.5">
+                      <span className="inline-block px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark text-[10px] font-bold border border-primary/20">
+                        #{memberNo}
+                      </span>
+                      {member.memberSince && (
+                        <span className="text-[11px] text-ink-muted sm:hidden">
+                          • {locale === 'bn' ? toBanglaNum(member.memberSince) : member.memberSince}
+                        </span>
                       )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </div>
+
+                    <h3 className="font-serif font-bold text-sm sm:text-base text-primary-dark truncate">
+                      {name}
+                    </h3>
+
+                    {/* Single Key Fact: Amount or enrolled year */}
+                    <p className="text-xs text-gold-text font-semibold truncate mt-0.5">
+                      {globalShowAmount && member.amount
+                        ? `${formatBDT(member.amount)}`
+                        : `${locale === 'bn' ? 'যোগদান: ' : 'Enrolled: '}${locale === 'bn' ? toBanglaNum(member.memberSince || '—') : member.memberSince || '—'}`}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-6">
+        {/* Load More Button (No numbered pagination) */}
+        {!loading && hasMore && (
+          <div className="text-center pt-4 pb-6">
             <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              type="button"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface border border-sand hover:border-primary/40 text-primary-dark text-sm font-bold shadow-sakinah-sm hover:shadow-sakinah-card transition-all disabled:opacity-50 min-h-[46px] tap-feedback"
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>{locale === 'bn' ? 'পূর্ববর্তী' : 'Previous'}</span>
-            </button>
-
-            <span className="px-4 py-2 text-sm text-stone-600 font-medium">
-              {locale === 'bn' ? 'পৃষ্ঠা ' : 'Page '}
-              <span className="font-bold text-emerald-900">{toBanglaNum(currentPage)}</span>
-              {locale === 'bn' ? ' / ' : ' of '}
-              <span className="font-bold text-emerald-900">{toBanglaNum(pagination.totalPages)}</span>
-            </span>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
-              disabled={currentPage >= pagination.totalPages}
-              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-            >
-              <span>{locale === 'bn' ? 'পরবর্তী' : 'Next'}</span>
-              <ChevronRight className="w-4 h-4" />
+              {loadingMore ? (
+                <span>{locale === 'bn' ? 'লোড হচ্ছে...' : 'Loading...'}</span>
+              ) : (
+                <span>
+                  {locale === 'bn' ? 'আরও দেখুন (২০টি)' : 'Load More (20)'}
+                </span>
+              )}
             </button>
           </div>
         )}
       </div>
 
-      {/* Detail Modal */}
-      {selectedMember && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
-          onClick={() => setSelectedMember(null)}
-        >
-          <div
-            className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full overflow-hidden border border-gold-500/40 shadow-2xl relative max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setSelectedMember(null)}
-              className="absolute top-3.5 right-3.5 z-10 w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 transition-colors tap-target"
-              aria-label="Close modal"
+      {/* Filter Bottom Sheet */}
+      <BottomSheet
+        isOpen={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        title={locale === 'bn' ? 'সদস্য তালিকা ফিল্টার' : 'Filter Members'}
+      >
+        <div className="space-y-4 py-2 text-ink">
+          {/* Year Filter */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-primary-dark uppercase tracking-wider">
+              {locale === 'bn' ? 'যোগদানের বছর' : 'Enrollment Year'}
+            </label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
             >
-              <X className="w-5 h-5" />
+              <option value="">{locale === 'bn' ? 'সব বছর' : 'All Years'}</option>
+              {availableYears.map((y) => (
+                <option key={y} value={y}>
+                  {locale === 'bn' ? `${toBanglaNum(y)} সাল` : y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort By Filter */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-primary-dark uppercase tracking-wider">
+              {locale === 'bn' ? 'ক্রমানুসার' : 'Sort Order'}
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
+            >
+              <option value="membership_no">{t('members.sort_no_asc') || 'By Member No'}</option>
+              <option value="name">{t('members.sort_name_asc') || 'By Name'}</option>
+              <option value="member_since">{t('members.sort_year_desc') || 'By Year'}</option>
+              {globalShowAmount && (
+                <option value="amount">
+                  {locale === 'bn' ? 'অনুদানের পরিমাণ অনুসারে' : 'By Amount'}
+                </option>
+              )}
+            </select>
+          </div>
+
+          <div className="flex gap-2 pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedYear('');
+                setSortBy('membership_no');
+                setFilterSheetOpen(false);
+              }}
+              className="flex-1 py-2.5 rounded-xl border border-sand text-xs font-bold text-ink-muted hover:bg-canvas-alt transition-colors min-h-[44px]"
+            >
+              {locale === 'bn' ? 'রিসেট' : 'Reset'}
             </button>
-
-            <div className="bg-gradient-to-b from-emerald-950 to-emerald-900 p-8 text-center text-ivory relative">
-              <div className="w-28 h-36 mx-auto rounded-t-full rounded-b-2xl overflow-hidden p-1 bg-gradient-to-b from-gold-400 via-gold-500 to-gold-700 shadow-xl mb-4">
-                <div className="w-full h-full rounded-t-full rounded-b-xl overflow-hidden bg-emerald-950 flex items-center justify-center">
-                  {selectedMember.photoPath ? (
-                    <img src={selectedMember.photoPath} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-12 h-12 text-gold-300" />
-                  )}
-                </div>
-              </div>
-              <div className="inline-block px-3 py-1 rounded-full bg-gold-400/20 text-gold-300 text-xs font-bold border border-gold-400/40 mb-2">
-                {locale === 'bn' ? 'সদস্য নং: ' : 'Member No: '}
-                {toBanglaNum(selectedMember.membershipNo || selectedMember.id)}
-              </div>
-              <h3 className="font-serif text-2xl font-bold">{getLocalized(selectedMember, 'name')}</h3>
-            </div>
-
-            <div className="p-6 space-y-3 text-sm text-stone-700">
-              {selectedMember.fatherNameBn && (
-                <div className="flex justify-between py-2 border-b border-stone-100">
-                  <span className="text-stone-500">{locale === 'bn' ? 'পিতার নাম' : 'Father’s Name'}</span>
-                  <span className="font-semibold">{getLocalized(selectedMember, 'fatherName')}</span>
-                </div>
-              )}
-              {selectedMember.addressBn && (
-                <div className="flex justify-between py-2 border-b border-stone-100">
-                  <span className="text-stone-500">{locale === 'bn' ? 'ঠিকানা' : 'Address'}</span>
-                  <span className="font-semibold text-right">{getLocalized(selectedMember, 'address')}</span>
-                </div>
-              )}
-              {selectedMember.memberSince && (
-                <div className="flex justify-between py-2 border-b border-stone-100">
-                  <span className="text-stone-500">{locale === 'bn' ? 'যোগদানের সাল' : 'Member Since'}</span>
-                  <span className="font-semibold">{toBanglaNum(selectedMember.memberSince)}</span>
-                </div>
-              )}
-              {selectedMember.amountPaid !== null && selectedMember.amountPaid !== undefined && (
-                <div className="flex justify-between py-2 border-b border-stone-100">
-                  <span className="text-stone-500">{locale === 'bn' ? 'অনুদানের পরিমাণ' : 'Amount Contributed'}</span>
-                  <span className="font-serif font-bold text-emerald-900 text-base">{formatBDT(selectedMember.amountPaid)}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 bg-stone-50 text-center">
-              <button
-                onClick={() => setSelectedMember(null)}
-                className="px-6 py-2 rounded-xl bg-emerald-900 text-gold-200 text-sm font-semibold hover:bg-emerald-800 transition-colors"
-              >
-                {locale === 'bn' ? 'বন্ধ করুন' : 'Close'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setFilterSheetOpen(false)}
+              className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-sakinah-sm transition-all min-h-[44px]"
+            >
+              {locale === 'bn' ? 'প্রয়োগ করুন' : 'Apply'}
+            </button>
           </div>
         </div>
-      )}
+      </BottomSheet>
+
+      {/* Member Profile Detail BottomSheet with Full Gold-Plate / Certificate Presentation */}
+      <BottomSheet
+        isOpen={!!selectedMember}
+        onClose={() => setSelectedMember(null)}
+        title={selectedMember ? getLocalized(selectedMember, 'name') : ''}
+      >
+        {selectedMember && (
+          <div className="flex flex-col items-center text-center space-y-3.5 py-2 text-ink">
+            {/* Membership Ribbon Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary-soft text-primary-dark font-bold text-xs border border-primary/20">
+              <Sparkles className="w-3.5 h-3.5 text-gold-text" />
+              <span>
+                {t('members.member_no')}:{' '}
+                {locale === 'bn'
+                  ? toBanglaNum(selectedMember.membershipNo || selectedMember.id)
+                  : selectedMember.membershipNo || selectedMember.id}
+              </span>
+            </div>
+
+            {/* Arch-Top Photo */}
+            <div className="w-24 h-32 rounded-t-full rounded-b-xl border-2 border-gold/70 overflow-hidden bg-primary-soft shadow-sakinah-sm flex items-center justify-center">
+              {selectedMember.photoPath ? (
+                <img
+                  src={getImageUrl(selectedMember.photoPath)}
+                  alt={getLocalized(selectedMember, 'name')}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-serif text-3xl font-bold text-primary-dark">
+                  {getLocalized(selectedMember, 'name')?.charAt(0) || 'M'}
+                </span>
+              )}
+            </div>
+
+            <h3 className="font-serif font-bold text-xl text-primary-dark">
+              {getLocalized(selectedMember, 'name')}
+            </h3>
+
+            {/* Father's Name */}
+            {selectedMember.fatherNameBn && (
+              <p className="text-xs text-ink-muted flex items-center gap-1">
+                <User className="w-3.5 h-3.5 text-gold-text" />
+                <span>
+                  {locale === 'bn' ? 'পিতা: ' : 'Father: '}
+                  {getLocalized(selectedMember, 'fatherName')}
+                </span>
+              </p>
+            )}
+
+            {/* Address */}
+            {selectedMember.addressBn && (
+              <p className="text-xs text-ink-muted flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-gold-text" />
+                <span>{getLocalized(selectedMember, 'address')}</span>
+              </p>
+            )}
+
+            {/* Member Since */}
+            {selectedMember.memberSince && (
+              <p className="text-xs text-ink-muted flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-gold-text" />
+                <span>
+                  {locale === 'bn' ? 'যোগদানের বছর: ' : 'Enrolled Year: '}
+                  {locale === 'bn' ? toBanglaNum(selectedMember.memberSince) : selectedMember.memberSince}
+                </span>
+              </p>
+            )}
+
+            {/* Contribution Amount (Gold Plate) */}
+            {globalShowAmount && selectedMember.amount && (
+              <div className="w-full py-2.5 px-4 rounded-xl bg-gold-plate text-ink font-bold text-sm shadow-sakinah-sm">
+                <span>{locale === 'bn' ? 'মোট অনুদান: ' : 'Total Contribution: '}</span>
+                <span>{formatBDT(selectedMember.amount)}</span>
+              </div>
+            )}
+
+            {/* Bio or Notes */}
+            {(selectedMember.notesBn || selectedMember.notesEn) && (
+              <div className="w-full pt-3 border-t border-sand text-left text-xs leading-relaxed text-ink-muted">
+                <p className="font-bold text-primary-dark mb-1">
+                  {locale === 'bn' ? 'মন্তব্য / তথ্য:' : 'Notes:'}
+                </p>
+                <p className="whitespace-pre-line">{getLocalized(selectedMember, 'notes')}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }
-

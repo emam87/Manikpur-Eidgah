@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Map, Plus, Trash2, Eye, X, Compass, Layers, Check } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { BilingualInput } from '../components/BilingualInput.jsx';
 
 export function AdminLandMaps() {
   const { toBanglaNum } = useLanguage();
@@ -10,9 +11,11 @@ export function AdminLandMaps() {
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     titleBn: '',
+    titleEn: '',
     surveyType: 'CS',
     dagKhatianInfo: '',
     descriptionBn: '',
+    descriptionEn: '',
     sortOrder: 1,
   });
   const [mapFile, setMapFile] = useState(null);
@@ -51,8 +54,8 @@ export function AdminLandMaps() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.titleBn.trim() || !mapFile) {
-      alert('নকশার শিরোনাম ও ফাইল প্রদান আবশ্যক।');
+    if (!formData.titleBn.trim() || !formData.titleEn.trim() || !mapFile) {
+      alert('নকশার শিরোনাম বাংলা এবং ইংরেজি উভয় ভাষাতেই আবশ্যক এবং ফাইল নির্বাচন করুন।');
       return;
     }
 
@@ -82,7 +85,7 @@ export function AdminLandMaps() {
   };
 
   const handleDelete = async (id, title) => {
-    if (!window.confirm(`আপনি কি নিশ্চিত যে '${title}' নকশা ট্র্যাশে পাঠাতে চান?`)) return;
+    if (!window.confirm(`আপনি কি নিশ্চিত যে '${title}' নকশা ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলতে চান?`)) return;
 
     try {
       const res = await fetch(`/api/admin/land-maps/${id}`, { method: 'DELETE' });
@@ -97,13 +100,13 @@ export function AdminLandMaps() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gold-500/30 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-surface p-6 rounded-3xl border border-sand shadow-sakinah-sm">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-stone-900 flex items-center gap-2">
-            <Compass className="w-6 h-6 text-emerald-800" />
+          <h1 className="font-serif text-2xl font-bold text-ink flex items-center gap-2">
+            <Compass className="w-6 h-6 text-primary-dark" />
             <span>মৌজা নকশা ও জরিপ মানচিত্র ব্যবস্থাপনা</span>
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
+          <p className="text-xs text-ink-muted mt-1">
             সিএস, এসএ, আরএস ও বিএস অফিসিয়াল মৌজা জরিপ নকশা
           </p>
         </div>
@@ -120,39 +123,39 @@ export function AdminLandMaps() {
             setMapFile(null);
             setModalOpen(true);
           }}
-          className="px-4 py-2 rounded-xl bg-emerald-950 text-gold-200 text-xs font-bold hover:bg-emerald-900 transition-colors flex items-center gap-1.5 shadow-md"
+          className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors flex items-center gap-1.5 shadow-sakinah-sm"
         >
-          <Plus className="w-4 h-4 text-gold-400" />
+          <Plus className="w-4 h-4 text-gold" />
           <span>নতুন মৌজা নকশা আপলোড</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {maps.map((m) => (
-          <div key={m.id} className="bg-white rounded-3xl overflow-hidden border border-gold-500/30 shadow-sm flex flex-col justify-between">
-            <div className="relative aspect-[16/10] bg-stone-900 overflow-hidden">
+          <div key={m.id} className="bg-surface rounded-3xl overflow-hidden border border-sand shadow-sakinah-sm flex flex-col justify-between">
+            <div className="relative aspect-[16/10] bg-canvas-alt overflow-hidden">
               <img src={m.filePath} alt="" className="w-full h-full object-cover" />
-              <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-emerald-950 text-gold-300 font-bold text-xs font-mono">
+              <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-gold-plate text-ink font-bold text-xs font-mono shadow-sakinah-sm">
                 {m.surveyType}
               </div>
             </div>
 
             <div className="p-5 space-y-2">
-              <h3 className="font-serif font-bold text-base text-stone-900 line-clamp-1">
+              <h3 className="font-serif font-bold text-base text-ink line-clamp-1">
                 {m.titleBn}
               </h3>
               {m.dagKhatianInfo && (
-                <p className="text-xs text-stone-500 font-mono">
+                <p className="text-xs text-ink-muted font-mono">
                   দাগ/খতিয়ান: {m.dagKhatianInfo}
                 </p>
               )}
 
-              <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+              <div className="pt-3 border-t border-sand flex items-center justify-between">
                 <a
                   href={m.filePath}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-semibold hover:bg-emerald-100 flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-primary-soft text-primary-dark text-xs font-semibold hover:bg-primary hover:text-white transition-colors flex items-center gap-1"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>দেখুন</span>
@@ -160,7 +163,7 @@ export function AdminLandMaps() {
 
                 <button
                   onClick={() => handleDelete(m.id, m.titleBn)}
-                  className="p-1.5 rounded-lg text-red-600 hover:bg-red-50"
+                  className="p-1.5 rounded-lg text-danger hover:bg-danger-soft"
                   title="মুছে ফেলুন"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -172,35 +175,34 @@ export function AdminLandMaps() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 border border-gold-500/40 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h2 className="font-serif font-bold text-xl text-stone-900">মৌজা নকশা আপলোড</h2>
-              <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-stone-100 text-stone-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface rounded-3xl max-w-lg w-full p-6 sm:p-8 border border-sand shadow-sakinah-lift space-y-4">
+            <div className="flex items-center justify-between border-b border-sand pb-3">
+              <h2 className="font-serif font-bold text-xl text-ink">মৌজা নকশা আপলোড</h2>
+              <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-canvas-alt text-ink-muted">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">নকশার শিরোনাম *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.titleBn}
-                  onChange={(e) => setFormData({ ...formData, titleBn: e.target.value })}
-                  placeholder="যেমন: আরএস জরিপের মানিকপুর মৌজা নকশা"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                />
-              </div>
+              <BilingualInput
+                label="নকশার শিরোনাম"
+                required={true}
+                valueBn={formData.titleBn}
+                valueEn={formData.titleEn}
+                onChangeBn={(val) => setFormData({ ...formData, titleBn: val })}
+                onChangeEn={(val) => setFormData({ ...formData, titleEn: val })}
+                placeholderBn="যেমন: আরএস জরিপের মানিকপুর মৌজা নকশা"
+                placeholderEn="e.g. Manikpur Mouza Map of RS Survey"
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">জরিপের ধরন</label>
+                  <label className="block font-bold text-ink mb-1">জরিপের ধরন</label>
                   <select
                     value={formData.surveyType}
                     onChange={(e) => setFormData({ ...formData, surveyType: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-canvas border border-sand text-ink font-bold focus:outline-none focus:border-primary"
                   >
                     <option value="CS">সিএস (CS)</option>
                     <option value="SA">এসএ (SA)</option>
@@ -210,40 +212,52 @@ export function AdminLandMaps() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">দাগ ও খতিয়ান নম্বর</label>
+                  <label className="block font-bold text-ink mb-1">দাগ ও খতিয়ান নম্বর</label>
                   <input
                     type="text"
                     value={formData.dagKhatianInfo}
                     onChange={(e) => setFormData({ ...formData, dagKhatianInfo: e.target.value })}
                     placeholder="দাগ নং: ১২৪, খতিয়ান নং: ৪৫"
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                    className="w-full px-3 py-2 rounded-xl bg-canvas border border-sand text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
 
+              <BilingualInput
+                label="নকশার বিবরণ (ঐচ্ছিক)"
+                isTextArea={true}
+                rows={2}
+                valueBn={formData.descriptionBn}
+                valueEn={formData.descriptionEn}
+                onChangeBn={(val) => setFormData({ ...formData, descriptionBn: val })}
+                onChangeEn={(val) => setFormData({ ...formData, descriptionEn: val })}
+                placeholderBn="নকশার অতিরিক্ত বিবরণ বা নোট..."
+                placeholderEn="Additional description or notes for this map..."
+              />
+
               <div>
-                <label className="block font-bold text-stone-700 mb-1">নকশার ফাইল (ছবি বা স্ক্যান কপি) *</label>
+                <label className="block font-bold text-ink mb-1">নকশার ফাইল (ছবি বা স্ক্যান কপি) *</label>
                 <input
                   type="file"
                   required
                   accept="image/*,.pdf"
                   onChange={(e) => setMapFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-950 file:text-gold-200"
+                  className="w-full text-xs text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-hover"
                 />
               </div>
 
-              <div className="pt-3 border-t border-stone-100 flex items-center justify-end gap-3">
+              <div className="pt-3 border-t border-sand flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-700 font-semibold"
+                  className="px-4 py-2 rounded-xl border border-sand text-ink-muted hover:bg-canvas-alt font-semibold"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2 rounded-xl bg-emerald-950 text-gold-200 font-bold shadow-md"
+                  className="px-6 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold shadow-sakinah-sm disabled:opacity-50"
                 >
                   {saving ? 'আপলোড হচ্ছে...' : 'আপলোড নিশ্চিত করুন'}
                 </button>

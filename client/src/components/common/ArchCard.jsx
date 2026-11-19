@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * ArchCard: Reusable Ivory Heritage card with arch styling and hairline gold border.
+ * ArchCard: Reusable Sakinah card with gentle shadow and warm sand border.
  */
 export function ArchCard({
   children,
@@ -11,13 +11,13 @@ export function ArchCard({
   onClick,
 }) {
   const variantStyles = {
-    white: 'bg-white text-stone-900 border-gold-500/30',
-    emerald: 'bg-emerald-800 text-ivory-50 border-gold-500/40 shadow-emerald-card',
-    ivory: 'bg-ivory-50 text-stone-900 border-gold-500/25',
+    white: 'bg-surface text-ink border-sand shadow-sakinah-sm',
+    emerald: 'bg-primary text-white border-gold/40 shadow-sakinah-card',
+    ivory: 'bg-canvas-alt text-ink border-sand shadow-sakinah-sm',
   };
 
   const hoverClasses = hoverEffect
-    ? 'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-gold-500/70'
+    ? 'transition-all duration-300 hover:-translate-y-1 hover:shadow-sakinah-lift hover:border-primary/40'
     : '';
 
   return (
@@ -29,4 +29,3 @@ export function ArchCard({
     </div>
   );
 }
-

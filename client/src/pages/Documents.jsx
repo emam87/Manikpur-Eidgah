@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, Search, Download, Eye, X, ExternalLink, Calendar, 
-  FileCheck, ShieldCheck, ChevronLeft, ChevronRight, FileSpreadsheet,
-  AlertCircle
+import {
+  FileText,
+  Search,
+  Download,
+  Eye,
+  X,
+  Calendar,
+  Filter,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
-import { EightPointStar, StarDivider } from '../components/common/EightPointStar.jsx';
+import { Breadcrumb } from '../components/common/Breadcrumb.jsx';
+import { BottomSheet } from '../components/common/BottomSheet.jsx';
 
 export function Documents() {
   const { locale, t, toBanglaNum, getLocalized } = useLanguage();
 
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({ page: 1, limit: 12, total: 0, totalPages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   // Lock body scroll when document preview modal is open
   useEffect(() => {
@@ -44,15 +51,18 @@ export function Documents() {
   ];
 
   useEffect(() => {
-    fetchDocuments();
-  }, [searchQuery, selectedCategory, currentPage]);
+    setCurrentPage(1);
+    loadDocuments(1, false);
+  }, [searchQuery, selectedCategory]);
 
-  const fetchDocuments = async () => {
-    setLoading(true);
+  const loadDocuments = async (page = 1, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
     try {
       const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '12',
+        page: page.toString(),
+        limit: '20',
       });
       if (searchQuery.trim()) params.append('q', searchQuery.trim());
       if (selectedCategory) params.append('category', selectedCategory);
@@ -61,14 +71,25 @@ export function Documents() {
       if (!res.ok) throw new Error('Failed to fetch documents');
       const data = await res.json();
       if (data.success) {
-        setDocuments(data.documents || []);
-        setPagination(data.pagination || { page: 1, limit: 12, total: 0, totalPages: 1 });
+        if (append) {
+          setDocuments((prev) => [...prev, ...(data.documents || [])]);
+        } else {
+          setDocuments(data.documents || []);
+        }
+        setPagination(data.pagination || { page, limit: 20, total: 0, totalPages: 1 });
       }
     } catch (err) {
       console.error('Error fetching documents:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleLoadMore = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    loadDocuments(nextPage, true);
   };
 
   const formatFileSize = (bytes) => {
@@ -84,144 +105,160 @@ export function Documents() {
     return locale === 'bn' ? found.labelBn : found.labelEn;
   };
 
+  const hasMore = documents.length < pagination.total;
+
   return (
-    <div className="py-10 sm:py-16">
-      <SEO 
-        title={locale === 'bn' ? 'দলিল ও কাগজপত্র' : 'Legal Documents Archive'} 
-        description={locale === 'bn' ? 'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের ওয়াকফ দলিল, খতিয়ান, পর্চা ও আইনি কাগজপত্রের উন্মুক্ত সংরক্ষণাগার।' : 'Public legal archive of registered waqf deeds, khatians, and official records of Manikpur Eidgah.'}
+    <div className="py-4 sm:py-8 page-enter">
+      <SEO
+        title={locale === 'bn' ? 'দলিল ও কাগজপত্র' : 'Legal Documents Archive'}
+        description={
+          locale === 'bn'
+            ? 'মানিকপুর ঈদগাহের ওয়াকফ দলিল, খতিয়ান, পর্চা ও আইনি কাগজপত্রের উন্মুক্ত সংরক্ষণাগার।'
+            : 'Public legal archive of registered waqf deeds, khatians, and official records of Manikpur Eidgah.'
+        }
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950 text-gold-300 text-xs sm:text-sm font-semibold mb-3 border border-gold-500/40">
-            <ShieldCheck className="w-3.5 h-3.5 text-gold-400" />
-            <span>{locale === 'bn' ? 'স্বচ্ছতা ও আইনি নিশ্চয়তা' : 'Legal Transparency'}</span>
-            <EightPointStar className="w-3.5 h-3.5 text-gold-400" />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <Breadcrumb items={[{ label: locale === 'bn' ? 'দলিল ও স্বচ্ছতা' : 'Legal Documents' }]} />
+
+        {/* Page Title & Total Count Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sand pb-3">
+          <div>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary-dark tracking-tight">
+              {locale === 'bn' ? 'দলিল ও কাগজপত্র সংরক্ষণাগার' : 'Legal Documents Archive'}
+            </h1>
+            <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
+              {locale === 'bn'
+                ? 'ওয়াকফ দলিল, খতিয়ান, পর্চা ও আইনি কাগজপত্রের উন্মুক্ত ডিজিটাল কপি'
+                : 'Registered waqf deeds, khatians, and official records of Manikpur Eidgah'}
+            </p>
           </div>
-          <h1 className="font-serif text-3xl sm:text-5xl font-extrabold text-stone-900 tracking-tight mb-4">
-            {locale === 'bn' ? 'দলিল ও স্বচ্ছতা সংরক্ষণাগার' : 'Legal Documents Archive'}
-          </h1>
-          <p className="text-stone-600 text-sm sm:text-base leading-relaxed">
-            {locale === 'bn' 
-              ? 'মানিকপুর কেন্দ্রীয় শাহী ঈদগাহের ১.৩৫ একর ওয়াকফ ভূমির সকল বৈধ দলিল, খতিয়ান ও আইনি কাগজপত্রের উন্মুক্ত সংগ্রহশালা।' 
-              : 'Official open archive of registered waqf deeds, surveys, mutation, and legal records ensuring total community transparency.'}
-          </p>
-          <StarDivider className="my-4" />
+          <div className="text-xs font-semibold text-primary-dark bg-primary-soft px-3 py-1 rounded-full border border-primary/20 w-fit">
+            <span>{locale === 'bn' ? 'মোট নথি: ' : 'Total: '}</span>
+            <span className="font-bold tabular-nums">
+              {locale === 'bn' ? toBanglaNum(pagination.total) : pagination.total}
+            </span>
+            <span>{locale === 'bn' ? ' টি' : ''}</span>
+          </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-          {categories.map((cat) => (
+        {/* Sticky Search Field + Filter Button */}
+        <div className="sticky top-14 sm:top-16 z-20 bg-canvas/95 backdrop-blur-md py-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder={locale === 'bn' ? 'দলিলের নাম বা নম্বর খুঁজুন...' : 'Search by document name or number...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-sand bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 shadow-sakinah-sm"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-ink-muted hover:text-ink"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Button (Opens Category Bottom Sheet) */}
             <button
-              key={cat.value}
-              onClick={() => {
-                setSelectedCategory(cat.value);
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all ${
-                selectedCategory === cat.value
-                  ? 'bg-emerald-900 text-gold-200 shadow-md border border-gold-500/50'
-                  : 'bg-white text-stone-700 hover:bg-stone-50 border border-stone-200'
+              type="button"
+              onClick={() => setFilterSheetOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-all min-h-[42px] tap-feedback ${
+                selectedCategory
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-surface text-primary-dark border-sand hover:bg-primary-soft/50'
               }`}
+              aria-label="Filter documents by category"
             >
-              {locale === 'bn' ? cat.labelBn : cat.labelEn}
+              <Filter className="w-4 h-4" />
+              <span>{locale === 'bn' ? 'ক্যাটাগরি' : 'Category'}</span>
+              {selectedCategory && <span className="w-2 h-2 rounded-full bg-gold" />}
             </button>
-          ))}
-        </div>
-
-        {/* Search Bar */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gold-500/30 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative w-full sm:max-w-md">
-            <input
-              type="text"
-              placeholder={locale === 'bn' ? 'দলিলের শিরোনাম বা নম্বর দিয়ে অনুসন্ধান করুন...' : 'Search by title or document number...'}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-gold-500/50 text-sm bg-stone-50/50"
-            />
-            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5" />
-          </div>
-
-          <div className="text-xs sm:text-sm text-stone-500 w-full sm:w-auto text-right">
-            {locale === 'bn' ? 'মোট সংরক্ষিত নথি: ' : 'Total Documents: '}
-            <span className="font-bold text-emerald-900 font-serif text-base">{toBanglaNum(pagination.total)}</span>
-            {locale === 'bn' ? ' টি' : ''}
           </div>
         </div>
 
-        {/* Documents Grid */}
+        {/* Documents Grid / Feed */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 rounded-2xl bg-stone-100 animate-pulse border border-stone-200" />
+              <div key={i} className="h-32 sm:h-52 rounded-2xl bg-surface border border-sand animate-pulse" />
             ))}
           </div>
         ) : documents.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-stone-200 space-y-4">
-            <FileText className="w-12 h-12 text-stone-300 mx-auto" />
-            <h3 className="font-serif text-xl font-bold text-stone-800">
-              {locale === 'bn' ? 'কোনো উন্মুক্ত দলিল পাওয়া যায়নি' : 'No Public Documents Found'}
+          <div className="text-center py-16 bg-surface rounded-2xl border border-sand shadow-sakinah-sm space-y-3">
+            <FileText className="w-10 h-10 text-ink-muted/50 mx-auto" />
+            <h3 className="font-serif text-lg font-bold text-primary-dark">
+              {locale === 'bn' ? 'কোনো নথি পাওয়া যায়নি' : 'No Documents Found'}
             </h3>
-            <p className="text-stone-500 text-sm max-w-md mx-auto">
-              {locale === 'bn' ? 'এই ক্যাটাগরিতে কোনো নথি অন্তর্ভুক্ত নেই অথবা অনুসন্ধানে পাওয়া যায়নি।' : 'No documents available under this category.'}
+            <p className="text-xs text-ink-muted">
+              {locale === 'bn' ? 'অনুসন্ধান বা ক্যাটাগরি পরিবর্তন করে আবার চেষ্টা করুন।' : 'Try adjusting your search criteria.'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
             {documents.map((doc) => {
+              const title = getLocalized(doc, 'title');
+              if (locale === 'en' && !title) return null;
               const isPdf = (doc.fileMime && doc.fileMime.includes('pdf')) || (doc.filePath && doc.filePath.endsWith('.pdf'));
 
               return (
                 <div
                   key={doc.id}
-                  className="bg-white rounded-2xl border border-gold-500/30 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+                  className="bg-surface rounded-2xl border border-sand p-4 sm:p-5 shadow-sakinah-sm hover:border-gold/60 transition-all flex flex-col justify-between"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-primary-soft text-primary-dark text-[10px] font-bold border border-primary/20">
                         {getCategoryLabel(doc.category)}
                       </span>
                       {doc.documentDate && (
-                        <span className="text-xs text-stone-400 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
+                        <span className="text-[11px] text-ink-muted flex items-center gap-1 tabular-nums">
+                          <Calendar className="w-3 h-3 text-gold-text" />
                           {new Date(doc.documentDate).getFullYear()}
                         </span>
                       )}
                     </div>
 
-                    <h3 className="font-serif font-bold text-lg text-stone-900 group-hover:text-emerald-800 transition-colors">
-                      {getLocalized(doc, 'title')}
+                    <h3 className="font-serif font-bold text-sm sm:text-base text-primary-dark line-clamp-2 leading-snug">
+                      {title}
                     </h3>
 
                     {doc.documentNo && (
-                      <p className="text-xs text-stone-500 font-mono">
+                      <p className="text-xs text-ink-muted font-mono tabular-nums">
                         {locale === 'bn' ? 'নম্বর: ' : 'Doc No: '}
-                        <span className="font-semibold text-stone-700">{toBanglaNum(doc.documentNo)}</span>
+                        <span className="font-semibold text-ink">
+                          {locale === 'bn' ? toBanglaNum(doc.documentNo) : doc.documentNo}
+                        </span>
                       </p>
                     )}
 
-                    {doc.descriptionBn && (
-                      <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
+                    {getLocalized(doc, 'description') && (
+                      <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">
                         {getLocalized(doc, 'description')}
                       </p>
                     )}
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-stone-100 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-stone-400">
-                      {isPdf ? 'PDF নথি' : 'চিত্র / স্ক্যান'} {doc.fileSize ? `(${formatFileSize(doc.fileSize)})` : ''}
+                  <div className="pt-3 mt-3 border-t border-sand flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-ink-muted">
+                      {isPdf ? (locale === 'bn' ? 'PDF নথি' : 'PDF') : (locale === 'bn' ? 'চিত্র' : 'Image')}{' '}
+                      {doc.fileSize ? `(${formatFileSize(doc.fileSize)})` : ''}
                     </span>
 
                     <div className="flex items-center gap-2">
                       {doc.filePath && (
                         <>
                           <button
+                            type="button"
                             onClick={() => setPreviewDoc(doc)}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-semibold hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-xl bg-primary-soft text-primary-dark text-xs font-bold hover:bg-primary hover:text-white transition-colors flex items-center gap-1 min-h-[36px] tap-feedback"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>{locale === 'bn' ? 'দেখুন' : 'Preview'}</span>
@@ -232,10 +269,10 @@ export function Documents() {
                             target="_blank"
                             rel="noopener noreferrer"
                             download
-                            className="px-3 py-1.5 rounded-lg bg-gold-50 text-gold-800 text-xs font-semibold hover:bg-gold-100 transition-colors flex items-center gap-1 border border-gold-300/40"
+                            className="p-1.5 rounded-xl bg-canvas-alt text-ink hover:text-primary border border-sand transition-colors flex items-center justify-center min-w-[36px] min-h-[36px] tap-feedback"
+                            aria-label={locale === 'bn' ? 'ডাউনলোড' : 'Download'}
                           >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>{locale === 'bn' ? 'ডাউনলোড' : 'Download'}</span>
+                            <Download className="w-4 h-4" />
                           </a>
                         </>
                       )}
@@ -247,123 +284,109 @@ export function Documents() {
           </div>
         )}
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-6">
+        {/* Load More Button (No numbered pagination) */}
+        {!loading && hasMore && (
+          <div className="text-center pt-4 pb-6">
             <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              type="button"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface border border-sand hover:border-primary/40 text-primary-dark text-sm font-bold shadow-sakinah-sm hover:shadow-sakinah-card transition-all disabled:opacity-50 min-h-[46px] tap-feedback"
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>{locale === 'bn' ? 'পূর্ববর্তী' : 'Previous'}</span>
-            </button>
-
-            <span className="px-4 py-2 text-sm text-stone-600 font-medium">
-              {locale === 'bn' ? 'পৃষ্ঠা ' : 'Page '}
-              <span className="font-bold text-emerald-900">{toBanglaNum(currentPage)}</span>
-              {locale === 'bn' ? ' / ' : ' of '}
-              <span className="font-bold text-emerald-900">{toBanglaNum(pagination.totalPages)}</span>
-            </span>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
-              disabled={currentPage >= pagination.totalPages}
-              className="px-4 py-2 rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-medium hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-            >
-              <span>{locale === 'bn' ? 'পরবর্তী' : 'Next'}</span>
-              <ChevronRight className="w-4 h-4" />
+              {loadingMore ? (
+                <span>{locale === 'bn' ? 'লোড হচ্ছে...' : 'Loading...'}</span>
+              ) : (
+                <span>{locale === 'bn' ? 'আরও দেখুন (২০টি)' : 'Load More (20)'}</span>
+              )}
             </button>
           </div>
         )}
       </div>
 
-      {/* Preview Modal */}
+      {/* Category Filter Bottom Sheet */}
+      <BottomSheet
+        isOpen={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        title={locale === 'bn' ? 'দলিলের ক্যাটাগরি' : 'Document Category'}
+      >
+        <div className="space-y-1.5 py-2">
+          {categories.map((cat) => (
+            <button
+              key={cat.value}
+              type="button"
+              onClick={() => {
+                setSelectedCategory(cat.value);
+                setFilterSheetOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition-all tap-feedback min-h-[46px] ${
+                selectedCategory === cat.value
+                  ? 'bg-primary text-white font-bold shadow-sakinah-sm'
+                  : 'bg-canvas-alt text-ink hover:bg-primary-soft/50'
+              }`}
+            >
+              <span>{locale === 'bn' ? cat.labelBn : cat.labelEn}</span>
+              {selectedCategory === cat.value && <span className="text-xs">✓</span>}
+            </button>
+          ))}
+        </div>
+      </BottomSheet>
+
+      {/* Document Fullscreen Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col overflow-hidden border border-gold-500/40 shadow-2xl relative">
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 bg-emerald-950 text-ivory flex items-center justify-between border-b border-gold-500/30">
-              <div className="truncate pr-4">
-                <span className="text-xs text-gold-300 font-semibold block uppercase">
+        <div
+          className="fixed inset-0 z-50 bg-scrim/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in"
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            className="bg-surface rounded-2xl max-w-4xl w-full max-h-[92dvh] flex flex-col shadow-sakinah-lift overflow-hidden border border-sand"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-sand bg-canvas-alt">
+              <div className="min-w-0 pr-4">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gold-text block">
                   {getCategoryLabel(previewDoc.category)}
                 </span>
-                <h3 className="font-serif font-bold text-base sm:text-lg truncate">
+                <h3 className="font-serif font-bold text-sm sm:text-base text-primary-dark truncate">
                   {getLocalized(previewDoc, 'title')}
                 </h3>
               </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={previewDoc.filePath}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center tap-target"
-                  title="নতুন ট্যাবে খুলুন"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-                <button
-                  onClick={() => setPreviewDoc(null)}
-                  className="p-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-gold-300 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center tap-target"
-                  aria-label="Close document preview"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewDoc(null)}
+                className="p-1.5 rounded-full bg-surface text-ink-muted hover:text-ink border border-sand min-w-[36px] min-h-[36px] flex items-center justify-center"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Modal Viewer */}
-            <div className="flex-1 bg-stone-100 overflow-auto flex items-center justify-center p-2 sm:p-4">
-              {(previewDoc.fileMime && previewDoc.fileMime.includes('pdf')) || previewDoc.filePath.endsWith('.pdf') ? (
-                <div className="w-full h-full flex flex-col items-center">
-                  <iframe
-                    src={`${previewDoc.filePath}#toolbar=0`}
-                    title={getLocalized(previewDoc, 'title')}
-                    className="w-full h-full rounded-xl border border-stone-200 hidden sm:block"
-                  />
-                  {/* Mobile PDF Fallback */}
-                  <div className="sm:hidden text-center p-8 bg-white rounded-2xl border border-stone-200 space-y-4 my-auto">
-                    <FileText className="w-12 h-12 text-emerald-800 mx-auto" />
-                    <p className="text-sm text-stone-700">
-                      {locale === 'bn' 
-                        ? 'মোবাইলে সরাসরি পিডিএফ প্রদর্শনে সীমাবদ্ধতা থাকলে ডাউনলোড করে দেখুন।' 
-                        : 'Tap below to download or view this PDF directly on your device.'}
-                    </p>
-                    <a
-                      href={previewDoc.filePath}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-900 text-gold-200 font-semibold text-sm shadow-md"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>{locale === 'bn' ? 'পিডিএফ খুলুন / ডাউনলোড' : 'Open / Download PDF'}</span>
-                    </a>
-                  </div>
-                </div>
+            <div className="flex-1 overflow-auto p-4 bg-canvas flex items-center justify-center">
+              {((previewDoc.fileMime && previewDoc.fileMime.includes('pdf')) || (previewDoc.filePath && previewDoc.filePath.endsWith('.pdf'))) ? (
+                <iframe
+                  src={previewDoc.filePath}
+                  title={getLocalized(previewDoc, 'title')}
+                  className="w-full h-[65dvh] border-0 rounded-xl bg-surface"
+                />
               ) : (
                 <img
                   src={previewDoc.filePath}
                   alt={getLocalized(previewDoc, 'title')}
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-md"
+                  className="max-w-full max-h-[65dvh] object-contain rounded-xl shadow-sakinah-sm"
                 />
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-3 sm:p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between">
-              <span className="text-xs text-stone-500">
-                {previewDoc.documentNo && `${locale === 'bn' ? 'দলিল নং: ' : 'Doc No: '}${toBanglaNum(previewDoc.documentNo)}`}
-              </span>
-              <div className="flex items-center gap-2">
-                <a
-                  href={previewDoc.filePath}
-                  download
-                  className="px-4 py-2 rounded-xl bg-emerald-900 text-gold-200 text-xs sm:text-sm font-semibold hover:bg-emerald-800 transition-colors flex items-center gap-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>{locale === 'bn' ? 'ডাউনলোড করুন' : 'Download'}</span>
-                </a>
-              </div>
+            <div className="p-3 border-t border-sand bg-canvas-alt flex items-center justify-end gap-2">
+              <a
+                href={previewDoc.filePath}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold shadow-sakinah-sm flex items-center gap-1.5 min-h-[40px] tap-feedback"
+              >
+                <Download className="w-4 h-4" />
+                <span>{locale === 'bn' ? 'নথিটি ডাউনলোড করুন' : 'Download File'}</span>
+              </a>
             </div>
           </div>
         </div>
@@ -371,4 +394,3 @@ export function Documents() {
     </div>
   );
 }
-

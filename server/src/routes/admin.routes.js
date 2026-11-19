@@ -14,12 +14,20 @@ import {
   updateMember,
   deleteMember,
   importMembers,
-  // Donors
+  // Donors (Archived monetary donations)
   getDonors,
   createDonor,
   updateDonor,
   deleteDonor,
   importDonors,
+  // Land Donors
+  getAdminLandDonors,
+  createLandDonor,
+  updateLandDonor,
+  deleteLandDonor,
+  exportLandDonorsCsv,
+  importLandDonorsCsv,
+  getLandDonorsTemplate,
   // Committee
   getCommitteeMembers,
   createCommitteeMember,
@@ -59,6 +67,7 @@ import {
   // Settings
   getSettings,
   updateSettings,
+  uploadHeroImageSetting,
   // Users (ADMIN only)
   getUsers,
   createUser,
@@ -73,6 +82,10 @@ import {
   getActivityLogs,
   // Backup
   getDatabaseBackup,
+  getMediaBackup,
+  // Missing Translations Audit Report
+  getMissingTranslationsReport,
+  getNameReviewReport,
 } from '../controllers/admin.controller.js';
 
 const router = Router();
@@ -82,6 +95,8 @@ router.use(requireAuth);
 
 // 1. Dashboard
 router.get('/dashboard', getDashboardStats);
+router.get('/missing-translations', getMissingTranslationsReport);
+router.get('/name-review', getNameReviewReport);
 
 // 2. Members
 router.get('/members', getMembers);
@@ -90,12 +105,21 @@ router.put('/members/:id', uploadSingleImage, updateMember);
 router.delete('/members/:id', deleteMember);
 router.post('/members/import', importMembers);
 
-// 3. Donors
+// 3. Donors (Archived Donations)
 router.get('/donors', getDonors);
 router.post('/donors', createDonor);
 router.put('/donors/:id', updateDonor);
 router.delete('/donors/:id', deleteDonor);
 router.post('/donors/import', importDonors);
+
+// 3.1 Land Donors (জমিদাতা পরিষদ)
+router.get('/land-donors', getAdminLandDonors);
+router.get('/land-donors/export', exportLandDonorsCsv);
+router.get('/land-donors/template', getLandDonorsTemplate);
+router.post('/land-donors/import', importLandDonorsCsv);
+router.post('/land-donors', uploadSingleImage, createLandDonor);
+router.put('/land-donors/:id', uploadSingleImage, updateLandDonor);
+router.delete('/land-donors/:id', deleteLandDonor);
 
 // 4. Committee
 router.get('/committee', getCommitteeMembers);
@@ -142,6 +166,7 @@ router.post('/designs/video', updateDesignVideo);
 // 10. Settings
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
+router.post('/settings/hero-image', uploadSingleImage, uploadHeroImageSetting);
 
 // 11. Users (ADMIN only)
 router.get('/users', requireRole('ADMIN'), getUsers);
@@ -158,8 +183,9 @@ router.post('/trash/permanent-delete', requireRole('ADMIN'), permanentDeleteTras
 // 13. Activity Log
 router.get('/activity-logs', getActivityLogs);
 
-// 14. Full Database Backup (ADMIN only)
+// 14. Full Database Backup & Media Archive (ADMIN only)
 router.get('/backup/export', requireRole('ADMIN'), getDatabaseBackup);
+router.get('/backup/media', requireRole('ADMIN'), getMediaBackup);
 
 export default router;
 

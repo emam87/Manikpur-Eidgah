@@ -49,6 +49,14 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  // Handle Prisma Unique Constraint Violations cleanly
+  if (err.code === 'P2002') {
+    return res.status(409).json({
+      success: false,
+      error: 'এই নম্বর, স্লাগ বা তথ্যটি ইতিমধ্যে ডাটাবেজে বিদ্যমান রয়েছে। অনুগ্রহ করে ভিন্ন মান ব্যবহার করুন।',
+    });
+  }
+
   // General server error
   console.error('Unhandled Application Error:', err);
 

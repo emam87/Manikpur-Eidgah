@@ -1,4 +1,4 @@
-# মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ (Manikpur Central Shahi Eidgah)
+# মানিকপুর ঈদগাহ (Manikpur Eidgah)
 
 > **Historic Community Eidgah Ground & Waqf Estate • Established 1965**  
 > Manikpur, Bancharampur, Brahmanbaria, Bangladesh.  
@@ -8,7 +8,7 @@
 
 ## 🏛️ Project Overview
 
-This repository houses the complete, modern full-stack implementation of the **Manikpur Central Shahi Eidgah** platform. Rebuilt to achieve **100% feature parity** with zero feature loss from the legacy system while elevating the design to the bespoke **"Ivory Heritage"** aesthetic (`#FAF7F0` ivory, `#0F5132` deep emerald, `#B8923F` antique gold).
+This repository houses the complete, modern full-stack implementation of the **Manikpur Eidgah** platform. Rebuilt to achieve **100% feature parity** with zero feature loss from the legacy system while elevating the design to the bespoke **"Ivory Heritage"** aesthetic (`#FAF7F0` ivory, `#0F5132` deep emerald, `#B8923F` antique gold).
 
 ### Key Architectural Highlights:
 - **Clean Monorepo Structure**: Partitioned cleanly into [`client/`](./client) (React.js SPA) and [`server/`](./server) (Express.js REST API).
@@ -222,6 +222,6 @@ npm run dev:client    # Frontend SPA on http://localhost:5173
 
 ## 📄 License & Attribution
 
-Developed with reverence for the **Manikpur Central Shahi Eidgah (মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ)** community and Waqf Estate.  
-© 1965 – 2026 মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ পরিচালনা কমিটি। সর্বস্বত্ব সংরক্ষিত।
+Developed with reverence for the **Manikpur Eidgah (মানিকপুর ঈদগাহ)** community and Waqf Estate.  
+© 1965 – 2026 মানিকপুর ঈদগাহ পরিচালনা কমিটি। সর্বস্বত্ব সংরক্ষিত।
 

@@ -1,4 +1,4 @@
-# Manikpur Eidgah (মানিকপুর কেন্দ্রীয় শাহী ঈদগাহ) — Production Deployment Guide
+# Manikpur Eidgah (মানিকপুর ঈদগাহ) — Production Deployment Guide
 
 This guide walks you through deploying the complete Manikpur Eidgah platform to production across **Vercel** (Frontend SPA), **Render / VPS** (Node.js REST API), **Supabase** (PostgreSQL), and **Cloudflare R2** (S3-compatible Object Storage).
 

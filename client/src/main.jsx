@@ -5,6 +5,8 @@ import { HelmetProvider } from 'react-helmet-async';
 import { LanguageProvider } from './context/LanguageContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
+import { CacheProvider } from './context/CacheContext.jsx';
 import { App } from './App.jsx';
 import './index.css';
 
@@ -15,7 +17,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <LanguageProvider>
           <ThemeProvider>
             <SettingsProvider>
-              <App />
+              <CacheProvider>
+                <ToastProvider>
+                  <App />
+                </ToastProvider>
+              </CacheProvider>
             </SettingsProvider>
           </ThemeProvider>
         </LanguageProvider>
@@ -23,4 +29,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </HelmetProvider>
   </React.StrictMode>
 );
-

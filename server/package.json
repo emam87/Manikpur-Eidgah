@@ -2,7 +2,7 @@
   "name": "manikpur-eidgah-server",
   "version": "1.0.0",
   "private": true,
-  "description": "Backend REST API for Manikpur Central Shahi Eidgah",
+  "description": "Backend REST API for Manikpur Eidgah",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

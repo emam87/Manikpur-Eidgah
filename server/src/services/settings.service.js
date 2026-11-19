@@ -53,14 +53,17 @@ export const SettingsService = {
       return entry.bn || entry.en || defaultValue;
     }
 
-    const primary = locale === 'en' ? entry.en : entry.bn;
-    const fallback = locale === 'en' ? entry.bn : entry.en;
-
-    if (primary !== null && primary !== undefined && primary !== '') {
-      return primary;
+    // Strict zero-fallback: when English is requested, NEVER fall back to Bengali
+    if (locale === 'en') {
+      if (entry.en !== null && entry.en !== undefined && entry.en !== '') {
+        return entry.en;
+      }
+      return defaultValue;
     }
-    if (fallback !== null && fallback !== undefined && fallback !== '') {
-      return fallback;
+
+    // When Bengali is requested
+    if (entry.bn !== null && entry.bn !== undefined && entry.bn !== '') {
+      return entry.bn;
     }
 
     return defaultValue;
