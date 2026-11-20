@@ -377,10 +377,136 @@
   color: #1F2D2A;
 }
 
-/* Subtle Gold Accent Plate for Badges & Distinctions */
-.bg-gold-plate {
-  background: linear-gradient(135deg, var(--gold-plate-from) 0%, var(--gold-plate-to) 100%);
-  color: #1F2D2A;
+/* Premium Lifetime Membership Card Effects */
+.member-card-premium {
+  background: linear-gradient(
+    135deg,
+    var(--surface) 0%,
+    var(--surface) 58%,
+    rgb(var(--gold-rgb) / 0.08) 100%
+  );
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.dark .member-card-premium {
+  background: linear-gradient(
+    135deg,
+    var(--surface) 0%,
+    var(--surface) 54%,
+    rgb(var(--gold-rgb) / 0.12) 100%
+  );
+}
+
+.member-card-premium:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 14px 32px -8px rgb(var(--primary-rgb) / 0.14),
+    0 6px 22px -4px rgb(var(--gold-rgb) / 0.28);
+}
+
+html.dark .member-card-premium:hover {
+  box-shadow:
+    0 16px 36px -6px rgba(0, 0, 0, 0.5),
+    0 6px 24px -4px rgb(var(--gold-rgb) / 0.24);
+}
+
+.member-card-spotlight {
+  background: radial-gradient(
+    280px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgb(var(--gold-rgb) / 0.16),
+    rgb(var(--gold-plate-from-rgb) / 0.06) 40%,
+    transparent 72%
+  );
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.member-card-premium:hover .member-card-spotlight {
+  opacity: 1;
+}
+
+.member-card-sheen {
+  background: linear-gradient(
+    108deg,
+    transparent 24%,
+    rgba(255, 255, 255, 0.38) 46%,
+    rgb(var(--gold-plate-from-rgb) / 0.28) 52%,
+    transparent 72%
+  );
+  transform: translateX(-135%) skewX(-16deg);
+  transition: transform 780ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.dark .member-card-sheen {
+  background: linear-gradient(
+    108deg,
+    transparent 24%,
+    rgb(var(--gold-plate-from-rgb) / 0.18) 48%,
+    rgba(255, 255, 255, 0.12) 53%,
+    transparent 72%
+  );
+}
+
+.member-card-premium:hover .member-card-sheen {
+  transform: translateX(155%) skewX(-16deg);
+}
+
+.gold-plate-premium {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgb(var(--gold-text-rgb) / 0.25),
+    0 4px 12px rgb(var(--gold-rgb) / 0.26);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 280ms ease;
+}
+
+.gold-plate-premium::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.52) 50%,
+    transparent 75%
+  );
+  transform: translateX(-140%);
+  transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.member-card-premium:hover .gold-plate-premium,
+.gold-plate-premium:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgb(var(--gold-text-rgb) / 0.3),
+    0 6px 18px rgb(var(--gold-rgb) / 0.38);
+}
+
+.member-card-premium:hover .gold-plate-premium::after,
+.gold-plate-premium:hover::after {
+  transform: translateX(140%);
+}
+
+/* Royal Digital Certificate Frame inside Member Detail Sheet */
+.certificate-frame {
+  background:
+    radial-gradient(circle at 50% 0%, rgb(var(--gold-plate-from-rgb) / 0.22) 0%, transparent 58%),
+    linear-gradient(180deg, var(--surface) 0%, rgb(var(--bg-alt-rgb) / 0.55) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--gold-rgb) / 0.25),
+    0 10px 28px -10px rgb(var(--gold-rgb) / 0.24);
+}
+
+html.dark .certificate-frame {
+  background:
+    radial-gradient(circle at 50% 0%, rgb(var(--gold-rgb) / 0.16) 0%, transparent 58%),
+    linear-gradient(180deg, var(--surface) 0%, rgb(var(--bg-rgb) / 0.7) 100%);
 }
 
 /* Arch-Top Image Frame */
@@ -504,6 +630,72 @@ html.dark .bg-hero-dawn {
   text-shadow: 0 2px 18px rgb(var(--dawn-cream-rgb) / 0.9);
 }
 
+/* Land Donor Horizontal Card (Curated Motion Allow-List + Low-End Perf) */
+.land-donor-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 124px;
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.land-donor-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgb(var(--primary-rgb) / 0.14) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 220ms ease, transform 220ms ease;
+  pointer-events: none;
+}
+
+.land-donor-card:active {
+  transform: scale(0.98);
+}
+
+.land-donor-card:active::after {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .land-donor-card:hover {
+    transform: translateY(-4px);
+    border-color: rgb(var(--gold-rgb) / 0.7);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+.land-donor-reveal {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.land-donor-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Lite Mode & Reduced Motion Overrides */
+html.lite-mode *,
+html.lite-mode ::before,
+html.lite-mode ::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+html.lite-mode .land-donor-reveal {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
 /* Reduced Motion Overrides */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -513,5 +705,10 @@ html.dark .bg-hero-dawn {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .land-donor-reveal {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

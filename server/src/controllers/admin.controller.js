@@ -846,6 +846,8 @@ export async function createLandDonor(req, res, next) {
         directory: 'land-donors',
         maxWidth: 800,
         maxHeight: 1000,
+        thumbWidth: 160,
+        thumbHeight: 200,
       });
       photoPath = processed.path;
     }
@@ -963,6 +965,8 @@ export async function updateLandDonor(req, res, next) {
         directory: 'land-donors',
         maxWidth: 800,
         maxHeight: 1000,
+        thumbWidth: 160,
+        thumbHeight: 200,
       });
       photoPath = processed.path;
     } else if (body.photoPath === '' || body.photoPath === null) {

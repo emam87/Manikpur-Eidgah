@@ -1,25 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Landmark,
   Search,
   Filter,
-  MapPin,
-  Calendar,
-  FileText,
-  Share2,
-  Check,
   X,
-  Compass,
+  RotateCcw,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO.jsx';
 import { Breadcrumb } from '../components/common/Breadcrumb.jsx';
 import { BottomSheet } from '../components/common/BottomSheet.jsx';
+import { LandDonorCard, LandDonorCardSkeleton } from '../components/land-donors/LandDonorCard.jsx';
+import { LandDonorDetailSheet } from '../components/land-donors/LandDonorDetailSheet.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { getImageUrl } from '../utils/imageUrl.js';
+import {
+  formatAreaPlate,
+  convertFromDecimal,
+  getHonorificPrefix,
+} from '../utils/landDonorHelpers.js';
+
+const DENSITY_STORAGE_KEY = 'eidgah_land_donor_density';
 
 export function LandDonors() {
-  const { locale, toBanglaNum, getLocalized } = useLanguage();
+  const { locale, toBanglaNum, formatDate, getLocalized } = useLanguage();
   const { showToast } = useToast();
 
   const [donors, setDonors] = useState([]);
@@ -27,61 +30,114 @@ export function LandDonors() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // Filters & controls
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
   const [selectedLandUse, setSelectedLandUse] = useState('');
   const [selectedDonationType, setSelectedDonationType] = useState('');
   const [selectedMouza, setSelectedMouza] = useState('');
   const [selectedDeceased, setSelectedDeceased] = useState('');
   const [sortOrder, setSortOrder] = useState('custom');
-
   const [displayUnit, setDisplayUnit] = useState('decimal');
+  const [density, setDensity] = useState(() => {
+    try {
+      const saved = localStorage.getItem(DENSITY_STORAGE_KEY);
+      return saved === 'compact' ? 'compact' : 'comfortable';
+    } catch {
+      return 'comfortable';
+    }
+  });
+
+  // Modals / Sheets
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Pagination (20 per page)
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
 
-  // Reset to page 1 on filter/search change
+  const handleDensityChange = (next) => {
+    setDensity(next);
+    try {
+      localStorage.setItem(DENSITY_STORAGE_KEY, next);
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  const activeFilterCount = [
+    selectedYear,
+    selectedLandUse,
+    selectedDonationType,
+    selectedMouza,
+    selectedDeceased,
+    sortOrder !== 'custom' ? sortOrder : '',
+  ].filter(Boolean).length;
+
+  const hasAnySearchOrFilter = Boolean(searchQuery.trim() || activeFilterCount > 0);
+
+  const loadDonors = useCallback(
+    async (page = 1, append = false) => {
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+
+      try {
+        const params = new URLSearchParams();
+        params.set('lang', locale);
+        params.set('page', String(page));
+        params.set('limit', '20');
+        if (searchQuery.trim()) params.set('q', searchQuery.trim());
+        if (selectedYear) params.set('year', selectedYear);
+        if (selectedLandUse) params.set('landUse', selectedLandUse);
+        if (selectedDonationType) params.set('donationType', selectedDonationType);
+        if (selectedMouza) params.set('mouza', selectedMouza);
+        if (selectedDeceased) params.set('isDeceased', selectedDeceased);
+        if (sortOrder) params.set('sort', sortOrder);
+
+        const res = await fetch(`/api/public/land-donors?${params.toString()}`);
+        if (!res.ok) throw new Error('Failed to fetch land donors');
+        const data = await res.json();
+        if (data && data.success) {
+          if (append) {
+            setDonors((prev) => [...prev, ...(data.donors || [])]);
+          } else {
+            setDonors(data.donors || []);
+          }
+          if (data.summary) setSummary(data.summary);
+          setPagination(
+            data.pagination || {
+              page,
+              limit: 20,
+              total: data.donors?.length || 0,
+              totalPages: 1,
+            }
+          );
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [
+      locale,
+      searchQuery,
+      selectedYear,
+      selectedLandUse,
+      selectedDonationType,
+      selectedMouza,
+      selectedDeceased,
+      sortOrder,
+    ]
+  );
+
+  // Reset to page 1 on filter/search/locale change
   useEffect(() => {
     setCurrentPage(1);
     loadDonors(1, false);
-  }, [searchQuery, selectedLandUse, selectedDonationType, selectedMouza, selectedDeceased, sortOrder]);
-
-  const loadDonors = async (page = 1, append = false) => {
-    if (append) setLoadingMore(true);
-    else setLoading(true);
-
-    try {
-      const params = new URLSearchParams();
-      if (searchQuery.trim()) params.set('q', searchQuery.trim());
-      if (selectedLandUse) params.set('landUse', selectedLandUse);
-      if (selectedDonationType) params.set('donationType', selectedDonationType);
-      if (selectedMouza) params.set('mouza', selectedMouza);
-      if (selectedDeceased) params.set('isDeceased', selectedDeceased);
-      if (sortOrder) params.set('sort', sortOrder);
-      params.set('page', page.toString());
-      params.set('limit', '20');
-
-      const res = await fetch(`/api/public/land-donors?${params.toString()}`);
-      if (!res.ok) throw new Error('Failed to fetch land donors');
-      const data = await res.json();
-      if (data && data.success) {
-        if (append) {
-          setDonors((prev) => [...prev, ...(data.donors || [])]);
-        } else {
-          setDonors(data.donors || []);
-        }
-        if (data.summary) setSummary(data.summary);
-        setPagination(data.pagination || { page, limit: 20, total: data.summary?.totalDonors || data.donors?.length || 0, totalPages: 1 });
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+  }, [loadDonors]);
 
   const handleLoadMore = () => {
     const nextPage = currentPage + 1;
@@ -89,250 +145,285 @@ export function LandDonors() {
     loadDonors(nextPage, true);
   };
 
-  const convertedTotalLand = useMemo(() => {
-    if (!summary || !summary.totalLandInDecimal) return '০';
-    const totalDec = summary.totalLandInDecimal;
-    const factors = summary.conversionFactors || { acre: 100, bigha: 33, katha: 1.65, sqft: 435.6 };
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedYear('');
+    setSelectedLandUse('');
+    setSelectedDonationType('');
+    setSelectedMouza('');
+    setSelectedDeceased('');
+    setSortOrder('custom');
+  };
 
-    let val = totalDec;
-    let unitLabel = locale === 'bn' ? 'শতাংশ' : 'Decimal';
+  // Slim summary line: "১২ জন জমিদাতা, মোট ২৪০ শতাংশ জমি" / "12 land donors, 240 decimals of land total"
+  const summaryLine = useMemo(() => {
+    if (!summary && loading) return '';
+    const count = pagination.total ?? summary?.filteredDonors ?? donors.length;
+    const totalDec =
+      summary?.filteredLandInDecimal !== undefined
+        ? summary.filteredLandInDecimal
+        : summary?.totalLandInDecimal || 0;
+    const converted = convertFromDecimal(
+      totalDec,
+      displayUnit,
+      summary?.conversionFactors,
+      locale,
+      toBanglaNum
+    );
 
-    if (displayUnit === 'katha') {
-      val = totalDec / (factors.katha || 1.65);
-      unitLabel = locale === 'bn' ? 'কাঠা' : 'Katha';
-    } else if (displayUnit === 'bigha') {
-      val = totalDec / (factors.bigha || 33);
-      unitLabel = locale === 'bn' ? 'বিঘা' : 'Bigha';
-    } else if (displayUnit === 'acre') {
-      val = totalDec / (factors.acre || 100);
-      unitLabel = locale === 'bn' ? 'একর' : 'Acre';
+    if (locale === 'bn') {
+      return `${toBanglaNum(count, true)} জন জমিদাতা, মোট ${converted.summaryText} জমি`;
     }
+    const donorWord = count === 1 ? 'land donor' : 'land donors';
+    return `${count} ${donorWord}, ${converted.summaryText} of land total`;
+  }, [summary, pagination.total, donors.length, displayUnit, locale, toBanglaNum, loading]);
 
-    const formattedNum = locale === 'bn' ? toBanglaNum(Math.round(val * 100) / 100) : Math.round(val * 100) / 100;
-    return `${formattedNum} ${unitLabel}`;
-  }, [summary, displayUnit, locale, toBanglaNum]);
+  // Bilingual mouza options strictly matching active locale (zero Bengali in en mode)
+  const mouzaOptions = useMemo(() => {
+    if (Array.isArray(summary?.mouzaOptions) && summary.mouzaOptions.length > 0) {
+      return summary.mouzaOptions
+        .map((m) => {
+          const label = locale === 'bn' ? m.bn : m.en;
+          return label ? { value: label, label } : null;
+        })
+        .filter(Boolean);
+    }
+    if (locale === 'bn' && Array.isArray(summary?.mouzas)) {
+      return summary.mouzas.map((m) => ({ value: m, label: m }));
+    }
+    return [];
+  }, [summary, locale]);
 
   const handleShare = (donor) => {
-    const donorName = `${donor.isDeceased ? (locale === 'bn' ? 'মরহুম ' : 'Late ') : ''}${getLocalized(donor, 'name')}`;
-    const text = `${donorName} - মানিকপুর ঈদগাহের ওয়াকফকৃত জমিদাতা। মোট জমি: ${donor.areaValue} ${donor.unit}।`;
+    const name = getLocalized(donor, 'name');
+    const honorific = getHonorificPrefix(name, donor.isDeceased, locale);
+    const fullName = honorific ? `${honorific} ${name}` : name;
+    const areaPlate = formatAreaPlate(
+      donor.areaValue,
+      donor.areaUnit || donor.unit,
+      locale,
+      toBanglaNum
+    );
+
+    const text =
+      locale === 'bn'
+        ? `${fullName} — মানিকপুর ঈদগাহের জমিদাতা। দানকৃত জমি: ${areaPlate.full}।`
+        : `${fullName} — Land donor of Manikpur Eidgah. Donated land: ${areaPlate.full}.`;
+
     if (navigator.share) {
-      navigator.share({ title: donorName, text, url: window.location.href }).catch(() => { });
-    } else {
+      navigator.share({ title: fullName, text, url: window.location.href }).catch(() => {});
+    } else if (navigator.clipboard) {
       navigator.clipboard.writeText(`${text}\n${window.location.href}`).then(() => {
         setCopied(true);
-        if (showToast) showToast(locale === 'bn' ? 'লিংক ও তথ্য কপি হয়েছে!' : 'Details copied to clipboard!');
+        if (showToast) {
+          showToast(
+            locale === 'bn' ? 'তথ্য ও লিংক কপি হয়েছে' : 'Details copied to clipboard'
+          );
+        }
         setTimeout(() => setCopied(false), 2000);
       });
     }
   };
 
-  const landUseLabels = {
-    EIDGAH_GROUND: { bn: 'ঈদগাহ ময়দান', en: 'Eidgah Ground' },
-    GRAVEYARD: { bn: 'কবরস্থান', en: 'Graveyard' },
-    MOSQUE: { bn: 'মসজিদ', en: 'Mosque' },
-    ROAD: { bn: 'রাস্তা', en: 'Road' },
-    BOUNDARY_WALL: { bn: 'সীমানা প্রাচীর', en: 'Boundary Wall' },
-  };
-
-  const hasMore = donors.length < (summary?.totalDonors || pagination.total);
+  const hasMore = donors.length < pagination.total;
 
   return (
-    <div className="py-4 sm:py-8 page-enter">
+    <div className="py-4 sm:py-6 page-enter">
       <SEO
-        title={locale === 'bn' ? 'ওয়াকফকৃত জমিদাতা সংরক্ষণাগার' : 'Waqf Land Donors'}
-        description={locale === 'bn' ? 'মানিকপুর ঈদগাহের ওয়াকফকৃত জমিদাতাদের ঐতিহাসিক তালিকা ও খতিয়ান বিবরণ।' : 'Historical archive of land donors who endowed waqf land to Manikpur Eidgah.'}
+        title={locale === 'bn' ? 'জমিদাতা তালিকা' : 'Land Donors'}
+        description={
+          locale === 'bn'
+            ? 'মানিকপুর ঈদগাহের ওয়াকফ ও দানকৃত জমির সম্মানিত দাতাগণের তালিকা।'
+            : 'Archive of honored land donors who dedicated waqf land to Manikpur Eidgah.'
+        }
       />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <Breadcrumb items={[{ label: locale === 'bn' ? 'জমিদাতা সংরক্ষণাগার' : 'Land Donors' }]} />
+      {/* Full width minus 16px screen padding on mobile (px-4), centered max-w-6xl on desktop */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <Breadcrumb items={[{ label: locale === 'bn' ? 'জমিদাতা' : 'Land Donors' }]} />
 
-        {/* Page Title & Total Summary Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sand pb-3">
-          <div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary-dark tracking-tight">
-              {locale === 'bn' ? 'ওয়াকফকৃত জমিদাতা সংরক্ষণাগার' : 'Waqf Land Donors Archive'}
-            </h1>
-            <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
-              {locale === 'bn'
-                ? 'ঈদগাহ ময়দান, কবরস্থান ও রাস্তার জন্য জমিদানকারীদের তথ্য'
-                : 'Permanent waqf records of land donors for Manikpur Eidgah'}
-            </p>
-          </div>
-          {summary && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-primary-dark bg-primary-soft px-3 py-1 rounded-full border border-primary/20">
-                {locale === 'bn' ? 'মোট জমি: ' : 'Total: '}
-                <span className="font-bold tabular-nums">{convertedTotalLand}</span>
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Minimal Page Header (no redundant stats banner) */}
+        <header className="space-y-0.5">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-primary-dark tracking-tight">
+            {locale === 'bn' ? 'জমিদাতা তালিকা' : 'Land Donors'}
+          </h1>
+          <p className="text-xs sm:text-sm text-ink-muted">
+            {locale === 'bn'
+              ? 'মানিকপুর ঈদগাহের সম্মানিত ওয়াকফ ও ভূমি দাতাগণ'
+              : 'Honored patrons who dedicated land to Manikpur Eidgah'}
+          </p>
+        </header>
 
-        {/* Sticky Search Field + Filter Button */}
-        <div className="sticky top-14 sm:top-16 z-20 bg-canvas/95 backdrop-blur-md py-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+        {/* Sticky Search + Single Filter Button */}
+        <div className="sticky top-14 sm:top-16 z-20 bg-canvas/95 py-2 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-sand/60">
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="relative flex-1 min-w-0">
+              <Search
+                className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                aria-hidden="true"
+              />
               <input
-                type="text"
-                placeholder={locale === 'bn' ? 'নাম, পিতা, গ্রাম বা মৌজা দিয়ে খুঁজুন...' : 'Search by name, father, village, mouza...'}
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-sand bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 shadow-sakinah-sm"
+                placeholder={
+                  locale === 'bn'
+                    ? 'নাম, পিতা, গ্রাম বা মৌজা খুঁজুন...'
+                    : 'Search name, father, village, mouza...'
+                }
+                aria-label={locale === 'bn' ? 'জমিদাতা খুঁজুন' : 'Search land donors'}
+                className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-sand bg-surface text-ink text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 shadow-sakinah-sm min-h-[44px]"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-ink-muted hover:text-ink"
-                  aria-label="Clear search"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 text-ink-muted hover:text-ink min-w-[36px] min-h-[36px] flex items-center justify-center"
+                  aria-label={locale === 'bn' ? 'অনুসন্ধান মুছুন' : 'Clear search'}
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            {/* Filter Button (Opens Bottom Sheet) */}
             <button
               type="button"
               onClick={() => setFilterSheetOpen(true)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-all min-h-[44px] tap-feedback shrink-0 ${
-                selectedLandUse || selectedDonationType || selectedMouza || selectedDeceased
+              className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-colors min-h-[44px] min-w-[44px] tap-feedback shrink-0 ${
+                activeFilterCount > 0
                   ? 'bg-primary text-white border-primary'
                   : 'bg-surface text-primary-dark border-sand hover:bg-primary-soft/50'
               }`}
-              aria-label="Open filter options"
+              aria-label={locale === 'bn' ? 'ফিল্টার ও সাজানো' : 'Open filter options'}
             >
-              <Filter className="w-4 h-4" />
+              <Filter className="w-4 h-4" aria-hidden="true" />
               <span>{locale === 'bn' ? 'ফিল্টার' : 'Filter'}</span>
-              {(selectedLandUse || selectedDonationType || selectedMouza || selectedDeceased) && (
-                <span className="w-2 h-2 rounded-full bg-gold" />
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-gold text-ink text-[11px] font-bold tabular-nums">
+                  {locale === 'bn' ? toBanglaNum(activeFilterCount, true) : activeFilterCount}
+                </span>
               )}
             </button>
           </div>
         </div>
 
-        {/* Donors List: Mobile 56px Card List, Desktop Grid */}
+        {/* One Slim Summary Line Above the List (Results count shown strictly once) */}
+        {!loading && summaryLine && (
+          <p className="text-[13px] font-medium text-ink-muted tabular-nums" aria-live="polite">
+            {summaryLine}
+          </p>
+        )}
+
+        {/* Land Donors List: Mobile 1-col horizontal cards, md 2-col, xl 3-col */}
         {loading ? (
-          <div className="space-y-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="h-20 sm:h-64 rounded-2xl bg-surface border border-sand animate-pulse"
-              />
+              <LandDonorCardSkeleton key={i} density={density} />
             ))}
           </div>
         ) : donors.length === 0 ? (
-          <div className="text-center py-16 bg-surface rounded-2xl border border-sand shadow-sakinah-sm space-y-3">
-            <Landmark className="w-10 h-10 text-ink-muted/50 mx-auto" />
-            <h3 className="font-serif text-lg font-bold text-primary-dark">
-              {locale === 'bn' ? 'কোনো জমিদাতার তথ্য পাওয়া যায়নি' : 'No Land Donors Found'}
-            </h3>
-            <p className="text-xs text-ink-muted">
+          <div className="text-center py-14 px-4 bg-surface rounded-2xl border border-sand shadow-sakinah-sm space-y-3">
+            <Landmark className="w-10 h-10 text-ink-muted/50 mx-auto" aria-hidden="true" />
+            <h2 className="font-serif text-lg font-bold text-primary-dark">
+              {locale === 'bn' ? 'কোনো ফলাফল পাওয়া যায়নি' : 'No results'}
+            </h2>
+            <p className="text-xs sm:text-sm text-ink-muted max-w-sm mx-auto">
               {locale === 'bn'
-                ? 'অনুসন্ধান বা ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন।'
-                : 'Try adjusting your search criteria or filter options.'}
+                ? 'অনুসন্ধান বা ফিল্টারের সাথে মিল থাকা কোনো জমিদাতা পাওয়া যায়নি।'
+                : 'No land donors match your current search or filter settings.'}
             </p>
+            {hasAnySearchOrFilter && (
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold shadow-sakinah-sm hover:bg-primary-hover min-h-[44px] tap-feedback"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>{locale === 'bn' ? 'ফিল্টার মুছুন' : 'Clear filters'}</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
-            {donors.map((donor) => {
-              const name = getLocalized(donor, 'name');
-              if (locale === 'en' && !name) return null;
-              const photoUrl = donor.photoPath ? getImageUrl(donor.photoPath) : null;
-              const honorific = donor.isDeceased ? (locale === 'bn' ? 'মরহুম ' : 'Late ') : '';
-              const useLabel = landUseLabels[donor.landUse]?.[locale] || donor.landUse;
-
-              return (
-                <div
-                  key={donor.id}
-                  onClick={() => setSelectedDonor(donor)}
-                  className="bg-surface rounded-2xl border border-sand hover:border-gold/60 p-3 sm:p-5 shadow-sakinah-sm hover:shadow-sakinah-card transition-all cursor-pointer flex items-center gap-3.5 sm:flex-col sm:text-center active:scale-[0.98] tap-feedback overflow-hidden"
-                >
-                  {/* Photo: 56px square on mobile, arch frame on desktop */}
-                  <div className="w-14 h-14 sm:w-24 sm:h-28 rounded-xl sm:rounded-t-full sm:rounded-b-lg overflow-hidden bg-primary-soft border border-sand flex-shrink-0 flex items-center justify-center">
-                    {photoUrl ? (
-                      <img
-                        src={photoUrl}
-                        alt={name}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="font-serif text-xl sm:text-3xl font-bold text-primary-dark">
-                        {name?.charAt(0) || 'L'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Info: 1 key fact on mobile (land area) */}
-                  <div className="min-w-0 flex-1 sm:w-full">
-                    <div className="flex items-center gap-1.5 sm:justify-center mb-0.5">
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark text-[10px] font-bold border border-primary/20">
-                        {useLabel}
-                      </span>
-                      {donor.donationYear && (
-                        <span className="text-[11px] text-ink-muted sm:hidden">
-                          • {locale === 'bn' ? `${toBanglaNum(donor.donationYear)} সাল` : donor.donationYear}
-                        </span>
-                      )}
-                    </div>
-
-                    <h3 className="font-serif font-bold text-sm sm:text-base text-primary-dark truncate">
-                      {honorific}
-                      {name}
-                    </h3>
-
-                    {/* Single Key Fact: Donated Area */}
-                    <p className="text-xs text-gold-text font-semibold truncate mt-0.5">
-                      {locale === 'bn' ? 'দানকৃত জমি: ' : 'Donated Land: '}
-                      <span className="font-bold text-primary-dark">
-                        {locale === 'bn' ? toBanglaNum(donor.areaValue) : donor.areaValue} {donor.unit}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+            {donors.map((donor, index) => (
+              <LandDonorCard
+                key={donor.id}
+                donor={donor}
+                index={index}
+                density={density}
+                locale={locale}
+                toBanglaNum={toBanglaNum}
+                getLocalized={getLocalized}
+                onSelect={setSelectedDonor}
+              />
+            ))}
           </div>
         )}
 
-        {/* Load More Button (No numbered pagination) */}
+        {/* Load More Button (20 per page) */}
         {!loading && hasMore && (
-          <div className="text-center pt-4 pb-6">
+          <div className="text-center pt-3 pb-6">
             <button
               type="button"
               onClick={handleLoadMore}
               disabled={loadingMore}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface border border-sand hover:border-primary/40 text-primary-dark text-sm font-bold shadow-sakinah-sm hover:shadow-sakinah-card transition-all disabled:opacity-50 min-h-[46px] tap-feedback"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface border border-sand hover:border-primary/40 text-primary-dark text-sm font-bold shadow-sakinah-sm transition-colors disabled:opacity-50 min-h-[46px] tap-feedback"
             >
-              {loadingMore ? (
-                <span>{locale === 'bn' ? 'লোড হচ্ছে...' : 'Loading...'}</span>
-              ) : (
-                <span>
-                  {locale === 'bn' ? 'আরও দেখুন (২০টি)' : 'Load More (20)'}
-                </span>
-              )}
+              {loadingMore
+                ? locale === 'bn'
+                  ? 'লোড হচ্ছে...'
+                  : 'Loading...'
+                : locale === 'bn'
+                  ? 'আরও দেখুন (২০টি)'
+                  : 'Load more'}
             </button>
           </div>
         )}
       </div>
 
-      {/* Filter Bottom Sheet */}
+      {/* Filter & Display Preferences Bottom Sheet */}
       <BottomSheet
         isOpen={filterSheetOpen}
         onClose={() => setFilterSheetOpen(false)}
-        title={locale === 'bn' ? 'জমিদাতা তালিকা ফিল্টার' : 'Filter Land Donors'}
+        title={locale === 'bn' ? 'ফিল্টার ও সাজানো' : 'Filter & Sort'}
       >
-        <div className="space-y-4 py-2 text-ink">
-          {/* Unit Toggle */}
+        <div className="space-y-4 py-1 text-ink pb-safe">
+          {/* Density Control: Comfortable / Compact */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-primary-dark uppercase tracking-wider">
-              {locale === 'bn' ? 'পরিমাপ একক' : 'Display Unit'}
+            <label className="text-xs font-bold text-primary-dark uppercase tracking-wider block">
+              {locale === 'bn' ? 'কার্ডের ঘনত্ব' : 'Card Density'}
+            </label>
+            <div className="grid grid-cols-2 gap-1.5 bg-canvas-alt p-1 rounded-xl border border-sand">
+              {[
+                { key: 'comfortable', label: locale === 'bn' ? 'স্বাচ্ছন্দ্যময়' : 'Comfortable' },
+                { key: 'compact', label: locale === 'bn' ? 'সংক্ষিপ্ত' : 'Compact' },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => handleDensityChange(opt.key)}
+                  className={`py-2 text-xs font-bold rounded-lg transition-colors min-h-[40px] ${
+                    density === opt.key
+                      ? 'bg-primary text-white shadow-sakinah-sm'
+                      : 'text-ink-muted hover:text-primary-dark'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tiny Unit Switcher for the Summary Line */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-primary-dark uppercase tracking-wider block">
+              {locale === 'bn' ? 'মোট জমির একক' : 'Summary Unit'}
             </label>
             <div className="grid grid-cols-4 gap-1 bg-canvas-alt p-1 rounded-xl border border-sand">
               {[
-                { key: 'decimal', label: locale === 'bn' ? 'শতক' : 'Decimal' },
+                { key: 'decimal', label: locale === 'bn' ? 'শতাংশ' : 'Decimal' },
                 { key: 'katha', label: locale === 'bn' ? 'কাঠা' : 'Katha' },
                 { key: 'bigha', label: locale === 'bn' ? 'বিঘা' : 'Bigha' },
                 { key: 'acre', label: locale === 'bn' ? 'একর' : 'Acre' },
@@ -341,10 +432,11 @@ export function LandDonors() {
                   key={u.key}
                   type="button"
                   onClick={() => setDisplayUnit(u.key)}
-                  className={`py-1.5 text-xs font-bold rounded-lg transition-all min-h-[36px] ${displayUnit === u.key
-                    ? 'bg-primary text-white shadow-sakinah-sm'
-                    : 'text-ink-muted hover:text-primary-dark'
-                    }`}
+                  className={`py-1.5 text-xs font-bold rounded-lg transition-colors min-h-[38px] ${
+                    displayUnit === u.key
+                      ? 'bg-primary text-white shadow-sakinah-sm'
+                      : 'text-ink-muted hover:text-primary-dark'
+                  }`}
                 >
                   {u.label}
                 </button>
@@ -352,52 +444,151 @@ export function LandDonors() {
             </div>
           </div>
 
-          {/* Land Use Filter */}
+          {/* Donation Year */}
+          {Array.isArray(summary?.years) && summary.years.length > 0 && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-year"
+                className="text-xs font-bold text-primary-dark uppercase tracking-wider block"
+              >
+                {locale === 'bn' ? 'দানের সাল' : 'Donation Year'}
+              </label>
+              <select
+                id="filter-year"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
+              >
+                <option value="">{locale === 'bn' ? 'সকল সাল' : 'All Years'}</option>
+                {summary.years.map((y) => (
+                  <option key={y} value={y}>
+                    {locale === 'bn' ? `${toBanglaNum(y, true)} সাল` : y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Land Use */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-primary-dark uppercase tracking-wider">
-              {locale === 'bn' ? 'ব্যবহারের খাত' : 'Land Use'}
+            <label
+              htmlFor="filter-land-use"
+              className="text-xs font-bold text-primary-dark uppercase tracking-wider block"
+            >
+              {locale === 'bn' ? 'ব্যবহারের ক্ষেত্র' : 'Land Use'}
             </label>
             <select
+              id="filter-land-use"
               value={selectedLandUse}
               onChange={(e) => setSelectedLandUse(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
             >
-              <option value="">{locale === 'bn' ? 'সকল খাত' : 'All Land Uses'}</option>
+              <option value="">{locale === 'bn' ? 'সকল ক্ষেত্র' : 'All Land Uses'}</option>
               <option value="EIDGAH_GROUND">{locale === 'bn' ? 'ঈদগাহ ময়দান' : 'Eidgah Ground'}</option>
               <option value="GRAVEYARD">{locale === 'bn' ? 'কবরস্থান' : 'Graveyard'}</option>
-              <option value="MOSQUE">{locale === 'bn' ? 'মসজিদ কমপ্লেক্স' : 'Mosque Complex'}</option>
-              <option value="ROAD">{locale === 'bn' ? 'চলাচলের রাস্তা' : 'Access Road'}</option>
+              <option value="MOSQUE">{locale === 'bn' ? 'মসজিদ' : 'Mosque'}</option>
+              <option value="ROAD">{locale === 'bn' ? 'রাস্তা' : 'Road'}</option>
               <option value="BOUNDARY_WALL">{locale === 'bn' ? 'সীমানা প্রাচীর' : 'Boundary Wall'}</option>
+              <option value="OTHER">{locale === 'bn' ? 'অন্যান্য' : 'Other'}</option>
+            </select>
+          </div>
+
+          {/* Donation Type */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="filter-donation-type"
+              className="text-xs font-bold text-primary-dark uppercase tracking-wider block"
+            >
+              {locale === 'bn' ? 'দানের ধরন' : 'Donation Type'}
+            </label>
+            <select
+              id="filter-donation-type"
+              value={selectedDonationType}
+              onChange={(e) => setSelectedDonationType(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
+            >
+              <option value="">{locale === 'bn' ? 'সকল ধরন' : 'All Types'}</option>
+              <option value="DANPATRA">{locale === 'bn' ? 'দানপত্র' : 'Danpatra (Gift Deed)'}</option>
+              <option value="WAQF">{locale === 'bn' ? 'ওয়াকফনামা' : 'Waqf Deed'}</option>
+              <option value="HEBA">{locale === 'bn' ? 'হেবা দলিল' : 'Heba Deed'}</option>
+              <option value="REGISTERED_DEED">{locale === 'bn' ? 'রেজিস্ট্রিকৃত দলিল' : 'Registered Deed'}</option>
+              <option value="OTHER">{locale === 'bn' ? 'অন্যান্য' : 'Other'}</option>
+            </select>
+          </div>
+
+          {/* Mouza (strictly localized) */}
+          {mouzaOptions.length > 0 && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="filter-mouza"
+                className="text-xs font-bold text-primary-dark uppercase tracking-wider block"
+              >
+                {locale === 'bn' ? 'মৌজা' : 'Mouza'}
+              </label>
+              <select
+                id="filter-mouza"
+                value={selectedMouza}
+                onChange={(e) => setSelectedMouza(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
+              >
+                <option value="">{locale === 'bn' ? 'সকল মৌজা' : 'All Mouzas'}</option>
+                {mouzaOptions.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Living / Deceased */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="filter-status"
+              className="text-xs font-bold text-primary-dark uppercase tracking-wider block"
+            >
+              {locale === 'bn' ? 'অবস্থা' : 'Status'}
+            </label>
+            <select
+              id="filter-status"
+              value={selectedDeceased}
+              onChange={(e) => setSelectedDeceased(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
+            >
+              <option value="">{locale === 'bn' ? 'সকল জমিদাতা' : 'All Donors'}</option>
+              <option value="false">{locale === 'bn' ? 'জীবিত' : 'Living'}</option>
+              <option value="true">{locale === 'bn' ? 'মরহুম / মরহুমা' : 'Deceased'}</option>
             </select>
           </div>
 
           {/* Sort Order */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-primary-dark uppercase tracking-wider">
-              {locale === 'bn' ? 'ক্রমানুসার' : 'Sort Order'}
+            <label
+              htmlFor="filter-sort"
+              className="text-xs font-bold text-primary-dark uppercase tracking-wider block"
+            >
+              {locale === 'bn' ? 'সাজানোর ক্রম' : 'Sort By'}
             </label>
             <select
+              id="filter-sort"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-sand bg-surface text-ink text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold/50 min-h-[44px]"
             >
               <option value="custom">{locale === 'bn' ? 'নির্ধারিত ক্রম' : 'Custom Order'}</option>
-              <option value="area_desc">{locale === 'bn' ? 'জমির পরিমাণ (বেশি থেকে কম)' : 'Land Area (High to Low)'}</option>
-              <option value="year_asc">{locale === 'bn' ? 'জমিদানের বছর (আগে থেকে পরে)' : 'Donation Year (Earliest)'}</option>
-              <option value="year_desc">{locale === 'bn' ? 'জমিদানের বছর (পরে থেকে আগে)' : 'Donation Year (Latest)'}</option>
-              <option value="name_asc">{locale === 'bn' ? 'নাম অনুসারে (অ-ক্ষর)' : 'By Name (A-Z)'}</option>
+              <option value="name_asc">{locale === 'bn' ? 'নাম (অ–ক্ষ)' : 'Name (A–Z)'}</option>
+              <option value="area_desc">{locale === 'bn' ? 'জমির পরিমাণ (বেশি–কম)' : 'Area (High to Low)'}</option>
+              <option value="area_asc">{locale === 'bn' ? 'জমির পরিমাণ (কম–বেশি)' : 'Area (Low to High)'}</option>
+              <option value="year_asc">{locale === 'bn' ? 'দানের সাল (পুরাতন–নতুন)' : 'Year (Earliest)'}</option>
+              <option value="year_desc">{locale === 'bn' ? 'দানের সাল (নতুন–পুরাতন)' : 'Year (Latest)'}</option>
             </select>
           </div>
 
-          <div className="flex gap-2 pt-3">
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={() => {
-                setSelectedLandUse('');
-                setSelectedDonationType('');
-                setSelectedMouza('');
-                setSelectedDeceased('');
-                setSortOrder('custom');
+                handleClearFilters();
                 setFilterSheetOpen(false);
               }}
               className="flex-1 py-2.5 rounded-xl border border-sand text-xs font-bold text-ink-muted hover:bg-canvas-alt transition-colors min-h-[44px]"
@@ -407,120 +598,27 @@ export function LandDonors() {
             <button
               type="button"
               onClick={() => setFilterSheetOpen(false)}
-              className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-sakinah-sm transition-all min-h-[44px]"
+              className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow-sakinah-sm transition-colors min-h-[44px]"
             >
-              {locale === 'bn' ? 'প্রয়োগ করুন' : 'Apply'}
+              {locale === 'bn' ? 'প্রয়োগ করুন' : 'Apply'}
             </button>
           </div>
         </div>
       </BottomSheet>
 
-      {/* Donor Profile Detail BottomSheet with Full Certificate / Land Deed Presentation */}
-      <BottomSheet
-        isOpen={!!selectedDonor}
+      {/* Donor Profile Detail Bottom Sheet (Mobile) / Centered Dialog (Desktop) */}
+      <LandDonorDetailSheet
+        donor={selectedDonor}
+        isOpen={Boolean(selectedDonor)}
         onClose={() => setSelectedDonor(null)}
-        title={selectedDonor ? getLocalized(selectedDonor, 'name') : ''}
-      >
-        {selectedDonor && (
-          <div className="space-y-4 py-2 text-ink">
-            <div className="flex flex-col items-center text-center space-y-3 pb-3 border-b border-sand">
-              <div className="w-20 h-24 rounded-t-full rounded-b-xl border-2 border-gold/70 overflow-hidden bg-primary-soft shadow-sakinah-sm flex items-center justify-center">
-                {selectedDonor.photoPath ? (
-                  <img
-                    src={getImageUrl(selectedDonor.photoPath)}
-                    alt={getLocalized(selectedDonor, 'name')}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="font-serif text-2xl font-bold text-primary-dark">
-                    {getLocalized(selectedDonor, 'name')?.charAt(0) || 'L'}
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <span className="inline-block px-3 py-0.5 rounded-full bg-primary-soft text-primary-dark text-[11px] font-bold border border-primary/20 mb-1">
-                  {landUseLabels[selectedDonor.landUse]?.[locale] || selectedDonor.landUse}
-                </span>
-                <h3 className="font-serif font-bold text-xl text-primary-dark">
-                  {selectedDonor.isDeceased ? (locale === 'bn' ? 'মরহুম ' : 'Late ') : ''}
-                  {getLocalized(selectedDonor, 'name')}
-                </h3>
-                {selectedDonor.fatherNameBn && (
-                  <p className="text-xs text-ink-muted mt-0.5">
-                    {locale === 'bn' ? 'পিতা: ' : 'Father: '}
-                    {getLocalized(selectedDonor, 'fatherName')}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleShare(selectedDonor)}
-                className="px-3.5 py-1.5 rounded-xl bg-canvas-alt border border-sand text-primary-dark text-xs font-semibold flex items-center gap-1.5 hover:bg-primary-soft transition-colors min-h-[36px]"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Share2 className="w-3.5 h-3.5 text-gold-text" />}
-                <span>{copied ? (locale === 'bn' ? 'কপি হয়েছে' : 'Copied') : locale === 'bn' ? 'শেয়ার' : 'Share'}</span>
-              </button>
-            </div>
-
-            {/* Land Area Gold Foil Plate */}
-            <div className="bg-gold-plate p-3.5 rounded-xl text-center shadow-sakinah-sm">
-              <span className="text-[11px] font-bold uppercase tracking-wider block text-ink-muted mb-0.5">
-                {locale === 'bn' ? 'দানকৃত মোট জমি' : 'Total Land Donated'}
-              </span>
-              <p className="font-serif font-extrabold text-xl text-primary-dark">
-                {locale === 'bn' ? toBanglaNum(selectedDonor.areaValue) : selectedDonor.areaValue} {selectedDonor.unit}
-              </p>
-            </div>
-
-            {/* Cadastral Records & Deed Details */}
-            {(selectedDonor.deedNumber || selectedDonor.khatianNumber || selectedDonor.dagNumber || selectedDonor.mouzaBn) && (
-              <div className="bg-canvas-alt p-3.5 rounded-xl border border-sand space-y-2 text-xs">
-                <span className="font-bold text-primary-dark block">
-                  {locale === 'bn' ? 'দলিল ও খতিয়ান তথ্য' : 'Deed & Record Details'}
-                </span>
-                <div className="grid grid-cols-2 gap-2 text-ink">
-                  {selectedDonor.deedNumber && (
-                    <div>
-                      <span className="text-ink-muted block text-[10px]">{locale === 'bn' ? 'দলিল নং:' : 'Deed:'}</span>
-                      <span className="font-bold">{selectedDonor.deedNumber}</span>
-                    </div>
-                  )}
-                  {selectedDonor.khatianNumber && (
-                    <div>
-                      <span className="text-ink-muted block text-[10px]">{locale === 'bn' ? 'খতিয়ান:' : 'Khatian:'}</span>
-                      <span className="font-bold">{selectedDonor.khatianNumber}</span>
-                    </div>
-                  )}
-                  {selectedDonor.dagNumber && (
-                    <div>
-                      <span className="text-ink-muted block text-[10px]">{locale === 'bn' ? 'দাগ নং:' : 'Dag:'}</span>
-                      <span className="font-bold">{selectedDonor.dagNumber}</span>
-                    </div>
-                  )}
-                  {selectedDonor.mouzaBn && (
-                    <div>
-                      <span className="text-ink-muted block text-[10px]">{locale === 'bn' ? 'মৌজা:' : 'Mouza:'}</span>
-                      <span className="font-bold">{getLocalized(selectedDonor, 'mouza')}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Background Story */}
-            {selectedDonor.storyBn && (
-              <div className="pt-2 border-t border-sand text-xs leading-relaxed text-ink">
-                <p className="font-bold text-primary-dark mb-1">
-                  {locale === 'bn' ? 'জমিদানের ইতিহাস ও প্রেক্ষাপট:' : 'Background Story:'}
-                </p>
-                <p className="whitespace-pre-line text-ink-muted">{getLocalized(selectedDonor, 'story')}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </BottomSheet>
+        conversionFactors={summary?.conversionFactors}
+        locale={locale}
+        toBanglaNum={toBanglaNum}
+        formatDate={formatDate}
+        getLocalized={getLocalized}
+        onShare={handleShare}
+        copied={copied}
+      />
     </div>
   );
 }

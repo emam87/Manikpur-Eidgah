@@ -12,18 +12,68 @@ export function BottomSheet({
   const [dragY, setDragY] = useState(0);
   const [startY, setStartY] = useState(null);
   const sheetRef = useRef(null);
+  const pushedHistoryRef = useRef(false);
+  const closedByPopstateRef = useRef(false);
 
-  // Background scroll locking
+  // iOS Safari-safe background scroll locking
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!isOpen) return undefined;
+
+    const scrollY = window.scrollY;
+    const prevOverflow = document.body.style.overflow;
+    const prevPosition = document.body.style.position;
+    const prevTop = document.body.style.top;
+    const prevWidth = document.body.style.width;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = prevOverflow;
+      document.body.style.position = prevPosition;
+      document.body.style.top = prevTop;
+      document.body.style.width = prevWidth;
+      window.scrollTo(0, scrollY);
     };
   }, [isOpen]);
+
+  // Android Back button / browser popstate support
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    closedByPopstateRef.current = false;
+    pushedHistoryRef.current = true;
+    try {
+      window.history.pushState({ bottomSheetOpen: true }, '');
+    } catch {
+      pushedHistoryRef.current = false;
+    }
+
+    const handlePopState = () => {
+      if (pushedHistoryRef.current) {
+        pushedHistoryRef.current = false;
+        closedByPopstateRef.current = true;
+        onClose();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (pushedHistoryRef.current && !closedByPopstateRef.current) {
+        pushedHistoryRef.current = false;
+        try {
+          if (window.history.state && window.history.state.bottomSheetOpen) {
+            window.history.back();
+          }
+        } catch {
+          // Ignore history errors in sandboxed iframes
+        }
+      }
+    };
+  }, [isOpen, onClose]);
 
   // Escape key listener
   useEffect(() => {

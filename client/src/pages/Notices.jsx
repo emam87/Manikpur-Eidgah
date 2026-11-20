@@ -132,11 +132,10 @@ export function Notices() {
             <button
               type="button"
               onClick={() => setFilterSheetOpen(true)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-all min-h-[42px] tap-feedback ${
-                filterPinned
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-surface text-primary-dark border-sand hover:bg-primary-soft/50'
-              }`}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-all min-h-[42px] tap-feedback ${filterPinned
+                ? 'bg-primary text-white border-primary'
+                : 'bg-surface text-primary-dark border-sand hover:bg-primary-soft/50'
+                }`}
               aria-label="Filter notices"
             >
               <Filter className="w-4 h-4" />
@@ -170,10 +169,10 @@ export function Notices() {
               if (locale === 'en' && !title) return null;
               const dateStr = notice.publishedAt
                 ? new Date(notice.publishedAt).toLocaleDateString(locale === 'bn' ? 'bn-BD' : 'en-GB', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })
                 : '';
 
               return (
@@ -243,22 +242,20 @@ export function Notices() {
               <button
                 type="button"
                 onClick={() => setFilterPinned(false)}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${
-                  !filterPinned
-                    ? 'bg-primary text-white border-primary shadow-sakinah-sm'
-                    : 'bg-surface text-ink-muted border-sand'
-                }`}
+                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${!filterPinned
+                  ? 'bg-primary text-white border-primary shadow-sakinah-sm'
+                  : 'bg-surface text-ink-muted border-sand'
+                  }`}
               >
                 {locale === 'bn' ? 'সকল নোটিশ' : 'All Notices'}
               </button>
               <button
                 type="button"
                 onClick={() => setFilterPinned(true)}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${
-                  filterPinned
-                    ? 'bg-primary text-white border-primary shadow-sakinah-sm'
-                    : 'bg-surface text-ink-muted border-sand'
-                }`}
+                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${filterPinned
+                  ? 'bg-primary text-white border-primary shadow-sakinah-sm'
+                  : 'bg-surface text-ink-muted border-sand'
+                  }`}
               >
                 {locale === 'bn' ? 'শুধুমাত্র জরুরি (পিন্ড)' : 'Pinned Only'}
               </button>

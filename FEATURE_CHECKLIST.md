@@ -16,7 +16,7 @@
 | `GET /` | `Public\HomeController@index` -> `public.home` | `/` -> `Home.jsx` | `GET /api/public/home` | Mobile-first clean architecture with 6 canonical non-redundant blocks: (1) Light dawn hero with site name display H1 and 1 CTA pair, (2) Combined Eid Jamat & latest notice card, (3) 3-stat strip (Members, Donors, Photos) rendering immediately without count-up delay, (4) 2x3 quick-links grid with line icons, (5) Horizontal scroll snap strip of recent photos, (6) Physical address & directions card with native Google Maps launch button. Hides empty blocks cleanly; 0 redundant teasers. | [x] Completed Phase 3 & Mobile-First |
 | `GET /about` | `Public\AboutController@index` -> `public.about` | `/about` -> `About.jsx` | `GET /api/public/about` | Single clean H1, 3-part key-value summary facts, expandable history ("Read more"), Managing Committee display (Level 1: Chief Coordinator card; Level 2: 2-column coordinators grid on mobile opening detail BottomSheet with tap-to-call `tel:` link), and previous committees in collapsed accordion. | [x] Completed Phase 4 & Mobile-First |
 | `GET /lifetime-members` | `Public\MemberController@index` -> `public.members` | `/lifetime-members` -> `LifetimeMembers.jsx` | `GET /api/public/members` | Mobile-first list view: sticky search + 1 filter button opening bottom sheet; 56px photo list-card with name & key fact; full gold-foil certificate card rendered strictly inside detail BottomSheet; 20 items per page with "Load more" button. Private phone & NID NEVER exposed. | [x] Completed Phase 4 & Mobile-First |
-| `GET /land-donors` | New Land Donors Feature | `/land-donors` -> `LandDonors.jsx` | `GET /api/public/land-donors` | Land Donors (জমিদাতা) page with top tribute banner, interactive unit switcher (শতাংশ, কাঠা, বিঘা, একর), live search, multi-filters (land use, donation type, mouza), sorting, 3 view modes (Cards, Timeline, Table), detail BottomSheet, linked deeds & cadastral maps, Web Share API. Strict privacy serialization: private contacts (`phone`, `nid`, `representativePhone`) never exposed, deed/dag details gated by record flags. | [x] Completed |
+| `GET /land-donors` | New Land Donors Feature | `/land-donors` -> `LandDonors.jsx` | `GET /api/public/land-donors` | Redesigned horizontal mobile-first Land Donor (জমিদাতা) card (`LandDonorCard.jsx`) with arch-top mihrab photo (`64×80px` / `72×90px` at 412px+), gold-foil area plate, <=2 neutral chips (year & land use), optional 3px Sakinah land-use accent, Comfortable/Compact density toggle, single slim summary line with unit switcher in filter sheet, 20/page Load More, matching horizontal skeletons, and `LandDonorDetailSheet.jsx` (mobile BottomSheet with Android Back & iOS scroll-lock / desktop centered dialog). Strict server-side omission of private fields (`phone`, `nid`, `representativePhone`) and hidden detail fields when per-record visibility toggles are false. | [x] Completed (Redesigned 2026-11-20) |
 | `GET /donors` | Legacy Donors Page | Redirects to `/land-donors` | N/A (Redirect) | Public `/donors` permanently redirects to `/land-donors`. Preserves existing `Donor` table/data untouched. Accessible at `/donations` when `enable_money_donors` site setting is enabled. | [x] Completed |
 | `GET /donations` | Archived Donors (Optional) | `/donations` -> `Donors.jsx` | `GET /api/public/donors` | Legacy monetary donors page; accessible when `enable_money_donors` is enabled by admin. Displays archival notice leading to Land Donors. | [x] Completed |
 | `GET /gallery` | `Public\GalleryController@index` -> `public.gallery.index` | `/gallery` -> `Gallery.jsx` | `GET /api/public/gallery` | Folders layout (cards with cover, type badge, year, photo count, stacked preview; desktop 4/row, mobile 2/row), tabs (`ALL`, `FITR`, `ADHA`, `OTHER`), year filter, search. | [x] Completed Phase 5 |
@@ -525,6 +525,30 @@ Strictly 6 canonical blocks, each rendering immediately and hiding cleanly when 
 ### 6. Automated Verification
 - **`scripts/check-mobile.js` (`npm run mobile:check`)**: Automated verification ensuring 0 prohibited gimmicks, 0 duplicate navigation menus, strictly 6 canonical Home blocks, and valid safe-area & 16px CSS rules.
 - **`docs/MOBILE_DESIGN_GUIDE.md` & `docs/MOBILE_QA_CHECKLIST.md`**: Complete design tokens, tap target rules, and mobile QA matrix.
+
+---
+
+## 21. Land Donor (জমিদাতা) Horizontal Mobile Card Redesign
+
+> **Update Date**: 2026-11-20  
+> **Status**: **Implemented & Verified**  
+> **Specification Doc**: [`docs/LAND_DONOR_CARD.md`](docs/LAND_DONOR_CARD.md)
+
+### 1. Horizontal Card (`client/src/components/land-donors/LandDonorCard.jsx`)
+- **Mobile (`< 768px`)**: Full-width horizontal flex row (16px screen padding, 1 card/row), `min-height: 112px` (Comfortable) / `94px` (Compact), `padding: 12px`, `gap: 12px`, `radius: 14px`, white surface (`--surface`), `1px` sand border (`#E6E0CE`), soft green-tinted shadow, single semantic `<button>` tap target with press scale (`0.98`) + soft ripple, gold focus ring, and trailing `ChevronRight`.
+- **Mihrab Arch Portrait**: `64×80px` (`72×90px` at `412px+`; `56×70px` in Compact), `aspect-[4/5]`, thin gold ring (`1.5px`), lazy-loaded ~160px R2 thumbnail with blur-up and full-image fallback, sage gradient initials avatar when photo is absent, and quiet crescent marker for deceased donors.
+- **Right Column Hierarchy**: Honorific (`মরহুম` / `Late`) + 17px serif bold name (max 2 lines, balanced wrap), optional Father line (`13px` muted, hidden in Compact or when empty), optional Village line with `MapPin`, and bottom Facts Row featuring the gold-foil **Area Plate** (`#E8CB82` → `#C9A24B`, 16px bold value + 12px unit, `whitespace-nowrap`) + at most 2 neutral sage chips (donation year & land use with per-use Lucide icon).
+- **Desktop (`768px+`)**: Reuses the exact same card component in a 2-column (`md:grid-cols-2`) / 3-column (`xl:grid-cols-3`) grid with 4px hover lift strictly inside `@media (hover: hover) and (pointer: fine)`.
+
+### 2. Minimal List Page & Filter Sheet (`client/src/pages/LandDonors.jsx`)
+- Sticky search + single Filter button opening BottomSheet with **Density** (`Comfortable` / `Compact`), **Summary Unit Switcher** (`Decimal` / `Katha` / `Bigha` / `Acre`), Donation Year, Land Use, Donation Type, localized Mouza, Living/Deceased, and Sort By (`custom`, `name_asc`, `area_desc`, `area_asc`, `year_asc`, `year_desc`).
+- Single slim summary line above the list (`"১২ জন জমিদাতা, মোট ২৪০ শতাংশ জমি"` / `"12 land donors, 240 decimals of land total"`), zero redundant stats banners, 20 per page with "Load more", matching horizontal skeletons, first-6 scroll reveal, and empty state with "Clear filters".
+
+### 3. Detail Sheet & Server-Side Privacy (`LandDonorDetailSheet.jsx`, `BottomSheet.jsx`, `landDonorSerializer.js`)
+- Larger `96×120px` arch photo with subtle thin gold double border, parents' names, village, Share primary action, gold-foil Area Plate with converted শতাংশ & sq ft equivalents, 2-column key facts grid, expandable Story ("Read more"), public family representative, and linked Documents / Land Map rows with arrow.
+- **Server-Side Omission**: `server/src/utils/landDonorSerializer.js` omits `deedNumber`, `deedDate`, `relatedDocuments`, `khatianType`, `khatianNumber`, `dagNumber`, `jlNumber`, `mouza*`, `upazila*`, `district*`, `relatedLandMap`, and `boundary*` keys completely when their record visibility toggles are `false`, and never serializes `phone`, `nid`, or `representativePhone`.
+- **Android & iOS Compatibility**: `BottomSheet.jsx` implements `history.pushState` / `popstate` so the Android Back button closes open sheets, plus iOS Safari-safe fixed-position scroll locking that restores scroll position cleanly on close.
+
 
 
 

@@ -1,5 +1,6 @@
 import { prisma } from '../db/prisma.js';
 import { SettingsService } from '../services/settings.service.js';
+import { serializePublicLandDonor } from '../utils/landDonorSerializer.js';
 
 /**
  * GET /api/public/home
@@ -372,13 +373,19 @@ export async function getLandDonors(req, res, next) {
     const deceasedParam = req.query.isDeceased;
     const sort = req.query.sort || 'custom';
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '12', 10)));
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '20', 10)));
     const skip = (page - 1) * limit;
+    const isEn = req.query.lang === 'en';
 
+    const andConditions = [];
     const where = {
       isPublished: true,
       deletedAt: null,
     };
+
+    if (isEn) {
+      andConditions.push({ nameEn: { not: null } }, { NOT: { nameEn: '' } });
+    }
 
     if (year && !isNaN(year)) {
       where.donationYear = year;
@@ -390,10 +397,13 @@ export async function getLandDonors(req, res, next) {
       where.donationType = donationType;
     }
     if (mouza) {
-      where.OR = [
-        { mouzaBn: { equals: mouza, mode: 'insensitive' } },
-        { mouzaEn: { equals: mouza, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        showPlotDetails: true,
+        OR: [
+          { mouzaBn: { equals: mouza, mode: 'insensitive' } },
+          { mouzaEn: { equals: mouza, mode: 'insensitive' } },
+        ],
+      });
     }
     if (deceasedParam === 'true') {
       where.isDeceased = true;
@@ -402,28 +412,27 @@ export async function getLandDonors(req, res, next) {
     }
 
     if (q) {
-      const qFilter = [
-        { nameBn: { contains: q, mode: 'insensitive' } },
-        { nameEn: { contains: q, mode: 'insensitive' } },
-        { fatherNameBn: { contains: q, mode: 'insensitive' } },
-        { fatherNameEn: { contains: q, mode: 'insensitive' } },
-        { motherNameBn: { contains: q, mode: 'insensitive' } },
-        { motherNameEn: { contains: q, mode: 'insensitive' } },
-        { villageBn: { contains: q, mode: 'insensitive' } },
-        { villageEn: { contains: q, mode: 'insensitive' } },
-        { mouzaBn: { contains: q, mode: 'insensitive' } },
-        { mouzaEn: { contains: q, mode: 'insensitive' } },
-      ];
-      if (where.OR) {
-        where.AND = [{ OR: where.OR }, { OR: qFilter }];
-        delete where.OR;
-      } else {
-        where.OR = qFilter;
-      }
+      andConditions.push({
+        OR: [
+          { nameBn: { contains: q, mode: 'insensitive' } },
+          { nameEn: { contains: q, mode: 'insensitive' } },
+          { fatherNameBn: { contains: q, mode: 'insensitive' } },
+          { fatherNameEn: { contains: q, mode: 'insensitive' } },
+          { motherNameBn: { contains: q, mode: 'insensitive' } },
+          { motherNameEn: { contains: q, mode: 'insensitive' } },
+          { villageBn: { contains: q, mode: 'insensitive' } },
+          { villageEn: { contains: q, mode: 'insensitive' } },
+          { AND: [{ showPlotDetails: true }, { mouzaBn: { contains: q, mode: 'insensitive' } }] },
+          { AND: [{ showPlotDetails: true }, { mouzaEn: { contains: q, mode: 'insensitive' } }] },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     let orderBy = [{ sortOrder: 'asc' }, { donationYear: 'asc' }, { id: 'asc' }];
-    const isEn = req.query.lang === 'en';
     if (sort === 'name_asc') {
       orderBy = [{ [isEn ? 'nameEn' : 'nameBn']: 'asc' }];
     } else if (sort === 'name_desc') {
@@ -440,6 +449,7 @@ export async function getLandDonors(req, res, next) {
 
     const [
       totalRecords,
+      filteredAggregate,
       donors,
       totalSumAggregate,
       yearsAggregate,
@@ -453,6 +463,10 @@ export async function getLandDonors(req, res, next) {
       convSqft,
     ] = await Promise.all([
       prisma.landDonor.count({ where }),
+      prisma.landDonor.aggregate({
+        where,
+        _sum: { areaInDecimal: true },
+      }),
       // Strict Privacy by Serialization:
       // NEVER select phone, nid, representativePhone
       prisma.landDonor.findMany({
@@ -514,6 +528,8 @@ export async function getLandDonors(req, res, next) {
               surveyType: true,
               filePath: true,
               thumbPath: true,
+              isPublished: true,
+              deletedAt: true,
             },
           },
         },
@@ -538,9 +554,14 @@ export async function getLandDonors(req, res, next) {
         _sum: { areaInDecimal: true },
       }),
       prisma.landDonor.findMany({
-        where: { isPublished: true, deletedAt: null, mouzaBn: { not: null } },
-        select: { mouzaBn: true },
-        distinct: ['mouzaBn'],
+        where: {
+          isPublished: true,
+          deletedAt: null,
+          showPlotDetails: true,
+          OR: [{ mouzaBn: { not: null } }, { mouzaEn: { not: null } }],
+        },
+        select: { mouzaBn: true, mouzaEn: true },
+        distinct: ['mouzaBn', 'mouzaEn'],
       }),
       SettingsService.getValue('land_tribute_bn', 'ঐতিহ্যবাহী মানিকপুর ঈদগাহ ময়দানের জন্য নিঃস্বার্থভাবে জমি দানকারী সম্মানিত ব্যক্তিবর্গের তালিকা ও চিরকৃতজ্ঞতা প্রকাশ।'),
       SettingsService.getValue('land_tribute_en', 'Eternal gratitude and official register of distinguished patrons who dedicated their valuable land for the sacred grounds of Manikpur Eidgah.'),
@@ -550,10 +571,10 @@ export async function getLandDonors(req, res, next) {
       SettingsService.getValue('unit_conv_sqft', '435.6'),
     ]);
 
-    // Fetch related public documents for returned donors
+    // Fetch related public documents only for donors with showDeedDetails enabled
     const allDocIds = new Set();
     donors.forEach((d) => {
-      if (Array.isArray(d.relatedDocumentIds)) {
+      if (d.showDeedDetails && Array.isArray(d.relatedDocumentIds)) {
         d.relatedDocumentIds.forEach((id) => allDocIds.add(id));
       }
     });
@@ -580,63 +601,20 @@ export async function getLandDonors(req, res, next) {
       });
     }
 
-    // Apply strict server-side visibility filters
-    const sanitizedDonors = donors.map((d) => {
-      const docList = Array.isArray(d.relatedDocumentIds)
-        ? d.relatedDocumentIds.map((id) => docsMap[id]).filter(Boolean)
-        : [];
+    // Apply strict server-side visibility filters (omits hidden fields completely)
+    const sanitizedDonors = donors.map((d) => serializePublicLandDonor(d, docsMap));
 
-      return {
-        id: d.id,
-        nameBn: d.nameBn,
-        nameEn: d.nameEn,
-        fatherNameBn: d.fatherNameBn,
-        fatherNameEn: d.fatherNameEn,
-        motherNameBn: d.motherNameBn,
-        motherNameEn: d.motherNameEn,
-        villageBn: d.villageBn,
-        villageEn: d.villageEn,
-        photoPath: d.photoPath,
-        isDeceased: d.isDeceased,
-        areaValue: d.areaValue,
-        areaUnit: d.areaUnit,
-        areaInDecimal: d.areaInDecimal,
-        donationYear: d.donationYear,
-        donationDate: d.donationDate,
-        donationType: d.donationType,
-        landUse: d.landUse,
-        landUseOther: d.landUseOther,
-        storyBn: d.storyBn,
-        storyEn: d.storyEn,
-        representativeName: d.representativeName,
-        representativeRelation: d.representativeRelation,
-        sortOrder: d.sortOrder,
-        showDeedDetails: d.showDeedDetails,
-        showPlotDetails: d.showPlotDetails,
-        showBoundaries: d.showBoundaries,
-        // Conditional Deed details (server-side gated)
-        deedNumber: d.showDeedDetails ? d.deedNumber : null,
-        deedDate: d.showDeedDetails ? d.deedDate : null,
-        // Conditional Plot details (server-side gated)
-        khatianType: d.showPlotDetails ? d.khatianType : null,
-        khatianNumber: d.showPlotDetails ? d.khatianNumber : null,
-        dagNumber: d.showPlotDetails ? d.dagNumber : null,
-        mouzaBn: d.showPlotDetails ? d.mouzaBn : null,
-        mouzaEn: d.showPlotDetails ? d.mouzaEn : null,
-        jlNumber: d.showPlotDetails ? d.jlNumber : null,
-        upazilaBn: d.showPlotDetails ? d.upazilaBn : null,
-        upazilaEn: d.showPlotDetails ? d.upazilaEn : null,
-        districtBn: d.showPlotDetails ? d.districtBn : null,
-        districtEn: d.showPlotDetails ? d.districtEn : null,
-        // Conditional Boundaries (server-side gated)
-        boundaryNorth: d.showBoundaries ? d.boundaryNorth : null,
-        boundarySouth: d.showBoundaries ? d.boundarySouth : null,
-        boundaryEast: d.showBoundaries ? d.boundaryEast : null,
-        boundaryWest: d.showBoundaries ? d.boundaryWest : null,
-        // Related public attachments
-        relatedDocuments: docList,
-        relatedLandMap: d.relatedLandMap,
-      };
+    // Deduplicated bilingual mouza options
+    const mouzaSeen = new Set();
+    const mouzaOptions = [];
+    mouzasList.forEach((m) => {
+      const bn = m.mouzaBn ? m.mouzaBn.trim() : '';
+      const en = m.mouzaEn ? m.mouzaEn.trim() : '';
+      const key = `${bn}|${en}`;
+      if ((bn || en) && !mouzaSeen.has(key)) {
+        mouzaSeen.add(key);
+        mouzaOptions.push({ bn, en });
+      }
     });
 
     return res.status(200).json({
@@ -650,16 +628,19 @@ export async function getLandDonors(req, res, next) {
       },
       summary: {
         totalDonors: totalSumAggregate._count.id || totalRecords,
-        totalLandInDecimal: totalSumAggregate._sum.areaInDecimal || 0,
+        filteredDonors: totalRecords,
+        totalLandInDecimal: Number(totalSumAggregate._sum.areaInDecimal || 0),
+        filteredLandInDecimal: Number(filteredAggregate._sum.areaInDecimal || 0),
         earliestYear: totalSumAggregate._min.donationYear || null,
         latestYear: totalSumAggregate._max.donationYear || null,
         landByUsage: usageStats.map((u) => ({
           landUse: u.landUse,
           count: u._count.id,
-          areaInDecimal: u._sum.areaInDecimal || 0,
+          areaInDecimal: Number(u._sum.areaInDecimal || 0),
         })),
         years: yearsAggregate.map((y) => y.donationYear),
-        mouzas: mouzasList.map((m) => m.mouzaBn).filter(Boolean),
+        mouzas: mouzaOptions.map((m) => m.bn).filter(Boolean),
+        mouzaOptions,
         conversionFactors: {
           acre: parseFloat(convAcre) || 100,
           bigha: parseFloat(convBigha) || 33,
