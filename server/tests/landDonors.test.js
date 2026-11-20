@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeAreaInDecimal, convertDecimalToAllUnits, DEFAULT_UNIT_CONVERSION } from '../src/utils/landUnit.js';
+import { serializePublicLandDonor } from '../src/utils/landDonorSerializer.js';
 
 test('landUnit: computeAreaInDecimal handles standard conversions correctly', () => {
   // 1. Decimal (1:1)
@@ -39,74 +40,97 @@ test('landUnit: convertDecimalToAllUnits computes all unit representations', () 
 });
 
 test('landDonors: privacy serialization strictly omits private contacts and gated details', () => {
-  // Simulate a raw LandDonor database record with private contact numbers and false visibility toggles
   const rawDbRecord = {
     id: 1,
-    nameBn: 'মরহুম আলহাজ্ব মৌলভী আব্দুল জব্বার',
-    nameEn: 'Late Alhaj Maulvi Abdul Jabbar',
+    nameBn: 'আলহাজ্ব মৌলভী আব্দুল জব্বার',
+    nameEn: 'Alhaj Maulvi Abdul Jabbar',
     fatherNameBn: 'হাজী মোহাম্মদ বক্স',
+    fatherNameEn: 'Haji Mohammad Box',
     villageBn: 'মানিকপুর',
+    villageEn: 'Manikpur',
     photoPath: 'land-donors/sample.webp',
     isDeceased: true,
     areaValue: 40.0,
     areaUnit: 'DECIMAL_SHATANGSHO',
     areaInDecimal: 40.0,
     donationYear: 1965,
+    donationType: 'WAQF',
+    landUse: 'EIDGAH_GROUND',
     deedNumber: '২৮৪১/১৯৬৫',
+    deedDate: new Date('1965-03-15'),
+    khatianType: 'RS',
     khatianNumber: '১১২',
     dagNumber: '৩২৪',
+    mouzaBn: 'মানিকপুর',
+    mouzaEn: 'Manikpur',
+    jlNumber: '৪৫',
     boundaryNorth: 'সরকারী গোপাট',
     boundarySouth: 'মৌলভী বাড়ি',
+    boundaryEast: 'পুকুর',
+    boundaryWest: 'রাস্তা',
+    relatedDocumentIds: [10],
+    relatedLandMap: {
+      id: 3,
+      titleBn: 'আরএস নকশা',
+      titleEn: 'RS Map',
+      surveyType: 'RS',
+      filePath: 'land-maps/rs.webp',
+      thumbPath: 'land-maps/rs_thumb.webp',
+      isPublished: true,
+      deletedAt: null,
+    },
     // Strictly private fields
     phone: '01711000000',
     nid: '1965123456789',
     representativePhone: '01811000000',
-    showDeedDetails: false, // Turned off
-    showPlotDetails: false, // Turned off
-    showBoundaries: false,  // Turned off
+    showDeedDetails: false,
+    showPlotDetails: false,
+    showBoundaries: false,
   };
 
-  // Simulate server-side serialization logic from getLandDonors
-  const publicSerialized = {
-    id: rawDbRecord.id,
-    nameBn: rawDbRecord.nameBn,
-    nameEn: rawDbRecord.nameEn,
-    fatherNameBn: rawDbRecord.fatherNameBn,
-    villageBn: rawDbRecord.villageBn,
-    photoPath: rawDbRecord.photoPath,
-    isDeceased: rawDbRecord.isDeceased,
-    areaValue: rawDbRecord.areaValue,
-    areaUnit: rawDbRecord.areaUnit,
-    areaInDecimal: rawDbRecord.areaInDecimal,
-    donationYear: rawDbRecord.donationYear,
-    deedNumber: rawDbRecord.showDeedDetails ? rawDbRecord.deedNumber : null,
-    khatianNumber: rawDbRecord.showPlotDetails ? rawDbRecord.khatianNumber : null,
-    dagNumber: rawDbRecord.showPlotDetails ? rawDbRecord.dagNumber : null,
-    boundaryNorth: rawDbRecord.showBoundaries ? rawDbRecord.boundaryNorth : null,
+  const docsMap = {
+    10: { id: 10, titleBn: 'ওয়াকফ দলিল', titleEn: 'Waqf Deed', category: 'DEED', filePath: 'docs/deed.pdf' },
   };
+
+  const hiddenDto = serializePublicLandDonor(rawDbRecord, docsMap);
 
   // Verification 1: Private contact fields are NEVER exposed
-  assert.equal('phone' in publicSerialized, false, 'phone must never be present in public DTO');
-  assert.equal('nid' in publicSerialized, false, 'nid must never be present in public DTO');
-  assert.equal('representativePhone' in publicSerialized, false, 'representativePhone must never be present in public DTO');
+  assert.equal('phone' in hiddenDto, false, 'phone must never be present in public DTO');
+  assert.equal('nid' in hiddenDto, false, 'nid must never be present in public DTO');
+  assert.equal('representativePhone' in hiddenDto, false, 'representativePhone must never be present in public DTO');
 
-  // Verification 2: Gated fields are null when visibility toggles are false
-  assert.equal(publicSerialized.deedNumber, null, 'deedNumber must be null when showDeedDetails is false');
-  assert.equal(publicSerialized.khatianNumber, null, 'khatianNumber must be null when showPlotDetails is false');
-  assert.equal(publicSerialized.dagNumber, null, 'dagNumber must be null when showPlotDetails is false');
-  assert.equal(publicSerialized.boundaryNorth, null, 'boundaryNorth must be null when showBoundaries is false');
+  // Verification 2: Gated fields are OMITTED server-side when visibility toggles are false
+  assert.equal('deedNumber' in hiddenDto, false, 'deedNumber must be omitted when showDeedDetails is false');
+  assert.equal('deedDate' in hiddenDto, false, 'deedDate must be omitted when showDeedDetails is false');
+  assert.equal('relatedDocuments' in hiddenDto, false, 'relatedDocuments must be omitted when showDeedDetails is false');
+  assert.equal('khatianType' in hiddenDto, false, 'khatianType must be omitted when showPlotDetails is false');
+  assert.equal('khatianNumber' in hiddenDto, false, 'khatianNumber must be omitted when showPlotDetails is false');
+  assert.equal('dagNumber' in hiddenDto, false, 'dagNumber must be omitted when showPlotDetails is false');
+  assert.equal('jlNumber' in hiddenDto, false, 'jlNumber must be omitted when showPlotDetails is false');
+  assert.equal('mouzaBn' in hiddenDto, false, 'mouzaBn must be omitted when showPlotDetails is false');
+  assert.equal('relatedLandMap' in hiddenDto, false, 'relatedLandMap must be omitted when showPlotDetails is false');
+  assert.equal('boundaryNorth' in hiddenDto, false, 'boundaryNorth must be omitted when showBoundaries is false');
+  assert.equal('boundarySouth' in hiddenDto, false, 'boundarySouth must be omitted when showBoundaries is false');
 
-  // Verification 3: When toggles are true, details are included
-  const publicWithTogglesAllowed = {
-    ...publicSerialized,
-    deedNumber: true ? rawDbRecord.deedNumber : null,
-    khatianNumber: true ? rawDbRecord.khatianNumber : null,
-    dagNumber: true ? rawDbRecord.dagNumber : null,
-    boundaryNorth: true ? rawDbRecord.boundaryNorth : null,
-  };
-  assert.equal(publicWithTogglesAllowed.deedNumber, '২৮৪১/১৯৬৫');
-  assert.equal(publicWithTogglesAllowed.khatianNumber, '১১২');
-  assert.equal(publicWithTogglesAllowed.dagNumber, '৩২৪');
-  assert.equal(publicWithTogglesAllowed.boundaryNorth, 'সরকারী গোপাট');
+  // Verification 3: When toggles are true, details are included while private contacts remain omitted
+  const allowedDto = serializePublicLandDonor(
+    {
+      ...rawDbRecord,
+      showDeedDetails: true,
+      showPlotDetails: true,
+      showBoundaries: true,
+    },
+    docsMap
+  );
+  assert.equal('phone' in allowedDto, false);
+  assert.equal('nid' in allowedDto, false);
+  assert.equal('representativePhone' in allowedDto, false);
+  assert.equal(allowedDto.deedNumber, '২৮৪১/১৯৬৫');
+  assert.equal(allowedDto.khatianNumber, '১১২');
+  assert.equal(allowedDto.dagNumber, '৩২৪');
+  assert.equal(allowedDto.jlNumber, '৪৫');
+  assert.equal(allowedDto.boundaryNorth, 'সরকারী গোপাট');
+  assert.equal(allowedDto.relatedDocuments?.length, 1);
+  assert.equal(allowedDto.relatedLandMap?.id, 3);
 });
 

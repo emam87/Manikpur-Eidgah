@@ -1,21 +1,212 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users,
   Search,
   Filter,
-  ArrowUpDown,
   Sparkles,
   MapPin,
   Calendar,
   X,
   User,
+  Award,
+  ChevronRight,
 } from 'lucide-react';
 import { SEO } from '../components/common/SEO.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { BottomSheet } from '../components/common/BottomSheet.jsx';
 import { Breadcrumb } from '../components/common/Breadcrumb.jsx';
 import { ImageWithBlur } from '../components/common/ImageWithBlur.jsx';
+import { EightPointStar, StarDivider } from '../components/common/EightPointStar.jsx';
 import { getImageUrl } from '../utils/imageUrl.js';
+
+function LifetimeMemberCard({
+  member,
+  index,
+  locale,
+  toBanglaNum,
+  formatBDT,
+  getLocalized,
+  globalShowAmount,
+  onSelect,
+}) {
+  const name = getLocalized(member, 'name');
+  if (locale === 'en' && !name) return null;
+
+  const fatherName = getLocalized(member, 'fatherName');
+  const address = getLocalized(member, 'address');
+  const photoUrl = member.photoPath ? getImageUrl(member.photoPath) : null;
+  const memberNo =
+    locale === 'bn'
+      ? toBanglaNum(member.membershipNo || member.id)
+      : member.membershipNo || member.id;
+  const rawAmount = member.amountPaid ?? member.amount;
+  const hasAmount =
+    globalShowAmount &&
+    rawAmount !== null &&
+    rawAmount !== undefined &&
+    Number(rawAmount) > 0;
+
+  const handleMouseMove = useCallback((e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--spot-x', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--spot-y', `${e.clientY - rect.top}px`);
+  }, []);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(member)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(member);
+        }
+      }}
+      onMouseMove={handleMouseMove}
+      style={{ animationDelay: `${Math.min(index, 10) * 45}ms` }}
+      className="group member-card-premium relative rounded-2xl border border-gold/45 hover:border-gold p-3.5 sm:p-4 pl-4 sm:pl-5 shadow-sakinah-sm cursor-pointer active:scale-[0.99] tap-feedback overflow-hidden ring-1 ring-inset ring-gold/15 hover:ring-gold/40 animate-fade-in opacity-0"
+    >
+      {/* Metallic Gold Left Ribbon Bar */}
+      <div
+        className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-gold-plate-from via-gold to-gold-text group-hover:w-2 transition-all duration-300"
+        aria-hidden="true"
+      />
+
+      {/* Top Subtle Gold Highlight Line */}
+      <div
+        className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+        aria-hidden="true"
+      />
+
+      {/* Pointer-Tracking Warm Golden Spotlight */}
+      <div
+        className="member-card-spotlight pointer-events-none absolute inset-0"
+        aria-hidden="true"
+      />
+
+      {/* Glossy Diagonal Gold-Foil Sheen Sweep on Hover */}
+      <div
+        className="member-card-sheen pointer-events-none absolute -inset-y-4 -left-1/3 w-2/3"
+        aria-hidden="true"
+      />
+
+      {/* Subtle Islamic 8-Point Star Watermark */}
+      <EightPointStar
+        className="pointer-events-none absolute -right-4 -bottom-4 w-24 h-24 text-gold opacity-[0.07] group-hover:opacity-[0.16] group-hover:rotate-45 group-hover:scale-110 transition-all duration-700 ease-heritage"
+        filled={false}
+      />
+
+      <div className="relative z-10 flex items-center gap-3.5 sm:gap-4">
+        {/* Left: Double-Framed Arch Portrait Photo with Golden Halo */}
+        <div className="relative flex-shrink-0">
+          <div className="p-[2px] rounded-t-full rounded-b-xl bg-gradient-to-b from-gold-plate-from via-gold to-gold-text/80 shadow-sakinah-sm group-hover:shadow-gold-glow transition-shadow duration-300">
+            <div className="w-16 h-[74px] sm:w-20 sm:h-24 rounded-t-full rounded-b-[10px] overflow-hidden bg-primary-soft flex items-center justify-center ring-1 ring-inset ring-white/40">
+              {photoUrl ? (
+                <ImageWithBlur
+                  src={photoUrl}
+                  alt={name}
+                  aspectRatio=""
+                  className="w-full h-full"
+                  imageClassName="group-hover:scale-105"
+                />
+              ) : (
+                <span className="font-serif text-2xl sm:text-3xl font-bold text-primary-dark group-hover:scale-110 transition-transform duration-300">
+                  {name?.charAt(0) || 'M'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Tiny Golden Star Crest at Portrait Base */}
+          <span
+            className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-surface border border-gold/70 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:border-gold transition-transform duration-300"
+            aria-hidden="true"
+          >
+            <EightPointStar className="w-3 h-3 text-gold-text" />
+          </span>
+        </div>
+
+        {/* Center: Identity & Details */}
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-soft/90 text-primary-dark text-[11px] font-bold border border-gold/40 shadow-sm group-hover:border-gold/70 transition-colors">
+              <Award className="w-3 h-3 text-gold-text shrink-0" aria-hidden="true" />
+              <span className="tabular-nums">#{memberNo}</span>
+            </span>
+
+            {member.memberSince && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-canvas-alt/80 text-[11px] font-semibold text-ink-muted border border-sand/70">
+                <Calendar className="w-2.5 h-2.5 text-gold-text shrink-0" aria-hidden="true" />
+                <span className="tabular-nums">
+                  {locale === 'bn' ? toBanglaNum(member.memberSince) : member.memberSince}
+                </span>
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-serif font-bold text-base sm:text-lg text-primary-dark group-hover:text-primary leading-snug truncate transition-colors">
+              {name}
+            </h3>
+            <ChevronRight
+              className="w-4 h-4 text-gold-text/60 group-hover:text-gold-text group-hover:translate-x-0.5 transition-all shrink-0 opacity-0 sm:opacity-70 group-hover:opacity-100"
+              aria-hidden="true"
+            />
+          </div>
+
+          {fatherName && (
+            <p className="text-xs text-ink-muted truncate flex items-center gap-1.5">
+              <User className="w-3 h-3 text-gold-text shrink-0" aria-hidden="true" />
+              <span className="truncate">
+                {locale === 'bn' ? 'পিতা: ' : 'Father: '}
+                {fatherName}
+              </span>
+            </p>
+          )}
+
+          {address && (
+            <p className="text-xs text-ink-muted truncate flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-primary/75 shrink-0" aria-hidden="true" />
+              <span className="truncate">{address}</span>
+            </p>
+          )}
+
+          {/* Mobile Amount Plate (shown inline below details on narrow phones < 640px) */}
+          {hasAmount && (
+            <div className="sm:hidden pt-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-gold-plate gold-plate-premium border border-gold/80">
+                <Sparkles className="w-3 h-3 text-ink/75 shrink-0" aria-hidden="true" />
+                <span className="text-[10px] font-bold uppercase tracking-wide text-ink/80">
+                  {locale === 'bn' ? 'অনুদান' : 'Amount'}
+                </span>
+                <span className="w-px h-3 bg-ink/20" aria-hidden="true" />
+                <span className="font-serif font-extrabold text-sm text-ink tabular-nums whitespace-nowrap">
+                  {formatBDT(rawAmount)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Prominent Engraved Gold-Plate Taka Amount (sm+ horizontal layout) */}
+        {hasAmount && (
+          <div className="hidden sm:flex flex-col items-end justify-center shrink-0 pl-2">
+            <div className="px-3.5 py-2 rounded-xl bg-gold-plate gold-plate-premium border border-gold/85 text-right">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-ink/75 leading-none">
+                <Sparkles className="w-2.5 h-2.5 text-ink/70" aria-hidden="true" />
+                <span>{locale === 'bn' ? 'অনুদান' : 'Contribution'}</span>
+              </span>
+              <span className="block font-serif font-extrabold text-base lg:text-lg text-ink tabular-nums leading-tight mt-1 whitespace-nowrap">
+                {formatBDT(rawAmount)}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function LifetimeMembers() {
   const { locale, t, toBanglaNum, formatBDT, getLocalized } = useLanguage();
@@ -137,11 +328,10 @@ export function LifetimeMembers() {
             <button
               type="button"
               onClick={() => setFilterSheetOpen(true)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-all min-h-[44px] tap-feedback shrink-0 ${
-                selectedYear || sortBy !== 'membership_no'
-                  ? 'bg-primary text-white border-primary'
-                  : 'bg-surface text-primary-dark border-sand hover:bg-primary-soft/50'
-              }`}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-bold shadow-sakinah-sm transition-all min-h-[44px] tap-feedback shrink-0 ${selectedYear || sortBy !== 'membership_no'
+                ? 'bg-primary text-white border-primary'
+                : 'bg-surface text-primary-dark border-sand hover:bg-primary-soft/50'
+                }`}
               aria-label="Open filter options"
             >
               <Filter className="w-4 h-4" />
@@ -153,13 +343,13 @@ export function LifetimeMembers() {
           </div>
         </div>
 
-        {/* Members List: Mobile 56px Card List, Desktop Grid */}
+        {/* Members List: Horizontal Premium Cards */}
         {loading ? (
-          <div className="space-y-3 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="h-20 sm:h-64 rounded-2xl bg-surface border border-sand animate-pulse"
+                className="h-28 sm:h-32 rounded-2xl bg-surface border border-sand animate-pulse"
               />
             ))}
           </div>
@@ -176,62 +366,20 @@ export function LifetimeMembers() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2.5 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:space-y-0 sm:gap-4">
-            {members.map((member) => {
-              const name = getLocalized(member, 'name');
-              if (locale === 'en' && !name) return null;
-              const photoUrl = member.photoPath ? getImageUrl(member.photoPath) : null;
-              const memberNo = locale === 'bn' ? toBanglaNum(member.membershipNo || member.id) : member.membershipNo || member.id;
-
-              return (
-                <div
-                  key={member.id}
-                  onClick={() => setSelectedMember(member)}
-                  className="bg-surface rounded-2xl border border-sand hover:border-gold/60 p-3 sm:p-5 shadow-sakinah-sm hover:shadow-sakinah-card transition-all cursor-pointer flex items-center gap-3.5 sm:flex-col sm:text-center active:scale-[0.98] tap-feedback overflow-hidden"
-                >
-                  {/* Photo: 56px square on mobile, arch frame on desktop */}
-                  <div className="w-14 h-14 sm:w-24 sm:h-28 rounded-xl sm:rounded-t-full sm:rounded-b-lg overflow-hidden bg-primary-soft border border-sand flex-shrink-0 flex items-center justify-center">
-                    {photoUrl ? (
-                      <ImageWithBlur
-                        src={photoUrl}
-                        alt={name}
-                        aspectRatio=""
-                        className="w-full h-full"
-                      />
-                    ) : (
-                      <span className="font-serif text-xl sm:text-3xl font-bold text-primary-dark">
-                        {name?.charAt(0) || 'M'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Info: 1 key fact on mobile */}
-                  <div className="min-w-0 flex-1 sm:w-full">
-                    <div className="flex items-center gap-1.5 sm:justify-center mb-0.5">
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark text-[10px] font-bold border border-primary/20">
-                        #{memberNo}
-                      </span>
-                      {member.memberSince && (
-                        <span className="text-[11px] text-ink-muted sm:hidden">
-                          • {locale === 'bn' ? toBanglaNum(member.memberSince) : member.memberSince}
-                        </span>
-                      )}
-                    </div>
-
-                    <h3 className="font-serif font-bold text-sm sm:text-base text-primary-dark truncate">
-                      {name}
-                    </h3>
-
-                    {/* Single Key Fact: Amount or enrolled year */}
-                    <p className="text-xs text-gold-text font-semibold truncate mt-0.5">
-                      {globalShowAmount && member.amount
-                        ? `${formatBDT(member.amount)}`
-                        : `${locale === 'bn' ? 'যোগদান: ' : 'Enrolled: '}${locale === 'bn' ? toBanglaNum(member.memberSince || '—') : member.memberSince || '—'}`}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4">
+            {members.map((member, index) => (
+              <LifetimeMemberCard
+                key={member.id}
+                member={member}
+                index={index}
+                locale={locale}
+                toBanglaNum={toBanglaNum}
+                formatBDT={formatBDT}
+                getLocalized={getLocalized}
+                globalShowAmount={globalShowAmount}
+                onSelect={setSelectedMember}
+              />
+            ))}
           </div>
         )}
 
@@ -326,91 +474,152 @@ export function LifetimeMembers() {
         </div>
       </BottomSheet>
 
-      {/* Member Profile Detail BottomSheet with Full Gold-Plate / Certificate Presentation */}
+      {/* Member Profile Detail BottomSheet with Royal Gold-Plate Certificate Presentation */}
       <BottomSheet
         isOpen={!!selectedMember}
         onClose={() => setSelectedMember(null)}
-        title={selectedMember ? getLocalized(selectedMember, 'name') : ''}
+        title={t('members.certificate_badge') || (locale === 'bn' ? 'আজীবন সদস্য সনদ' : 'Lifetime Member')}
+        subtitle={
+          selectedMember
+            ? `${t('members.member_no')}: #${
+                locale === 'bn'
+                  ? toBanglaNum(selectedMember.membershipNo || selectedMember.id)
+                  : selectedMember.membershipNo || selectedMember.id
+              }`
+            : ''
+        }
       >
         {selectedMember && (
-          <div className="flex flex-col items-center text-center space-y-3.5 py-2 text-ink">
-            {/* Membership Ribbon Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary-soft text-primary-dark font-bold text-xs border border-primary/20">
-              <Sparkles className="w-3.5 h-3.5 text-gold-text" />
-              <span>
-                {t('members.member_no')}:{' '}
-                {locale === 'bn'
-                  ? toBanglaNum(selectedMember.membershipNo || selectedMember.id)
-                  : selectedMember.membershipNo || selectedMember.id}
-              </span>
-            </div>
+          <div className="certificate-frame bg-star-pattern-light relative rounded-2xl border border-gold/55 p-5 sm:p-6 overflow-hidden text-ink">
+            {/* Ornamental Corner Accents */}
+            <span className="pointer-events-none absolute top-2.5 left-2.5 w-4 h-4 border-t-2 border-l-2 border-gold/70 rounded-tl-sm" aria-hidden="true" />
+            <span className="pointer-events-none absolute top-2.5 right-2.5 w-4 h-4 border-t-2 border-r-2 border-gold/70 rounded-tr-sm" aria-hidden="true" />
+            <span className="pointer-events-none absolute bottom-2.5 left-2.5 w-4 h-4 border-b-2 border-l-2 border-gold/70 rounded-bl-sm" aria-hidden="true" />
+            <span className="pointer-events-none absolute bottom-2.5 right-2.5 w-4 h-4 border-b-2 border-r-2 border-gold/70 rounded-br-sm" aria-hidden="true" />
 
-            {/* Arch-Top Photo */}
-            <div className="w-24 h-32 rounded-t-full rounded-b-xl border-2 border-gold/70 overflow-hidden bg-primary-soft shadow-sakinah-sm flex items-center justify-center">
-              {selectedMember.photoPath ? (
-                <img
-                  src={getImageUrl(selectedMember.photoPath)}
-                  alt={getLocalized(selectedMember, 'name')}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="font-serif text-3xl font-bold text-primary-dark">
-                  {getLocalized(selectedMember, 'name')?.charAt(0) || 'M'}
+            {/* Subtle Background Watermark */}
+            <EightPointStar
+              className="pointer-events-none absolute -right-8 -top-8 w-36 h-36 text-gold opacity-[0.08]"
+              filled={false}
+            />
+
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3.5">
+              {/* Official Membership Ribbon Badge */}
+              <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-primary-soft/90 text-primary-dark font-bold text-xs border border-gold/50 shadow-sm">
+                <Award className="w-3.5 h-3.5 text-gold-text" />
+                <span>
+                  {t('members.member_no')}:{' '}
+                  <span className="tabular-nums">
+                    #
+                    {locale === 'bn'
+                      ? toBanglaNum(selectedMember.membershipNo || selectedMember.id)
+                      : selectedMember.membershipNo || selectedMember.id}
+                  </span>
                 </span>
+              </div>
+
+              {/* Double-Ringed Arch-Top Portrait with Golden Halo */}
+              <div className="relative pt-1">
+                <div className="p-[3px] rounded-t-full rounded-b-2xl bg-gradient-to-b from-gold-plate-from via-gold to-gold-text/80 shadow-gold-glow">
+                  <div className="w-24 h-32 rounded-t-full rounded-b-[13px] overflow-hidden bg-primary-soft flex items-center justify-center ring-1 ring-inset ring-white/40">
+                    {selectedMember.photoPath ? (
+                      <img
+                        src={getImageUrl(selectedMember.photoPath)}
+                        alt={getLocalized(selectedMember, 'name')}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="font-serif text-3xl font-bold text-primary-dark">
+                        {getLocalized(selectedMember, 'name')?.charAt(0) || 'M'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span
+                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-surface border border-gold shadow-sm flex items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <EightPointStar className="w-3.5 h-3.5 text-gold-text" />
+                </span>
+              </div>
+
+              <div className="pt-1">
+                <h3 className="font-serif font-bold text-xl sm:text-2xl text-primary-dark leading-snug">
+                  {getLocalized(selectedMember, 'name')}
+                </h3>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-gold-text mt-0.5">
+                  {t('members.certificate_badge') || (locale === 'bn' ? 'সম্মানিত আজীবন সদস্য' : 'Honored Lifetime Member')}
+                </p>
+              </div>
+
+              <StarDivider className="my-1" />
+
+              {/* Structured Info Chips */}
+              <div className="w-full space-y-2 text-left">
+                {(selectedMember.fatherNameBn || selectedMember.fatherNameEn) && (
+                  <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-surface/85 border border-sand/80 text-xs text-ink">
+                    <User className="w-3.5 h-3.5 text-gold-text shrink-0" />
+                    <span className="text-ink-muted shrink-0">
+                      {locale === 'bn' ? 'পিতা:' : 'Father:'}
+                    </span>
+                    <span className="font-semibold text-primary-dark truncate">
+                      {getLocalized(selectedMember, 'fatherName')}
+                    </span>
+                  </div>
+                )}
+
+                {(selectedMember.addressBn || selectedMember.addressEn) && (
+                  <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-surface/85 border border-sand/80 text-xs text-ink">
+                    <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="text-ink-muted shrink-0">
+                      {locale === 'bn' ? 'ঠিকানা:' : 'Address:'}
+                    </span>
+                    <span className="font-semibold text-primary-dark truncate">
+                      {getLocalized(selectedMember, 'address')}
+                    </span>
+                  </div>
+                )}
+
+                {selectedMember.memberSince && (
+                  <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-surface/85 border border-sand/80 text-xs text-ink">
+                    <Calendar className="w-3.5 h-3.5 text-gold-text shrink-0" />
+                    <span className="text-ink-muted shrink-0">
+                      {locale === 'bn' ? 'যোগদানের বছর:' : 'Enrolled Year:'}
+                    </span>
+                    <span className="font-semibold text-primary-dark tabular-nums">
+                      {locale === 'bn'
+                        ? `${toBanglaNum(selectedMember.memberSince)} সাল`
+                        : selectedMember.memberSince}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Contribution Amount (Engraved Gold Plate) */}
+              {globalShowAmount &&
+                (selectedMember.amountPaid ?? selectedMember.amount) &&
+                Number(selectedMember.amountPaid ?? selectedMember.amount) > 0 && (
+                  <div className="w-full py-3.5 px-4 rounded-xl bg-gold-plate gold-plate-premium border border-gold/90 text-ink flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink/80">
+                      <Sparkles className="w-3.5 h-3.5 text-ink/75" />
+                      <span>{locale === 'bn' ? 'মোট অনুদান' : 'Total Contribution'}</span>
+                    </span>
+                    <span className="font-serif font-extrabold text-lg sm:text-xl tabular-nums">
+                      {formatBDT(selectedMember.amountPaid ?? selectedMember.amount)}
+                    </span>
+                  </div>
+                )}
+
+              {/* Bio or Notes */}
+              {(selectedMember.notesBn || selectedMember.notesEn) && (
+                <div className="w-full pt-3 border-t border-gold/25 text-left text-xs leading-relaxed text-ink-muted">
+                  <p className="font-bold text-primary-dark mb-1">
+                    {locale === 'bn' ? 'মন্তব্য / তথ্য:' : 'Notes:'}
+                  </p>
+                  <p className="whitespace-pre-line">{getLocalized(selectedMember, 'notes')}</p>
+                </div>
               )}
             </div>
-
-            <h3 className="font-serif font-bold text-xl text-primary-dark">
-              {getLocalized(selectedMember, 'name')}
-            </h3>
-
-            {/* Father's Name */}
-            {selectedMember.fatherNameBn && (
-              <p className="text-xs text-ink-muted flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-gold-text" />
-                <span>
-                  {locale === 'bn' ? 'পিতা: ' : 'Father: '}
-                  {getLocalized(selectedMember, 'fatherName')}
-                </span>
-              </p>
-            )}
-
-            {/* Address */}
-            {selectedMember.addressBn && (
-              <p className="text-xs text-ink-muted flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-gold-text" />
-                <span>{getLocalized(selectedMember, 'address')}</span>
-              </p>
-            )}
-
-            {/* Member Since */}
-            {selectedMember.memberSince && (
-              <p className="text-xs text-ink-muted flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-gold-text" />
-                <span>
-                  {locale === 'bn' ? 'যোগদানের বছর: ' : 'Enrolled Year: '}
-                  {locale === 'bn' ? toBanglaNum(selectedMember.memberSince) : selectedMember.memberSince}
-                </span>
-              </p>
-            )}
-
-            {/* Contribution Amount (Gold Plate) */}
-            {globalShowAmount && selectedMember.amount && (
-              <div className="w-full py-2.5 px-4 rounded-xl bg-gold-plate text-ink font-bold text-sm shadow-sakinah-sm">
-                <span>{locale === 'bn' ? 'মোট অনুদান: ' : 'Total Contribution: '}</span>
-                <span>{formatBDT(selectedMember.amount)}</span>
-              </div>
-            )}
-
-            {/* Bio or Notes */}
-            {(selectedMember.notesBn || selectedMember.notesEn) && (
-              <div className="w-full pt-3 border-t border-sand text-left text-xs leading-relaxed text-ink-muted">
-                <p className="font-bold text-primary-dark mb-1">
-                  {locale === 'bn' ? 'মন্তব্য / তথ্য:' : 'Notes:'}
-                </p>
-                <p className="whitespace-pre-line">{getLocalized(selectedMember, 'notes')}</p>
-              </div>
-            )}
           </div>
         )}
       </BottomSheet>
