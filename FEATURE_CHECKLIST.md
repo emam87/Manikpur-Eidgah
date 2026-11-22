@@ -22,7 +22,7 @@
 | `GET /gallery` | `Public\GalleryController@index` -> `public.gallery.index` | `/gallery` -> `Gallery.jsx` | `GET /api/public/gallery` | Folders layout (cards with cover, type badge, year, photo count, stacked preview; desktop 4/row, mobile 2/row), tabs (`ALL`, `FITR`, `ADHA`, `OTHER`), year filter, search. | [x] Completed Phase 5 |
 | `GET /gallery/:slug` | `Public\GalleryController@show` -> `public.gallery.show` | `/gallery/:slug` -> `GalleryFolder.jsx` | `GET /api/public/gallery/:slug` | Breadcrumb, "← সব ফোল্ডার" back link, folder details, masonry photo grid, pagination, full lightbox (keyboard nav, touch swipe, pinch zoom, captions bn/en, counter, thumbnail strip, optional download button gated by setting), prev/next folder nav. | [x] Completed Phase 5 |
 | `GET /designs` | `Public\DesignController@index` -> `public.designs.index` | `/designs` -> `Designs.jsx` | `GET /api/public/designs` | Grid of 7 proposed architectural 3D render images with captions bn/en, in-page lightbox (no detail page), 3D Video section (uploaded MP4/WebM or YouTube nocookie embed) shown only when published videos exist. Disclaimer that they are proposed 3D renders. | [x] Completed Phase 5 |
-| `GET /map` | Map & Directions Page | `/map` -> `MapPage.jsx` | `GET /api/public/map` | Dedicated mobile-first Map & Directions (`মানচিত্র ও পথ`) page with ONLY location content (no contact/bank duplication). Single-source settings (`23.0199269, 91.2112393`), lazy-loaded Leaflet map (OSM + configurable Satellite), anti-scroll-trap two-finger / Ctrl+scroll hints, Lite mode static preview fallback, platform-ordered Navigate sheet (Apple Maps first on iOS, Google Maps, Waze, Android `geo:`, Street View), My Location distance, Share, Copy coords & Plus Code, lazy QR poster, POI layer + accessible list, Boundary polygon with sq m & শতাংশ area, optional privacy-gated Land Donor Parcels layer, and collapsible Route Guides accordion. | [x] Completed (Upgraded 2026-11-22) |
+| `GET /map` | Location Map Page | Redirects to `/` | HTTP 301 -> `/` | **Removed by decision (data retained, restore via git tag `before-map-removal`)**. `/map` and `/map/*` redirect to `/` (HTTP 301 server-side + client-side fallback). `leaflet` uninstalled; `MapPlace`, `RouteGuide`, `LandDonor.geometry`, and `map_*` rows remain dormant in PostgreSQL and preserved in backups. Cadastral Land Map (`/land-maps`, CS/SA/RS/BS viewer) remains 100% active and untouched. | [x] Removed by decision (data retained) |
 | `GET /land-maps` | `Public\LandMapController@index` -> `public.land-maps` | `/land-maps` -> `LandMaps.jsx` | `GET /api/public/land-maps` | Mouza/cadastral map viewer (CS, SA, RS, BS), title, survey type, dag/khatian info, date, pan & zoom controls (zoom in/out/reset, mouse drag, touch drag), direct file download. | [x] Completed Phase 4 |
 | `GET /documents` | `Public\DocumentController@index` -> `public.documents` | `/documents` -> `Documents.jsx` | `GET /api/public/documents` | Legal documents repository (Deed, Khatian, Porcha, Mutation, DCR, Court papers, Resolutions, Others). Search, category filter, modal preview, direct download. Only `PUBLIC` documents shown; PDF fallback button for mobile devices. | [x] Completed Phase 4 |
 | `GET /documents/:id/file` | `Public\DocumentController@file` | Dynamic signed URL or proxy | `GET /api/public/documents/:id/file` | Serves public files directly from R2, or validates admin auth for `ADMIN_ONLY` documents and generates a short-lived signed R2 download/preview URL. | [x] Completed Phase 4 |
@@ -583,6 +583,20 @@ Strictly 6 canonical blocks, each rendering immediately and hiding cleanly when 
   - `map_zoom`, `map_satellite_enabled`, `map_static_preview` → **Tab 2: View** (zoom slider + live preview + satellite toggle + static fallback upload).
   - `boundary_geojson` → **Tab 3: Boundary** (polygon editor + GeoJSON import/export + sq m & শতাংশ area).
   - `MapPlace` CRUD → **Tab 4: Places**; `RouteGuide` CRUD → **Tab 5: Route Guides**; `LandDonor.geometry` → **Tab 6: Parcels**.
+
+---
+
+## 23. Location Map Feature Removal (Data Retained)
+
+> **Update Date**: 2026-11-22  
+> **Status**: **Removed by decision (data retained, restore via git tag `before-map-removal`)**  
+> **Safety Branch / Tag**: Tag `before-map-removal`, branch `remove-map`
+
+- **Non-Destructive Data Retention**: No database table, column, row, or setting was dropped or modified. `MapPlace`, `RouteGuide`, `LandDonor.geometry`, and `map_*` / `boundary_geojson` rows remain dormant in PostgreSQL (`schema.prisma` annotated) and continue to be included in `GET /api/admin/backup/export`.
+- **Public Site & API**: Deleted `/map` page/components/helpers, uninstalled `leaflet`, added HTTP 301 (`/map` & `/map/*` → `/`) + client redirect, stripped `map_*` keys from `GET /api/public/settings`, removed `GET /api/public/map` and `POST /api/admin/maps/resolve`, removed `/map` from sitemap/OG/JSON-LD, replaced the Home Quick Links Map tile with Land Map (`/land-maps`), and simplified Home's bottom card to plain address + Contact link.
+- **Admin**: Removed Settings > Map tab, Places/Route Guides CRUD pages/routes, and Land Donor parcel editor; Admin Settings ignores dormant `map_*` keys on save so existing DB values are preserved.
+- **100% Parity Preserved**: Cadastral Land Map (`/land-maps`), Documents, Land Donors, Lifetime Members, Gallery, Designs, Notices, About/Committee, and Contact remain 100% intact.
+
 
 
 

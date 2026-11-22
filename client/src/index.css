@@ -586,21 +586,6 @@ html.dark .certificate-frame {
   min-height: 100dvh;
 }
 
-/* Harmonized Leaflet Map Popup & Control Styling */
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: var(--surface) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-card) !important;
-}
-
-.leaflet-control-zoom a {
-  background-color: var(--surface) !important;
-  color: var(--primary-dark) !important;
-  border-color: var(--border) !important;
-}
-
 /* Light Dawn Hero Background & Masked Photo Edge Fade */
 .bg-hero-dawn {
   background:

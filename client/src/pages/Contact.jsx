@@ -18,21 +18,60 @@ export function Contact() {
 
   const [copiedKey, setCopiedKey] = useState(null);
 
-  const phone = getSetting('contact_phone', locale, '+880 1711-000000');
-  const email = getSetting('contact_email', locale, 'info@manikpureidgah.org');
+  const phone = getSetting('contact_phone', locale) || getSetting('contact_phone', 'bn', '+880 1711-000000');
+  const email = getSetting('contact_email', locale) || getSetting('contact_email', 'bn', 'info@manikpureidgah.org');
   const address = getSetting('location', locale, locale === 'bn' ? 'মানিকপুর, বাঞ্ছারামপুর, ব্রাহ্মণবাড়িয়া, বাংলাদেশ' : 'Manikpur, Bancharampur, Brahmanbaria, Bangladesh');
   const bankName = getSetting('bank_name', locale, locale === 'bn' ? 'ইসলামী ব্যাংক বাংলাদেশ পিএলসি' : 'Islami Bank Bangladesh PLC');
   const branchName = getSetting('bank_branch', locale, locale === 'bn' ? 'বাঞ্ছারামপুর শাখা' : 'Bancharampur Branch');
   const acName = getSetting('bank_account_name', locale, locale === 'bn' ? 'মানিকপুর ঈদগাহ উন্নয়ন কমিটি' : 'Manikpur Eidgah Development Committee');
-  const acNumber = getSetting('bank_account_no', locale, '20501234567890123');
-  const routingNo = getSetting('bank_routing_no', locale, '125120000');
-  const bkashNo = getSetting('bkash_no', locale, locale === 'bn' ? '01711-000000 (পার্সোনাল)' : '01711-000000 (Personal)');
-  const nagadNo = getSetting('nagad_no', locale, locale === 'bn' ? '01811-000000 (পার্সোনাল)' : '01811-000000 (Personal)');
+  const acNumber = getSetting('bank_account_no', locale) || getSetting('bank_account_no', 'bn', '20501234567890123');
+  const routingNo = getSetting('bank_routing_no', locale) || getSetting('bank_routing_no', 'bn', '125120000');
+  const bkashNo = getSetting('bkash_no', locale) || getSetting('bkash_no', 'bn', locale === 'bn' ? '01711-000000 (পার্সোনাল)' : '01711-000000 (Personal)');
+  const nagadNo = getSetting('nagad_no', locale) || getSetting('nagad_no', 'bn', locale === 'bn' ? '01811-000000 (পার্সোনাল)' : '01811-000000 (Personal)');
 
-  const copyToClipboard = (text, key, label) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text, key, label) => {
+    const cleanText = String(text || '').trim();
+    if (!cleanText) return;
+
+    let copiedOk = false;
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(cleanText);
+        copiedOk = true;
+      }
+    } catch {
+      copiedOk = false;
+    }
+
+    if (!copiedOk) {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = cleanText;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.top = '0';
+        textarea.style.left = '0';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, cleanText.length);
+        copiedOk = document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch {
+        copiedOk = false;
+      }
+    }
+
     setCopiedKey(key);
-    showToast(locale === 'bn' ? `${label || 'তথ্য'} কপি করা হয়েছে!` : `${label || 'Info'} copied to clipboard!`, 'success');
+    if (showToast) {
+      showToast(
+        locale === 'bn'
+          ? `${label || 'তথ্য'} কপি করা হয়েছে: ${cleanText}`
+          : `${label || 'Info'} copied: ${cleanText}`,
+        'success'
+      );
+    }
     setTimeout(() => setCopiedKey(null), 2500);
   };
 
@@ -98,8 +137,9 @@ export function Contact() {
                       <span>{phone}</span>
                     </a>
                     <button
+                      type="button"
                       onClick={() => copyToClipboard(phone, 'phone', locale === 'bn' ? 'ফোন নম্বর' : 'Phone')}
-                      className="text-xs px-2.5 py-1 rounded-lg bg-canvas-alt text-ink hover:bg-primary-soft transition-colors inline-flex items-center gap-1 min-h-[36px] border border-sand"
+                      className="text-xs px-2.5 py-1 rounded-lg bg-canvas-alt text-ink hover:bg-primary-soft transition-colors inline-flex items-center gap-1 min-h-[36px] border border-sand cursor-pointer"
                       title="নম্বর কপি করুন"
                       aria-label="Copy phone number"
                     >
@@ -172,14 +212,21 @@ export function Contact() {
                   <span className="font-serif font-bold text-base text-primary-dark">{acName}</span>
                 </div>
 
-                <div className="bg-canvas-alt p-3.5 sm:p-4 rounded-xl border border-gold/40 flex flex-col xs:flex-row xs:items-center justify-between gap-3">
+                <div
+                  onClick={() => copyToClipboard(acNumber, 'bank_ac', locale === 'bn' ? 'হিসাব নম্বর' : 'Account Number')}
+                  className="bg-canvas-alt p-3.5 sm:p-4 rounded-xl border border-gold/40 flex flex-col xs:flex-row xs:items-center justify-between gap-3 cursor-pointer"
+                >
                   <div className="min-w-0">
                     <span className="text-[11px] text-gold-text block font-mono font-semibold">{locale === 'bn' ? 'হিসাব নম্বর (A/C No)' : 'Account Number'}</span>
-                    <span className="font-mono font-extrabold text-base sm:text-lg text-ink tracking-wider break-all tabular-nums">{acNumber}</span>
+                    <span className="font-mono font-extrabold text-base sm:text-lg text-ink tracking-wider break-all tabular-nums select-all">{acNumber}</span>
                   </div>
                   <button
-                    onClick={() => copyToClipboard(acNumber, 'bank_ac', locale === 'bn' ? 'হিসাব নম্বর' : 'Account Number')}
-                    className="px-3.5 py-2 rounded-xl bg-gold-plate hover:brightness-105 active:scale-[0.98] text-ink font-bold text-xs flex items-center justify-center gap-1.5 transition-all min-h-[40px] tap-target shrink-0 shadow-sakinah-sm"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(acNumber, 'bank_ac', locale === 'bn' ? 'হিসাব নম্বর' : 'Account Number');
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-gold-plate hover:brightness-105 active:scale-[0.98] text-ink font-bold text-xs flex items-center justify-center gap-1.5 transition-all min-h-[40px] tap-target shrink-0 shadow-sakinah-sm cursor-pointer relative z-10"
                     title="হিসাব নম্বর কপি করুন"
                   >
                     {copiedKey === 'bank_ac' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -211,8 +258,9 @@ export function Contact() {
                     <span className="font-mono font-bold text-ink text-sm block mt-1 tabular-nums">{bkashNo}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => copyToClipboard(bkashNo.split(' ')[0], 'bkash', 'bKash')}
-                    className="text-xs text-primary-dark hover:bg-primary hover:text-white font-bold flex items-center gap-1.5 self-start px-3 py-1.5 rounded-lg bg-surface border border-sand min-h-[38px] tap-target transition-colors"
+                    className="text-xs text-primary-dark hover:bg-primary hover:text-white font-bold flex items-center gap-1.5 self-start px-3 py-1.5 rounded-lg bg-surface border border-sand min-h-[38px] tap-target transition-colors cursor-pointer"
                   >
                     {copiedKey === 'bkash' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedKey === 'bkash' ? (locale === 'bn' ? 'কপি হয়েছে!' : 'Copied!') : (locale === 'bn' ? 'নম্বর কপি করুন' : 'Copy Number')}</span>
@@ -226,8 +274,9 @@ export function Contact() {
                     <span className="font-mono font-bold text-ink text-sm block mt-1 tabular-nums">{nagadNo}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => copyToClipboard(nagadNo.split(' ')[0], 'nagad', 'Nagad')}
-                    className="text-xs text-primary-dark hover:bg-primary hover:text-white font-bold flex items-center gap-1.5 self-start px-3 py-1.5 rounded-lg bg-surface border border-sand min-h-[38px] tap-target transition-colors"
+                    className="text-xs text-primary-dark hover:bg-primary hover:text-white font-bold flex items-center gap-1.5 self-start px-3 py-1.5 rounded-lg bg-surface border border-sand min-h-[38px] tap-target transition-colors cursor-pointer"
                   >
                     {copiedKey === 'nagad' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedKey === 'nagad' ? (locale === 'bn' ? 'কপি হয়েছে!' : 'Copied!') : (locale === 'bn' ? 'নম্বর কপি করুন' : 'Copy Number')}</span>

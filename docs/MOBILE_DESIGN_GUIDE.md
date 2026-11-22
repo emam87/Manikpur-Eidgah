@@ -35,11 +35,10 @@ Mobile navigation exists strictly in **two unified layers**:
   - Secondary Destinations:
     1. `পরিচিতি ও কমিটি` / `About & Committee` (`/about`)
     2. `নকশা ও পরিকল্পনা` / `Design & Plan` (`/designs`)
-    3. `মানচিত্র ও পথ` / `Map & Directions` (`/contact#map`)
-    4. `জমির নকশা` / `Land Map` (`/land-maps`)
-    5. `দলিল ও কাগজপত্র` / `Documents` (`/documents`)
-    6. `নোটিশ ও ঘোষণা` / `Notices` (`/notices`)
-    7. `যোগাযোগ ও অনুদান` / `Contact & Donate` (`/contact`)
+    3. `জমির নকশা` / `Land Map` (`/land-maps`)
+    4. `দলিল ও কাগজপত্র` / `Documents` (`/documents`)
+    5. `নোটিশ ও ঘোষণা` / `Notices` (`/notices`)
+    6. `যোগাযোগ ও অনুদান` / `Contact & Donate` (`/contact`)
   - Preference Controls:
     - Language switcher (`বাং` / `EN`)
     - Theme switcher (`Sakinah Light` / `Night Noor`)

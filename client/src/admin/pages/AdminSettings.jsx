@@ -6,7 +6,6 @@ import {
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import { BilingualInput } from '../components/BilingualInput.jsx';
-import { AdminMapSettingsPanel } from '../components/AdminMapSettingsPanel.jsx';
 import { getImageUrl } from '../../utils/imageUrl.js';
 
 export function AdminSettings() {
@@ -83,6 +82,8 @@ export function AdminSettings() {
       const payload = {};
       Object.keys(settings).forEach((k) => {
         if (k.endsWith('_en')) return;
+        // Ignore dormant map_* / boundary_geojson rows so existing DB data stays untouched
+        if (k.startsWith('map_') || k === 'boundary_geojson') return;
         payload[k] = {
           valueBn: settings[k] || '',
           valueEn: settings[`${k}_en`] !== undefined ? settings[`${k}_en`] : null,
@@ -111,7 +112,6 @@ export function AdminSettings() {
 
   const tabs = [
     { id: 'general', label: 'সাধারণ পরিচিতি', icon: Globe },
-    { id: 'map', label: 'মানচিত্র ও অবস্থান', icon: MapPin },
     { id: 'land', label: 'জমিদাতা ও ভূমি সেটিংস', icon: Landmark },
     { id: 'jamat', label: 'ঈদের জামাত সময়সূচি', icon: Moon },
     { id: 'contact', label: 'যোগাযোগ ও ব্যাংক একাউন্ট', icon: Phone },
@@ -559,7 +559,10 @@ export function AdminSettings() {
                 <input
                   type="text"
                   value={settings.bank_account_no || ''}
-                  onChange={(e) => handleChange('bank_account_no', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('bank_account_no', e.target.value);
+                    handleChange('bank_account_no_en', e.target.value);
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono font-bold"
                 />
               </div>
@@ -569,7 +572,10 @@ export function AdminSettings() {
                 <input
                   type="text"
                   value={settings.bank_routing_no || ''}
-                  onChange={(e) => handleChange('bank_routing_no', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('bank_routing_no', e.target.value);
+                    handleChange('bank_routing_no_en', e.target.value);
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono"
                 />
               </div>
@@ -579,22 +585,15 @@ export function AdminSettings() {
                 <input
                   type="text"
                   value={settings.bkash_no || ''}
-                  onChange={(e) => handleChange('bkash_no', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('bkash_no', e.target.value);
+                    handleChange('bkash_no_en', e.target.value);
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono"
                 />
               </div>
             </div>
           </div>
-        )}
-
-        {/* TAB: MAP & LOCATION (Unambiguous 6-tab panel) */}
-        {activeTab === 'map' && (
-          <AdminMapSettingsPanel
-            settings={settings}
-            onSettingsUpdated={(updatedMapFields) =>
-              setSettings((prev) => ({ ...prev, ...updatedMapFields }))
-            }
-          />
         )}
 
         {/* TAB 4: PRIVACY */}
@@ -636,19 +635,17 @@ export function AdminSettings() {
 
 
 
-        {/* Save Button (hidden on map tab which manages its own dirty-gated Save/Reset + 50m guard) */}
-        {activeTab !== 'map' && (
-          <div className="pt-4 border-t border-sand flex items-center justify-end gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold hover:bg-primary-hover transition-colors shadow-sakinah-sm flex items-center gap-2 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? 'সংরক্ষণ হচ্ছে...' : 'সেটিংস সংরক্ষণ করুন'}</span>
-            </button>
-          </div>
-        )}
+        {/* Save Button */}
+        <div className="pt-4 border-t border-sand flex items-center justify-end gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-6 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold hover:bg-primary-hover transition-colors shadow-sakinah-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            <span>{saving ? 'সংরক্ষণ হচ্ছে...' : 'সেটিংস সংরক্ষণ করুন'}</span>
+          </button>
+        </div>
       </form>
     </div>
   );

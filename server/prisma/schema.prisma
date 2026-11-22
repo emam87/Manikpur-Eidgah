@@ -98,6 +98,7 @@ enum LandUse {
   OTHER
 }
 
+// dormant: map feature removed, data retained
 enum MapPlaceCategory {
   EIDGAH_GROUND
   ENTRANCE
@@ -110,6 +111,7 @@ enum MapPlaceCategory {
   OTHER
 }
 
+// dormant: map feature removed, data retained
 enum RouteTransportType {
   BUS
   CNG
@@ -488,7 +490,7 @@ model LandDonor {
   relatedDocumentIds     Json?             @map("related_document_ids")
   relatedLandMapId       Int?              @map("related_land_map_id")
   relatedLandMap         LandMap?          @relation(fields: [relatedLandMapId], references: [id])
-  geometry               Json?             @map("geometry")
+  geometry               Json?             @map("geometry") // dormant: map feature removed, data retained
   representativeName     String?           @map("representative_name") @db.VarChar(255)
   representativeRelation String?           @map("representative_relation") @db.VarChar(100)
   phone                  String?           @db.VarChar(50) // STRICTLY PRIVATE: never serialized to public
@@ -511,6 +513,7 @@ model LandDonor {
   @@map("land_donors")
 }
 
+// dormant: map feature removed, data retained
 model MapPlace {
   id          Int              @id @default(autoincrement())
   nameBn      String           @map("name_bn") @db.VarChar(255)
@@ -534,6 +537,7 @@ model MapPlace {
   @@map("map_places")
 }
 
+// dormant: map feature removed, data retained
 model RouteGuide {
   id            Int                  @id @default(autoincrement())
   fromNameBn    String               @map("from_name_bn") @db.VarChar(255)

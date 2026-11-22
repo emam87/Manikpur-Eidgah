@@ -91,10 +91,9 @@ export function Navbar() {
     {
       id: 'info',
       label: t('nav.group_info'),
-      paths: ['/about', '/notices', '/map'],
+      paths: ['/about', '/notices'],
       items: [
         { to: '/about', label: t('nav.about') },
-        { to: '/map', label: locale === 'bn' ? 'মানচিত্র ও পথ' : 'Map & Directions' },
         { to: '/notices', label: t('nav.notices') },
       ],
     },

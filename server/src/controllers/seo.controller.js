@@ -26,7 +26,6 @@ export class SeoController {
         { path: '/designs', priority: '0.8', changefreq: 'monthly' },
         { path: '/documents', priority: '0.7', changefreq: 'monthly' },
         { path: '/land-maps', priority: '0.7', changefreq: 'monthly' },
-        { path: '/map', priority: '0.8', changefreq: 'monthly' },
         { path: '/notices', priority: '0.9', changefreq: 'daily' },
         { path: '/contact', priority: '0.8', changefreq: 'monthly' },
       ];
@@ -200,18 +199,6 @@ Sitemap: ${baseUrl}/sitemap.xml
         description =
           'মানিকপুর ঈদগাহ ও সংলগ্ন পুকুর পাড়ের প্রস্তাবিত ত্রিমাত্রিক (3D) নান্দনিক মাস্টারপ্ল্যান ও ডিজাইন।';
         image = `${baseUrl}/designs/layout-plan.jpg`;
-      } else if (req.path === '/map') {
-        title = 'মানচিত্র ও পথ | মানিকপুর ঈদগাহ';
-        description =
-          'মানিকপুর ঈদগাহের অবস্থান, সীমানা, আশেপাশের গুরুত্বপূর্ণ স্থান ও পৌঁছানোর পথনির্দেশনা।';
-        const previewSetting = await prisma.siteSetting
-          .findUnique({ where: { key: 'map_static_preview' } })
-          .catch(() => null);
-        if (previewSetting?.valueBn) {
-          image = previewSetting.valueBn.startsWith('http')
-            ? previewSetting.valueBn
-            : `${baseUrl}${previewSetting.valueBn.startsWith('/') ? '' : '/uploads/'}${previewSetting.valueBn}`;
-        }
       }
     } catch (e) {
       // Fallback to defaults

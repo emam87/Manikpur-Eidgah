@@ -16,7 +16,6 @@ const Contact = lazy(() => import('./pages/Contact.jsx').then((m) => ({ default:
 const Gallery = lazy(() => import('./pages/Gallery.jsx').then((m) => ({ default: m.Gallery })));
 const GalleryFolder = lazy(() => import('./pages/GalleryFolder.jsx').then((m) => ({ default: m.GalleryFolder })));
 const Designs = lazy(() => import('./pages/Designs.jsx').then((m) => ({ default: m.Designs })));
-const MapPage = lazy(() => import('./pages/MapPage.jsx').then((m) => ({ default: m.MapPage })));
 const NotFound = lazy(() => import('./pages/NotFound.jsx').then((m) => ({ default: m.NotFound })));
 
 // Lazy-loaded secret admin SPA chunk
@@ -58,7 +57,8 @@ export function App() {
         <Route path="/gallery" element={<Suspense fallback={<PageFallback />}><Gallery /></Suspense>} />
         <Route path="/gallery/:slug" element={<Suspense fallback={<PageFallback />}><GalleryFolder /></Suspense>} />
         <Route path="/designs" element={<Suspense fallback={<PageFallback />}><Designs /></Suspense>} />
-        <Route path="/map" element={<Suspense fallback={<PageFallback />}><MapPage /></Suspense>} />
+        <Route path="/map" element={<Navigate to="/" replace />} />
+        <Route path="/map/*" element={<Navigate to="/" replace />} />
         <Route path="/land-maps" element={<Suspense fallback={<PageFallback />}><LandMaps /></Suspense>} />
         <Route path="/documents" element={<Suspense fallback={<PageFallback />}><Documents /></Suspense>} />
         <Route path="/notices" element={<Suspense fallback={<PageFallback />}><Notices /></Suspense>} />

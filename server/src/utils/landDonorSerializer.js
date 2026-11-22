@@ -78,10 +78,6 @@ export function serializePublicLandDonor(d, docsMap = {}) {
         thumbPath: d.relatedLandMap.thumbPath,
       };
     }
-
-    if (d.geometry) {
-      dto.geometry = d.geometry;
-    }
   }
 
   // Conditional Boundaries (server-side omitted when showBoundaries is false)

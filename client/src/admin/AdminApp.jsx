@@ -14,7 +14,6 @@ import { AdminDocuments } from './pages/AdminDocuments.jsx';
 import { AdminLandMaps } from './pages/AdminLandMaps.jsx';
 import { AdminNotices } from './pages/AdminNotices.jsx';
 import { AdminDesigns } from './pages/AdminDesigns.jsx';
-import { AdminMapManagement } from './pages/AdminMapManagement.jsx';
 import { AdminMissingTranslations } from './pages/AdminMissingTranslations.jsx';
 import { AdminNameReview } from './pages/AdminNameReview.jsx';
 import { AdminSettings } from './pages/AdminSettings.jsx';
@@ -105,7 +104,6 @@ function AdminContent() {
           <Route path="land-maps" element={<AdminLandMaps />} />
           <Route path="notices" element={<AdminNotices />} />
           <Route path="designs" element={<AdminDesigns />} />
-          <Route path="map" element={<AdminMapManagement />} />
           <Route path="missing-translations" element={<AdminMissingTranslations />} />
           <Route path="name-review" element={<AdminNameReview />} />
           <Route path="settings" element={<AdminSettings />} />

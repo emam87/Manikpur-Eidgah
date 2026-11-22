@@ -16,8 +16,6 @@ export function SEO({
 
   const siteName = getSetting('site_name', locale, t('site_name'));
   const defaultDesc = getSetting('tagline', locale, t('site_tagline'));
-  const mapLat = parseFloat(getSetting('map_lat', 'bn', '23.0199269'));
-  const mapLng = parseFloat(getSetting('map_lng', 'bn', '91.2112393'));
 
   const finalTitle = title ? `${title} | ${siteName}` : `${siteName} — ${defaultDesc}`;
   const finalDesc = description || defaultDesc;
@@ -28,21 +26,12 @@ export function SEO({
 
   const structuredData = jsonLd || {
     '@context': 'https://schema.org',
-    '@type': 'Place',
+    '@type': 'Organization',
     name: siteName,
     alternateName: locale === 'bn' ? 'Manikpur Eidgah' : 'মানিকপুর ঈদগাহ',
     url: siteUrl,
     description: finalDesc,
     image: finalImage,
-    ...(Number.isFinite(mapLat) && Number.isFinite(mapLng)
-      ? {
-          geo: {
-            '@type': 'GeoCoordinates',
-            latitude: mapLat,
-            longitude: mapLng,
-          },
-        }
-      : {}),
   };
 
   return (
