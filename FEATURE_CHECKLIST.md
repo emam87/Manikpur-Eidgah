@@ -22,7 +22,7 @@
 | `GET /gallery` | `Public\GalleryController@index` -> `public.gallery.index` | `/gallery` -> `Gallery.jsx` | `GET /api/public/gallery` | Folders layout (cards with cover, type badge, year, photo count, stacked preview; desktop 4/row, mobile 2/row), tabs (`ALL`, `FITR`, `ADHA`, `OTHER`), year filter, search. | [x] Completed Phase 5 |
 | `GET /gallery/:slug` | `Public\GalleryController@show` -> `public.gallery.show` | `/gallery/:slug` -> `GalleryFolder.jsx` | `GET /api/public/gallery/:slug` | Breadcrumb, "← সব ফোল্ডার" back link, folder details, masonry photo grid, pagination, full lightbox (keyboard nav, touch swipe, pinch zoom, captions bn/en, counter, thumbnail strip, optional download button gated by setting), prev/next folder nav. | [x] Completed Phase 5 |
 | `GET /designs` | `Public\DesignController@index` -> `public.designs.index` | `/designs` -> `Designs.jsx` | `GET /api/public/designs` | Grid of 7 proposed architectural 3D render images with captions bn/en, in-page lightbox (no detail page), 3D Video section (uploaded MP4/WebM or YouTube nocookie embed) shown only when published videos exist. Disclaimer that they are proposed 3D renders. | [x] Completed Phase 5 |
-| `GET /map` | Legacy Map Page | Redirects to `/contact` | N/A (Redirect) | Location Map ("অবস্থান মানচিত্র") removed per user requirement; route `/map` cleanly redirects to `/contact`. Cadastral Mouza Maps (`/land-maps`) remains active and distinct. | [x] Feature Removed |
+| `GET /map` | Location Map Page | Redirects to `/` | HTTP 301 -> `/` | **Removed by decision (data retained, restore via git tag `before-map-removal`)**. `/map` and `/map/*` redirect to `/` (HTTP 301 server-side + client-side fallback). `leaflet` uninstalled; `MapPlace`, `RouteGuide`, `LandDonor.geometry`, and `map_*` rows remain dormant in PostgreSQL and preserved in backups. Cadastral Land Map (`/land-maps`, CS/SA/RS/BS viewer) remains 100% active and untouched. | [x] Removed by decision (data retained) |
 | `GET /land-maps` | `Public\LandMapController@index` -> `public.land-maps` | `/land-maps` -> `LandMaps.jsx` | `GET /api/public/land-maps` | Mouza/cadastral map viewer (CS, SA, RS, BS), title, survey type, dag/khatian info, date, pan & zoom controls (zoom in/out/reset, mouse drag, touch drag), direct file download. | [x] Completed Phase 4 |
 | `GET /documents` | `Public\DocumentController@index` -> `public.documents` | `/documents` -> `Documents.jsx` | `GET /api/public/documents` | Legal documents repository (Deed, Khatian, Porcha, Mutation, DCR, Court papers, Resolutions, Others). Search, category filter, modal preview, direct download. Only `PUBLIC` documents shown; PDF fallback button for mobile devices. | [x] Completed Phase 4 |
 | `GET /documents/:id/file` | `Public\DocumentController@file` | Dynamic signed URL or proxy | `GET /api/public/documents/:id/file` | Serves public files directly from R2, or validates admin auth for `ADMIN_ONLY` documents and generates a short-lived signed R2 download/preview URL. | [x] Completed Phase 4 |
@@ -548,6 +548,57 @@ Strictly 6 canonical blocks, each rendering immediately and hiding cleanly when 
 - Larger `96×120px` arch photo with subtle thin gold double border, parents' names, village, Share primary action, gold-foil Area Plate with converted শতাংশ & sq ft equivalents, 2-column key facts grid, expandable Story ("Read more"), public family representative, and linked Documents / Land Map rows with arrow.
 - **Server-Side Omission**: `server/src/utils/landDonorSerializer.js` omits `deedNumber`, `deedDate`, `relatedDocuments`, `khatianType`, `khatianNumber`, `dagNumber`, `jlNumber`, `mouza*`, `upazila*`, `district*`, `relatedLandMap`, and `boundary*` keys completely when their record visibility toggles are `false`, and never serializes `phone`, `nid`, or `representativePhone`.
 - **Android & iOS Compatibility**: `BottomSheet.jsx` implements `history.pushState` / `popstate` so the Android Back button closes open sheets, plus iOS Safari-safe fixed-position scroll locking that restores scroll position cleanly on close.
+
+---
+
+## 22. Map & Route Page Upgrade (`/map` — মানচিত্র ও পথ)
+
+> **Update Date**: 2026-11-22  
+> **Status**: **Implemented & Verified**  
+> **Specification Doc**: [`docs/MAP_GUIDE.md`](docs/MAP_GUIDE.md)
+
+### 1. Single Source of Truth & Scope Cleanup
+- **Single-Source Site Settings**: `map_lat` (`23.0199269`), `map_lng` (`91.2112393`), `map_zoom` (`17`), `map_place_name` (`মানিকপুর ঈদগাহ` / `Manikpur Eidgah`), `map_address`, `map_google_place_url` (`https://maps.app.goo.gl/3rqcdrGPNoY9caRb7`), `map_satellite_enabled`, `map_static_preview`, and `boundary_geojson`.
+- **Safe Placeholder Migration**: `server/src/scripts/seed.js` updates ONLY exact placeholder coordinates (`23.8103, 90.4125`) to `23.0199269, 91.2112393` without altering custom coordinates.
+- **Zero Duplication**: `/map` contains strictly location, map layers, navigation apps, places of interest, and route guides (no phone/email/bank/donation blocks). Home Directions card (`HomeDirectionsCard.jsx`), SEO JSON-LD (`SEO.jsx`), crawler OG meta, and `/sitemap.xml` all read the same settings.
+
+### 2. Mobile-First Interactive Map (`MapPage.jsx` & `InteractiveLeafletMap.jsx`)
+- Lazy-loaded Leaflet chunk (not in initial bundle), viewport `IntersectionObserver`, and Lite Mode / `saveData` static preview fallback with *"Tap to load interactive map"*.
+- Configurable OSM + Satellite tile URLs & attributions via env (`VITE_MAP_TILE_URL`, `VITE_MAP_SATELLITE_URL`), persistent layer & overlay preferences (`Boundary`, `Places`, `Parcels`).
+- Two-finger touch pan & desktop `Ctrl+scroll` anti-scroll-trap with gentle bilingual hints, touch-sized 44px+ zoom/recenter/fullscreen controls (Android Back closes fullscreen & sheets).
+- **Primary & Secondary Actions**: Platform-ordered Navigate sheet (Apple Maps first on iOS, Google Maps, Waze, Android `geo:`, Google Place URL, Street View), My Location (HTTPS-only browser geolocation, straight-line distance in Bangla/Latin digits, never sent to server), Share (Web Share + copy fallback), Copy (coordinates + client-side Open Location Code Plus Code with in-app browser fallback), and lazy-loaded QR generator (`qrGenerator.js`) with PNG download & print poster.
+- **Layers & Accessible Lists**: Category-filtered POI markers with grid clustering + collapsed accessible list, Boundary polygon with geodesic area in sq m & শতাংশ, optional privacy-gated Land Donor Parcels opening `LandDonorDetailSheet`, and collapsible "How to reach" (`পথ`) route guide accordion.
+
+### 3. Data Model, Admin & Quality
+- **Non-Destructive Prisma Migration**: `MapPlace`, `RouteGuide`, `MapPlaceCategory`, `RouteTransportType`, and nullable `LandDonor.geometry`.
+- **Admin Tools**: `AdminSettings.jsx` Map tab (click-to-place pin, Google Maps URL extractor + short-link guidance, Bangladesh bbox warning, static preview upload, boundary polygon editor with GeoJSON import/export & live area), `AdminMapManagement.jsx` (Places & Route Guides CRUD + UTF-8 BOM CSV import/export + soft delete/Trash + Activity Log), and parcel polygon editor on `AdminLandDonors.jsx`.
+- **Tests**: `server/tests/map.test.js` covering navigation/Street View links, exact placeholder migration, Google Maps URL extraction, Plus Code, Haversine distance, polygon area, Bangladesh bbox warnings, and parcel privacy serialization.
+
+### 4. Exact Pin & Unambiguous 6-Tab Admin Map Settings (Refined 2026-11-22)
+- **Exact Confirmed Pin**: `map_lat = 23.0199269`, `map_lng = 91.2112393`, `map_google_place_url = https://maps.app.goo.gl/g9bU9iHkgNdrsZ9PA`, `map_google_place_id = 0x37549fe00e9dd21b:0x7941acb63efcee4a`.
+- **Known-Wrong Coordinate Migration**: `seed.js` updates ONLY exact matches `(23.8103, 90.4125)`, `(23.019842, 91.2076296)`, or `(23.0200482, 91.2079419)` and backs up old values into `activity_logs`.
+- **Strict Google Link Parser & SSRF-Safe Resolver**: Priority `!3d/!4d` pin → query params → plain coords (Bangla & Latin digits) → `@lat,lng` fallback with explicit viewport-centre warning. Short links resolved via `POST /api/admin/maps/resolve` (rate-limited, ADMIN/EDITOR, HTTPS + allow-listed Google Maps hosts + DNS private/loopback IP blocking + max 5 redirects + 5s timeout + no cookies).
+- **Old-to-New Admin Map Setting Mapping (`AdminMapSettingsPanel.jsx`)**:
+  - `map_lat`, `map_lng`, `map_place_name`, `map_address`, `map_google_place_url`, optional `map_nav_lat`/`map_nav_lng`, `map_pin_source`, `map_pin_verified_at` → **Tab 1: Location (Pin)** (draggable pin + 4 explicit input methods + >50m move confirmation + post-save ground verification).
+  - `map_zoom`, `map_satellite_enabled`, `map_static_preview` → **Tab 2: View** (zoom slider + live preview + satellite toggle + static fallback upload).
+  - `boundary_geojson` → **Tab 3: Boundary** (polygon editor + GeoJSON import/export + sq m & শতাংশ area).
+  - `MapPlace` CRUD → **Tab 4: Places**; `RouteGuide` CRUD → **Tab 5: Route Guides**; `LandDonor.geometry` → **Tab 6: Parcels**.
+
+---
+
+## 23. Location Map Feature Removal (Data Retained)
+
+> **Update Date**: 2026-11-22  
+> **Status**: **Removed by decision (data retained, restore via git tag `before-map-removal`)**  
+> **Safety Branch / Tag**: Tag `before-map-removal`, branch `remove-map`
+
+- **Non-Destructive Data Retention**: No database table, column, row, or setting was dropped or modified. `MapPlace`, `RouteGuide`, `LandDonor.geometry`, and `map_*` / `boundary_geojson` rows remain dormant in PostgreSQL (`schema.prisma` annotated) and continue to be included in `GET /api/admin/backup/export`.
+- **Public Site & API**: Deleted `/map` page/components/helpers, uninstalled `leaflet`, added HTTP 301 (`/map` & `/map/*` → `/`) + client redirect, stripped `map_*` keys from `GET /api/public/settings`, removed `GET /api/public/map` and `POST /api/admin/maps/resolve`, removed `/map` from sitemap/OG/JSON-LD, replaced the Home Quick Links Map tile with Land Map (`/land-maps`), and simplified Home's bottom card to plain address + Contact link.
+- **Admin**: Removed Settings > Map tab, Places/Route Guides CRUD pages/routes, and Land Donor parcel editor; Admin Settings ignores dormant `map_*` keys on save so existing DB values are preserved.
+- **100% Parity Preserved**: Cadastral Land Map (`/land-maps`), Documents, Land Donors, Lifetime Members, Gallery, Designs, Notices, About/Committee, and Contact remain 100% intact.
+
+
+
 
 
 

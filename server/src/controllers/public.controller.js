@@ -160,7 +160,12 @@ export async function getHomeData(req, res, next) {
  */
 export async function getPublicSettings(req, res, next) {
   try {
-    const settings = await SettingsService.getAll();
+    const allSettings = await SettingsService.getAll();
+    const settings = {};
+    for (const [key, val] of Object.entries(allSettings || {})) {
+      if (key.startsWith('map_') || key === 'boundary_geojson') continue;
+      settings[key] = val;
+    }
     return res.status(200).json({
       success: true,
       settings,

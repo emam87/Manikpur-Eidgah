@@ -57,7 +57,8 @@ export function App() {
         <Route path="/gallery" element={<Suspense fallback={<PageFallback />}><Gallery /></Suspense>} />
         <Route path="/gallery/:slug" element={<Suspense fallback={<PageFallback />}><GalleryFolder /></Suspense>} />
         <Route path="/designs" element={<Suspense fallback={<PageFallback />}><Designs /></Suspense>} />
-        <Route path="/map" element={<Navigate to="/contact" replace />} />
+        <Route path="/map" element={<Navigate to="/" replace />} />
+        <Route path="/map/*" element={<Navigate to="/" replace />} />
         <Route path="/land-maps" element={<Suspense fallback={<PageFallback />}><LandMaps /></Suspense>} />
         <Route path="/documents" element={<Suspense fallback={<PageFallback />}><Documents /></Suspense>} />
         <Route path="/notices" element={<Suspense fallback={<PageFallback />}><Notices /></Suspense>} />

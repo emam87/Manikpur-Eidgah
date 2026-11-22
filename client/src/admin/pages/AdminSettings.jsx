@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, Save, Globe, Moon, Phone, Lock, MapPin, 
-  Sparkles, Check, AlertCircle, RefreshCw, Landmark, Upload, Image as ImageIcon, RotateCcw 
+  Sparkles, Check, AlertCircle, RefreshCw, Landmark, Upload, Image as ImageIcon, RotateCcw
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
@@ -82,6 +82,8 @@ export function AdminSettings() {
       const payload = {};
       Object.keys(settings).forEach((k) => {
         if (k.endsWith('_en')) return;
+        // Ignore dormant map_* / boundary_geojson rows so existing DB data stays untouched
+        if (k.startsWith('map_') || k === 'boundary_geojson') return;
         payload[k] = {
           valueBn: settings[k] || '',
           valueEn: settings[`${k}_en`] !== undefined ? settings[`${k}_en`] : null,
@@ -557,7 +559,10 @@ export function AdminSettings() {
                 <input
                   type="text"
                   value={settings.bank_account_no || ''}
-                  onChange={(e) => handleChange('bank_account_no', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('bank_account_no', e.target.value);
+                    handleChange('bank_account_no_en', e.target.value);
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono font-bold"
                 />
               </div>
@@ -567,7 +572,10 @@ export function AdminSettings() {
                 <input
                   type="text"
                   value={settings.bank_routing_no || ''}
-                  onChange={(e) => handleChange('bank_routing_no', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('bank_routing_no', e.target.value);
+                    handleChange('bank_routing_no_en', e.target.value);
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono"
                 />
               </div>
@@ -577,7 +585,10 @@ export function AdminSettings() {
                 <input
                   type="text"
                   value={settings.bkash_no || ''}
-                  onChange={(e) => handleChange('bkash_no', e.target.value)}
+                  onChange={(e) => {
+                    handleChange('bkash_no', e.target.value);
+                    handleChange('bkash_no_en', e.target.value);
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-sand bg-canvas text-ink font-mono"
                 />
               </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Landmark, Images, Compass, MapPin, FileText } from 'lucide-react';
+import { Users, Landmark, Images, Compass, Map, FileText } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export function QuickLinksSection() {
@@ -28,9 +28,9 @@ export function QuickLinksSection() {
       label: locale === 'bn' ? 'নকশা ও পরিকল্পনা' : 'Design & Plan',
     },
     {
-      to: '/contact#map',
-      icon: MapPin,
-      label: locale === 'bn' ? 'মানচিত্র ও পথ' : 'Map & Location',
+      to: '/land-maps',
+      icon: Map,
+      label: locale === 'bn' ? 'জমির নকশা' : 'Land Map',
     },
     {
       to: '/documents',

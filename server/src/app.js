@@ -92,6 +92,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// 9.5 Legacy /map routes -> HTTP 301 redirect to Home (location map feature removed)
+app.get(['/map', '/map/*'], (req, res) => {
+  return res.redirect(301, '/');
+});
+
 // 10. API Routes
 app.use('/api', healthRoutes);
 app.use('/api/public', publicRoutes);

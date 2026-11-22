@@ -93,7 +93,6 @@
     "donations": "Donations Fund",
     "gallery": "Photo Gallery",
     "designs": "3D Plan & Masterplan",
-    "map": "Location Map",
     "land_map": "Cadastral Maps",
     "documents": "Legal Archive",
     "notices": "Notices & News",
@@ -115,7 +114,6 @@
     "subtitle": "Historic Community Eidgah Ground & Waqf Estate • Est. 1965",
     "cta_members": "Lifetime Members",
     "cta_land_donors": "Land Donors",
-    "cta_map": "View Location Map",
     "cta_donate": "Donations & Bank Info"
   },
   "stats": {
@@ -152,9 +150,6 @@
     "transparency_desc": "Registered Waqf deeds, khatians, and CS/RS/BS cadastral survey maps preserved online",
     "view_documents": "View Legal Documents",
     "view_land_maps": "View Cadastral Maps",
-    "map_preview_title": "Eidgah Ground Location",
-    "map_preview_desc": "View live Google Maps location and driving directions",
-    "get_directions": "Get Google Maps Directions",
     "quick_links": {
       "members_title": "Lifetime Members",
       "members_desc": "Registered patrons & membership roll",
@@ -293,15 +288,6 @@
     "video_title": "3D Animation & Video Presentation",
     "renders_title": "Proposed Architectural Views",
     "view_fullscreen": "View Fullscreen"
-  },
-  "map": {
-    "title": "Eidgah Ground Location Map",
-    "subtitle": "Geographical location and 1.35-acre boundary of Manikpur Eidgah",
-    "directions_button": "Get Directions on Google Maps",
-    "coordinates_title": "Geographical Coordinates",
-    "latitude": "Latitude",
-    "longitude": "Longitude",
-    "boundary_info": "1.35-acre designated boundary highlighted in red"
   },
   "land_maps": {
     "title": "Cadastral & Land Survey Maps",
