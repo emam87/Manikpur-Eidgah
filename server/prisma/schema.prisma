@@ -98,6 +98,26 @@ enum LandUse {
   OTHER
 }
 
+enum MapPlaceCategory {
+  EIDGAH_GROUND
+  ENTRANCE
+  PARKING
+  WUDU
+  GRAVEYARD
+  MOSQUE
+  POND
+  LANDMARK
+  OTHER
+}
+
+enum RouteTransportType {
+  BUS
+  CNG
+  RICKSHAW
+  WALK
+  CAR
+}
+
 // ------------------------------------------------------------------------------
 // Models
 // ------------------------------------------------------------------------------
@@ -468,6 +488,7 @@ model LandDonor {
   relatedDocumentIds     Json?             @map("related_document_ids")
   relatedLandMapId       Int?              @map("related_land_map_id")
   relatedLandMap         LandMap?          @relation(fields: [relatedLandMapId], references: [id])
+  geometry               Json?             @map("geometry")
   representativeName     String?           @map("representative_name") @db.VarChar(255)
   representativeRelation String?           @map("representative_relation") @db.VarChar(100)
   phone                  String?           @db.VarChar(50) // STRICTLY PRIVATE: never serialized to public
@@ -488,5 +509,49 @@ model LandDonor {
   @@index([isPublished])
   @@index([deletedAt])
   @@map("land_donors")
+}
+
+model MapPlace {
+  id          Int              @id @default(autoincrement())
+  nameBn      String           @map("name_bn") @db.VarChar(255)
+  nameEn      String?          @map("name_en") @db.VarChar(255)
+  category    MapPlaceCategory @default(LANDMARK)
+  noteBn      String?          @map("note_bn") @db.Text
+  noteEn      String?          @map("note_en") @db.Text
+  photoKey    String?          @map("photo_key") @db.VarChar(255)
+  lat         Float
+  lng         Float
+  isPublished Boolean          @default(true) @map("is_published")
+  sortOrder   Int              @default(0) @map("sort_order")
+  deletedAt   DateTime?        @map("deleted_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([sortOrder])
+  @@index([deletedAt])
+  @@map("map_places")
+}
+
+model RouteGuide {
+  id            Int                  @id @default(autoincrement())
+  fromNameBn    String               @map("from_name_bn") @db.VarChar(255)
+  fromNameEn    String?              @map("from_name_en") @db.VarChar(255)
+  transports    RouteTransportType[] @default([])
+  approxMinutes Int?                 @map("approx_minutes")
+  approxFare    String?              @map("approx_fare") @db.VarChar(120)
+  notesBn       String?              @map("notes_bn") @db.Text
+  notesEn       String?              @map("notes_en") @db.Text
+  sortOrder     Int                  @default(0) @map("sort_order")
+  isPublished   Boolean              @default(true) @map("is_published")
+  deletedAt     DateTime?            @map("deleted_at")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  @@index([isPublished])
+  @@index([sortOrder])
+  @@index([deletedAt])
+  @@map("route_guides")
 }
 

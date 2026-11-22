@@ -8,6 +8,7 @@ import { logActivity } from '../services/activityLogger.service.js';
 import { SettingsService } from '../services/settings.service.js';
 import { processAndUploadImage, deleteImageAssets } from '../services/image.service.js';
 import { computeAreaInDecimal, DEFAULT_UNIT_CONVERSION } from '../utils/landUnit.js';
+import { validateGeoJsonPolygon } from '../utils/mapHelpers.js';
 import { 
   uploadPublicFile, uploadPrivateFile, getPrivateSignedDownloadUrl, 
   deletePublicFile, deletePrivateFile, getStorageUsage, archiveAllMediaFiles 
@@ -116,6 +117,17 @@ const ENTITY_DELETE_CONFIG = {
     subjectType: 'Design',
     notFound: 'নকশা পাওয়া যায়নি।',
     afterFiles: (record) => cleanupPublicMedia(record.path, record.thumbPath),
+  },
+  MapPlace: {
+    prismaKey: 'mapPlace',
+    subjectType: 'MapPlace',
+    notFound: 'মানচিত্রের স্থান পাওয়া যায়নি।',
+    afterFiles: (record) => cleanupPublicMedia(record.photoKey),
+  },
+  RouteGuide: {
+    prismaKey: 'routeGuide',
+    subjectType: 'RouteGuide',
+    notFound: 'পথ নির্দেশনা পাওয়া যায়নি।',
   },
 };
 
@@ -923,6 +935,11 @@ export async function createLandDonor(req, res, next) {
         storyEn: body.storyEn ? body.storyEn.trim() : null,
         relatedDocumentIds,
         relatedLandMapId: body.relatedLandMapId ? parseInt(body.relatedLandMapId, 10) : null,
+        geometry: (() => {
+          if (!body.geometry) return null;
+          const check = validateGeoJsonPolygon(body.geometry);
+          return check.valid ? check.normalized : null;
+        })(),
         representativeName: body.representativeName ? body.representativeName.trim() : null,
         representativeRelation: body.representativeRelation ? body.representativeRelation.trim() : null,
         phone: body.phone ? body.phone.trim() : null,
@@ -1043,6 +1060,12 @@ export async function updateLandDonor(req, res, next) {
         storyEn: body.storyEn !== undefined ? (body.storyEn ? body.storyEn.trim() : null) : undefined,
         relatedDocumentIds,
         relatedLandMapId: body.relatedLandMapId !== undefined ? (body.relatedLandMapId ? parseInt(body.relatedLandMapId, 10) : null) : undefined,
+        geometry: (() => {
+          if (body.geometry === undefined) return undefined;
+          if (body.geometry === '' || body.geometry === null) return null;
+          const check = validateGeoJsonPolygon(body.geometry);
+          return check.valid ? check.normalized : existing.geometry;
+        })(),
         representativeName: body.representativeName !== undefined ? (body.representativeName ? body.representativeName.trim() : null) : undefined,
         representativeRelation: body.representativeRelation !== undefined ? (body.representativeRelation ? body.representativeRelation.trim() : null) : undefined,
         phone: body.phone !== undefined ? (body.phone ? body.phone.trim() : null) : undefined,
@@ -2607,7 +2630,7 @@ export async function deleteUser(req, res, next) {
 // ==============================================================================
 export async function getTrashItems(req, res, next) {
   try {
-    const [members, donors, committee, albums, photos, documents, landMaps, notices, designs, landDonors] =
+    const [members, donors, committee, albums, photos, documents, landMaps, notices, designs, landDonors, mapPlaces, routeGuides] =
       await Promise.all([
         prisma.member.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
         prisma.donor.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
@@ -2619,6 +2642,8 @@ export async function getTrashItems(req, res, next) {
         prisma.notice.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
         prisma.design.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
         prisma.landDonor.findMany({ where: { deletedAt: { not: null } }, take: 50 }),
+        prisma.mapPlace.findMany({ where: { deletedAt: { not: null } }, take: 50 }).catch(() => []),
+        prisma.routeGuide.findMany({ where: { deletedAt: { not: null } }, take: 50 }).catch(() => []),
       ]);
 
     const formatted = [
@@ -2632,6 +2657,8 @@ export async function getTrashItems(req, res, next) {
       ...notices.map((n) => ({ type: 'Notice', id: n.id, title: n.titleBn, deletedAt: n.deletedAt })),
       ...designs.map((ds) => ({ type: 'Design', id: ds.id, title: ds.captionBn || '৩ডি নকশা', deletedAt: ds.deletedAt })),
       ...landDonors.map((ld) => ({ type: 'LandDonor', id: ld.id, title: `${ld.nameBn} (${ld.areaValue} ${ld.areaUnit})`, deletedAt: ld.deletedAt })),
+      ...mapPlaces.map((mp) => ({ type: 'MapPlace', id: mp.id, title: mp.nameBn, deletedAt: mp.deletedAt })),
+      ...routeGuides.map((rg) => ({ type: 'RouteGuide', id: rg.id, title: rg.fromNameBn, deletedAt: rg.deletedAt })),
     ].sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
 
     return res.status(200).json({ success: true, items: formatted });
@@ -2766,6 +2793,8 @@ export async function getDatabaseBackup(req, res, next) {
       designs,
       designVideos,
       landDonors,
+      mapPlaces,
+      routeGuides,
       settings,
       activityLogs,
       users,
@@ -2781,6 +2810,8 @@ export async function getDatabaseBackup(req, res, next) {
       prisma.design.findMany(),
       prisma.designVideo.findMany(),
       prisma.landDonor.findMany(),
+      prisma.mapPlace.findMany().catch(() => []),
+      prisma.routeGuide.findMany().catch(() => []),
       prisma.siteSetting.findMany(),
       prisma.activityLog.findMany({ orderBy: { createdAt: 'desc' }, take: 1000 }),
       prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true } }),
@@ -2791,7 +2822,7 @@ export async function getDatabaseBackup(req, res, next) {
         site: 'Manikpur Eidgah',
         exportedAt: new Date().toISOString(),
         exportedBy: req.user.email,
-        version: '1.1.0',
+        version: '1.2.0',
       },
       data: {
         members,
@@ -2805,6 +2836,8 @@ export async function getDatabaseBackup(req, res, next) {
         designs,
         designVideos,
         landDonors,
+        mapPlaces,
+        routeGuides,
         settings,
         activityLogs,
         users,

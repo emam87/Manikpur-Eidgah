@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
 import { 
   uploadSingleImage, 
@@ -87,6 +88,32 @@ import {
   getMissingTranslationsReport,
   getNameReviewReport,
 } from '../controllers/admin.controller.js';
+import {
+  getAdminMapPlaces,
+  createMapPlace,
+  updateMapPlace,
+  deleteMapPlace,
+  exportMapPlacesCsv,
+  getMapPlacesTemplate,
+  importMapPlacesCsv,
+  getAdminRouteGuides,
+  createRouteGuide,
+  updateRouteGuide,
+  deleteRouteGuide,
+  exportRouteGuidesCsv,
+  getRouteGuidesTemplate,
+  importRouteGuidesCsv,
+  uploadMapPreviewSetting,
+  resolveAdminMapLink,
+} from '../controllers/mapAdmin.controller.js';
+
+const mapResolveLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।' },
+});
 
 const router = Router();
 
@@ -167,6 +194,25 @@ router.post('/designs/video', updateDesignVideo);
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
 router.post('/settings/hero-image', uploadSingleImage, uploadHeroImageSetting);
+router.post('/settings/map-preview', uploadSingleImage, uploadMapPreviewSetting);
+router.post('/maps/resolve', mapResolveLimiter, resolveAdminMapLink);
+
+// 10.1 Map Places (POI) & Route Guides
+router.get('/map-places', getAdminMapPlaces);
+router.get('/map-places/export', exportMapPlacesCsv);
+router.get('/map-places/template', getMapPlacesTemplate);
+router.post('/map-places/import', importMapPlacesCsv);
+router.post('/map-places', uploadSingleImage, createMapPlace);
+router.put('/map-places/:id', uploadSingleImage, updateMapPlace);
+router.delete('/map-places/:id', deleteMapPlace);
+
+router.get('/route-guides', getAdminRouteGuides);
+router.get('/route-guides/export', exportRouteGuidesCsv);
+router.get('/route-guides/template', getRouteGuidesTemplate);
+router.post('/route-guides/import', importRouteGuidesCsv);
+router.post('/route-guides', createRouteGuide);
+router.put('/route-guides/:id', updateRouteGuide);
+router.delete('/route-guides/:id', deleteRouteGuide);
 
 // 11. Users (ADMIN only)
 router.get('/users', requireRole('ADMIN'), getUsers);

@@ -1,6 +1,7 @@
 import { prisma } from '../db/prisma.js';
 import { SettingsService } from '../services/settings.service.js';
 import { serializePublicLandDonor } from '../utils/landDonorSerializer.js';
+import { DEFAULT_MAP_LOCATION } from '../utils/mapHelpers.js';
 
 /**
  * GET /api/public/home
@@ -1126,6 +1127,198 @@ export async function getDesigns(req, res, next) {
       success: true,
       designs,
       video,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/public/map
+ * Single-source-of-truth location config, boundary GeoJSON, published POIs,
+ * published route guides, and privacy-sanitized land donor parcels.
+ */
+export async function getMapData(req, res, next) {
+  try {
+    const [
+      settingsRows,
+      places,
+      routeGuides,
+      parcelDonors,
+    ] = await Promise.all([
+      prisma.siteSetting.findMany({
+        where: {
+          key: {
+            in: [
+              'map_lat',
+              'map_lng',
+              'map_zoom',
+              'map_place_name',
+              'map_address',
+              'map_google_place_url',
+              'map_google_place_id',
+              'map_satellite_enabled',
+              'map_static_preview',
+              'map_nav_lat',
+              'map_nav_lng',
+              'map_pin_verified_at',
+              'boundary_geojson',
+              'site_name',
+              'unit_conv_acre',
+              'unit_conv_bigha',
+              'unit_conv_katha',
+              'unit_conv_sqft',
+            ],
+          },
+        },
+      }),
+      prisma.mapPlace
+        .findMany({
+          where: { isPublished: true, deletedAt: null },
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+        })
+        .catch(() => []),
+      prisma.routeGuide
+        .findMany({
+          where: { isPublished: true, deletedAt: null },
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+        })
+        .catch(() => []),
+      prisma.landDonor
+        .findMany({
+          where: {
+            isPublished: true,
+            deletedAt: null,
+            showPlotDetails: true,
+            geometry: { not: null },
+          },
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+          select: {
+            id: true,
+            nameBn: true,
+            nameEn: true,
+            fatherNameBn: true,
+            fatherNameEn: true,
+            motherNameBn: true,
+            motherNameEn: true,
+            villageBn: true,
+            villageEn: true,
+            photoPath: true,
+            isDeceased: true,
+            areaValue: true,
+            areaUnit: true,
+            areaInDecimal: true,
+            donationYear: true,
+            donationDate: true,
+            donationType: true,
+            deedNumber: true,
+            deedDate: true,
+            khatianType: true,
+            khatianNumber: true,
+            dagNumber: true,
+            mouzaBn: true,
+            mouzaEn: true,
+            jlNumber: true,
+            upazilaBn: true,
+            upazilaEn: true,
+            districtBn: true,
+            districtEn: true,
+            boundaryNorth: true,
+            boundarySouth: true,
+            boundaryEast: true,
+            boundaryWest: true,
+            landUse: true,
+            landUseOther: true,
+            storyBn: true,
+            storyEn: true,
+            relatedDocumentIds: true,
+            relatedLandMapId: true,
+            geometry: true,
+            representativeName: true,
+            representativeRelation: true,
+            sortOrder: true,
+            showDeedDetails: true,
+            showPlotDetails: true,
+            showBoundaries: true,
+          },
+        })
+        .catch(() => []),
+    ]);
+
+    const settingsMap = {};
+    settingsRows.forEach((s) => {
+      settingsMap[s.key] = { bn: s.valueBn, en: s.valueEn };
+    });
+
+    const rawLat = settingsMap.map_lat?.bn || settingsMap.map_lat?.en || '';
+    const rawLng = settingsMap.map_lng?.bn || settingsMap.map_lng?.en || '';
+    const parsedLat = parseFloat(rawLat);
+    const parsedLng = parseFloat(rawLng);
+    const hasCoords = Number.isFinite(parsedLat) && Number.isFinite(parsedLng);
+    const parsedZoom = parseInt(settingsMap.map_zoom?.bn || settingsMap.map_zoom?.en, 10);
+
+    const parsedNavLat = parseFloat(settingsMap.map_nav_lat?.bn || settingsMap.map_nav_lat?.en);
+    const parsedNavLng = parseFloat(settingsMap.map_nav_lng?.bn || settingsMap.map_nav_lng?.en);
+    const hasNavPoint = Number.isFinite(parsedNavLat) && Number.isFinite(parsedNavLng);
+    const pinVerifiedAt = settingsMap.map_pin_verified_at?.bn || '';
+    const locationStatus = !hasCoords ? 'not_set' : pinVerifiedAt ? 'set' : 'needs_review';
+
+    let boundaryGeoJson = null;
+    const rawBoundary = settingsMap.boundary_geojson?.bn || settingsMap.boundary_geojson?.en;
+    if (rawBoundary) {
+      try {
+        boundaryGeoJson = typeof rawBoundary === 'string' ? JSON.parse(rawBoundary) : rawBoundary;
+      } catch {
+        boundaryGeoJson = null;
+      }
+    }
+
+    const satVal = settingsMap.map_satellite_enabled?.bn ?? '1';
+    const satelliteEnabled = satVal === '1' || satVal === 'true';
+
+    // Strictly serialize parcels with zero private fields & full visibility gating
+    const parcels = parcelDonors.map((d) => serializePublicLandDonor(d, {}));
+
+    return res.status(200).json({
+      success: true,
+      config: {
+        lat: hasCoords ? parsedLat : DEFAULT_MAP_LOCATION.lat,
+        lng: hasCoords ? parsedLng : DEFAULT_MAP_LOCATION.lng,
+        navLat: hasNavPoint ? parsedNavLat : null,
+        navLng: hasNavPoint ? parsedNavLng : null,
+        zoom: Number.isFinite(parsedZoom) ? parsedZoom : DEFAULT_MAP_LOCATION.zoom,
+        placeNameBn:
+          settingsMap.map_place_name?.bn ||
+          settingsMap.site_name?.bn ||
+          DEFAULT_MAP_LOCATION.placeNameBn,
+        placeNameEn:
+          settingsMap.map_place_name?.en ||
+          settingsMap.site_name?.en ||
+          DEFAULT_MAP_LOCATION.placeNameEn,
+        addressBn: settingsMap.map_address?.bn || '',
+        addressEn: settingsMap.map_address?.en || '',
+        googlePlaceUrl:
+          settingsMap.map_google_place_url?.bn ||
+          settingsMap.map_google_place_url?.en ||
+          DEFAULT_MAP_LOCATION.googlePlaceUrl,
+        googlePlaceId:
+          settingsMap.map_google_place_id?.bn ||
+          DEFAULT_MAP_LOCATION.googlePlaceId,
+        pinVerifiedAt,
+        locationStatus,
+        satelliteEnabled,
+        staticPreview: settingsMap.map_static_preview?.bn || '',
+        boundaryGeoJson,
+        conversionFactors: {
+          acre: parseFloat(settingsMap.unit_conv_acre?.bn) || 100,
+          bigha: parseFloat(settingsMap.unit_conv_bigha?.bn) || 33,
+          katha: parseFloat(settingsMap.unit_conv_katha?.bn) || 1.65,
+          sqft: parseFloat(settingsMap.unit_conv_sqft?.bn) || 435.6,
+        },
+      },
+      places,
+      routeGuides,
+      parcels,
     });
   } catch (err) {
     next(err);

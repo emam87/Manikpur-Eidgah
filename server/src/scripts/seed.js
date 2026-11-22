@@ -1,5 +1,9 @@
 import { prisma } from '../db/prisma.js';
 import { SettingsService } from '../services/settings.service.js';
+import {
+  DEFAULT_MAP_LOCATION,
+  resolvePlaceholderCoordinateMigration,
+} from '../utils/mapHelpers.js';
 
 export async function seedDatabase() {
   console.log(`\n======================================================`);
@@ -62,9 +66,20 @@ export async function seedDatabase() {
         'text',
         'contact',
       ],
-      ['map_lat', '23.9875', '23.9875', 'text', 'map'],
-      ['map_lng', '90.8214', '90.8214', 'text', 'map'],
-      ['map_zoom', '17', '17', 'number', 'map'],
+      ['map_lat', String(DEFAULT_MAP_LOCATION.lat), String(DEFAULT_MAP_LOCATION.lat), 'text', 'map'],
+      ['map_lng', String(DEFAULT_MAP_LOCATION.lng), String(DEFAULT_MAP_LOCATION.lng), 'text', 'map'],
+      ['map_zoom', String(DEFAULT_MAP_LOCATION.zoom), String(DEFAULT_MAP_LOCATION.zoom), 'number', 'map'],
+      ['map_place_name', DEFAULT_MAP_LOCATION.placeNameBn, DEFAULT_MAP_LOCATION.placeNameEn, 'text', 'map'],
+      ['map_address', '', '', 'text', 'map'],
+      ['map_google_place_url', DEFAULT_MAP_LOCATION.googlePlaceUrl, DEFAULT_MAP_LOCATION.googlePlaceUrl, 'text', 'map'],
+      ['map_google_place_id', DEFAULT_MAP_LOCATION.googlePlaceId, DEFAULT_MAP_LOCATION.googlePlaceId, 'text', 'map'],
+      ['map_satellite_enabled', '1', '1', 'boolean', 'map'],
+      ['map_static_preview', '', '', 'image', 'map'],
+      ['map_nav_lat', '', '', 'text', 'map'],
+      ['map_nav_lng', '', '', 'text', 'map'],
+      ['map_pin_source', 'Google link', 'Google link', 'text', 'map'],
+      ['map_pin_verified_at', '', '', 'text', 'map'],
+      ['map_pin_verified_by', '', '', 'text', 'map'],
       ['boundary_geojson', boundaryGeoJson, boundaryGeoJson, 'json', 'map'],
       ['contact_phone', '+880 1711-223344, +880 1819-556677', '+880 1711-223344, +880 1819-556677', 'text', 'contact'],
       ['contact_email', 'info@manikpureidgah.org', 'info@manikpureidgah.org', 'text', 'contact'],
@@ -99,6 +114,46 @@ export async function seedDatabase() {
       }
     }
     console.log(`✓ Site Settings: ${settingsInserted} inserted (existing preserved).`);
+
+    // 1b. Safe exact-match migration for known-wrong coordinates:
+    // ONLY (23.8103, 90.4125), (23.019842, 91.2076296), or (23.0200482, 91.2079419)
+    // Never touches custom coordinates set by an admin. Logs backup of old values in activity_logs.
+    const [existingLat, existingLng] = await Promise.all([
+      prisma.siteSetting.findUnique({ where: { key: 'map_lat' } }),
+      prisma.siteSetting.findUnique({ where: { key: 'map_lng' } }),
+    ]);
+    if (existingLat && existingLng) {
+      const migration = resolvePlaceholderCoordinateMigration(existingLat.valueBn, existingLng.valueBn);
+      if (migration.shouldUpdate) {
+        await Promise.all([
+          prisma.siteSetting.update({
+            where: { key: 'map_lat' },
+            data: { valueBn: migration.lat, valueEn: migration.lat },
+          }),
+          prisma.siteSetting.update({
+            where: { key: 'map_lng' },
+            data: { valueBn: migration.lng, valueEn: migration.lng },
+          }),
+        ]);
+        await prisma.activityLog
+          .create({
+            data: {
+              action: 'UPDATED',
+              subjectType: 'SiteSetting',
+              description: `Migrated known-wrong map coordinates (${migration.matchedLabel}) to exact Manikpur Eidgah pin.`,
+              properties: {
+                before: { map_lat: migration.previousLat, map_lng: migration.previousLng },
+                after: { map_lat: migration.lat, map_lng: migration.lng },
+                reason: migration.matchedLabel,
+              },
+            },
+          })
+          .catch(() => {});
+        console.log(
+          `✓ Migrated known-wrong coordinates (${migration.previousLat}, ${migration.previousLng} — ${migration.matchedLabel}) -> (${migration.lat}, ${migration.lng}).`
+        );
+      }
+    }
 
     // 2. Initial Committee Members (Insert only if none exists)
     const currentTerm = '২০২৪ - বর্তমান';

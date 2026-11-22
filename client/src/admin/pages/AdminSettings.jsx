@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, Save, Globe, Moon, Phone, Lock, MapPin, 
-  Sparkles, Check, AlertCircle, RefreshCw, Landmark, Upload, Image as ImageIcon, RotateCcw 
+  Sparkles, Check, AlertCircle, RefreshCw, Landmark, Upload, Image as ImageIcon, RotateCcw
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import { BilingualInput } from '../components/BilingualInput.jsx';
+import { AdminMapSettingsPanel } from '../components/AdminMapSettingsPanel.jsx';
 import { getImageUrl } from '../../utils/imageUrl.js';
 
 export function AdminSettings() {
@@ -110,6 +111,7 @@ export function AdminSettings() {
 
   const tabs = [
     { id: 'general', label: 'সাধারণ পরিচিতি', icon: Globe },
+    { id: 'map', label: 'মানচিত্র ও অবস্থান', icon: MapPin },
     { id: 'land', label: 'জমিদাতা ও ভূমি সেটিংস', icon: Landmark },
     { id: 'jamat', label: 'ঈদের জামাত সময়সূচি', icon: Moon },
     { id: 'contact', label: 'যোগাযোগ ও ব্যাংক একাউন্ট', icon: Phone },
@@ -585,6 +587,16 @@ export function AdminSettings() {
           </div>
         )}
 
+        {/* TAB: MAP & LOCATION (Unambiguous 6-tab panel) */}
+        {activeTab === 'map' && (
+          <AdminMapSettingsPanel
+            settings={settings}
+            onSettingsUpdated={(updatedMapFields) =>
+              setSettings((prev) => ({ ...prev, ...updatedMapFields }))
+            }
+          />
+        )}
+
         {/* TAB 4: PRIVACY */}
         {activeTab === 'privacy' && (
           <div className="space-y-4 max-w-2xl">
@@ -624,17 +636,19 @@ export function AdminSettings() {
 
 
 
-        {/* Save Button */}
-        <div className="pt-4 border-t border-sand flex items-center justify-end gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold hover:bg-primary-hover transition-colors shadow-sakinah-sm flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            <span>{saving ? 'সংরক্ষণ হচ্ছে...' : 'সেটিংস সংরক্ষণ করুন'}</span>
-          </button>
-        </div>
+        {/* Save Button (hidden on map tab which manages its own dirty-gated Save/Reset + 50m guard) */}
+        {activeTab !== 'map' && (
+          <div className="pt-4 border-t border-sand flex items-center justify-end gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold hover:bg-primary-hover transition-colors shadow-sakinah-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              <span>{saving ? 'সংরক্ষণ হচ্ছে...' : 'সেটিংস সংরক্ষণ করুন'}</span>
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

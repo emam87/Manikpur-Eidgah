@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+const AdminMapEditor = lazy(() => import('../components/AdminMapEditor.jsx'));
 import Papa from 'papaparse';
 import { 
   Landmark, Search, Plus, Edit, Trash2, Download, Upload, 
@@ -65,6 +66,7 @@ export function AdminLandDonors() {
     storyEn: '',
     relatedLandMapId: '',
     relatedDocumentIds: [],
+    geometry: null,
     representativeName: '',
     representativeRelation: '',
     phone: '',
@@ -183,6 +185,7 @@ export function AdminLandDonors() {
       storyEn: '',
       relatedLandMapId: '',
       relatedDocumentIds: [],
+      geometry: null,
       representativeName: '',
       representativeRelation: '',
       phone: '',
@@ -240,6 +243,7 @@ export function AdminLandDonors() {
       storyEn: donor.storyEn || '',
       relatedLandMapId: donor.relatedLandMapId ? String(donor.relatedLandMapId) : '',
       relatedDocumentIds: Array.isArray(donor.relatedDocumentIds) ? donor.relatedDocumentIds : [],
+      geometry: donor.geometry || null,
       representativeName: donor.representativeName || '',
       representativeRelation: donor.representativeRelation || '',
       phone: donor.phone || '',
@@ -323,6 +327,8 @@ export function AdminLandDonors() {
       Object.keys(formData).forEach(key => {
         if (key === 'relatedDocumentIds') {
           bodyData.append(key, JSON.stringify(formData[key]));
+        } else if (key === 'geometry') {
+          bodyData.append(key, formData.geometry ? JSON.stringify(formData.geometry) : '');
         } else if (formData[key] !== null && formData[key] !== undefined) {
           bodyData.append(key, formData[key]);
         }
@@ -1291,6 +1297,26 @@ export function AdminLandDonors() {
                       placeholder="জমি দান সম্পর্কিত বিশেষ কোনো ঘটনা, পটভূমি বা মরহুমের অবদান..."
                       className="w-full px-3 py-2 bg-canvas border border-sand rounded-xl text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-primary focus:bg-surface"
                     />
+                  </div>
+
+                  {/* Optional Land Donor Parcel Polygon */}
+                  <div className="p-4 bg-canvas rounded-2xl border border-sand space-y-2">
+                    <h3 className="text-xs font-bold text-primary-dark">
+                      মানচিত্রে জমির অংশ (Parcel Polygon — ঐচ্ছিক)
+                    </h3>
+                    <p className="text-[11px] text-ink-muted">
+                      পাবলিক /map পেজের Parcels লেয়ারে এই জমিদাতার অংশ দেখাতে মানচিত্রে ক্লিক করে সীমানা আঁকুন।
+                    </p>
+                    <Suspense fallback={<div className="h-56 rounded-xl skeleton-shimmer" />}>
+                      <AdminMapEditor
+                        mode="polygon"
+                        heightClass="h-56"
+                        geojson={formData.geometry}
+                        onChangeGeoJson={(nextGeo) =>
+                          setFormData((prev) => ({ ...prev, geometry: nextGeo }))
+                        }
+                      />
+                    </Suspense>
                   </div>
                 </div>
               )}

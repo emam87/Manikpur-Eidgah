@@ -67,7 +67,7 @@ export function MobileTabBar() {
   const moreLinks = [
     { to: '/about', label: locale === 'bn' ? 'পরিচিতি ও কমিটি' : 'About & Committee', icon: Info },
     { to: '/designs', label: locale === 'bn' ? 'নকশা ও পরিকল্পনা' : 'Design & Plan', icon: Compass },
-    { to: '/contact#map', label: locale === 'bn' ? 'মানচিত্র ও পথ' : 'Map & Directions', icon: MapPin },
+    { to: '/map', label: locale === 'bn' ? 'মানচিত্র ও পথ' : 'Map & Directions', icon: MapPin },
     { to: '/land-maps', label: locale === 'bn' ? 'জমির নকশা' : 'Land Map', icon: Map },
     { to: '/documents', label: locale === 'bn' ? 'দলিল ও কাগজপত্র' : 'Documents', icon: FileText },
     { to: '/notices', label: locale === 'bn' ? 'নোটিশ ও ঘোষণা' : 'Notices', icon: Bell },

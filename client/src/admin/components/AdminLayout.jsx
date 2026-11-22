@@ -43,6 +43,7 @@ export function AdminLayout({ children }) {
     { to: `/${ADMIN_PATH}/gallery`, label: 'ফটো গ্যালারি', icon: Images },
     { to: `/${ADMIN_PATH}/documents`, label: 'দলিল সংরক্ষণাগার', icon: FileText },
     { to: `/${ADMIN_PATH}/land-maps`, label: 'মৌজা নকশা', icon: Map },
+    { to: `/${ADMIN_PATH}/map`, label: 'মানচিত্র ও পথ', icon: Compass },
     { to: `/${ADMIN_PATH}/notices`, label: 'নোটিশ বোর্ড', icon: Bell },
     { to: `/${ADMIN_PATH}/designs`, label: '৩ডি ডিজাইন', icon: Compass },
     { to: `/${ADMIN_PATH}/missing-translations`, label: 'অনুবাদ নিরীক্ষা', icon: Globe },

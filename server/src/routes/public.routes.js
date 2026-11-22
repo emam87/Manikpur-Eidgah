@@ -8,6 +8,7 @@ import {
   getLandDonors,
   getDocuments,
   getLandMaps,
+  getMapData,
   getNotices,
   getNoticeBySlug,
   getAlbums,
@@ -25,6 +26,7 @@ router.get('/donors', getDonors);
 router.get('/land-donors', getLandDonors);
 router.get('/documents', getDocuments);
 router.get('/land-maps', getLandMaps);
+router.get('/map', getMapData);
 router.get('/notices', getNotices);
 router.get('/notices/:slug', getNoticeBySlug);
 router.get('/albums', getAlbums);
